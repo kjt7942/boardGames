@@ -5,22 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>마법의 미로</title>
 <style>
-:root{--bs:min(94vw,470px);--cs:calc(var(--bs)/6)}
+:root{--bs:max(220px,min(94vw,calc(100dvh - 340px),560px));--pw:var(--bs);--cs:calc(var(--bs)/6)}
+@media (min-aspect-ratio:11/10){:root{--bs:max(220px,min(calc(100dvh - 24px),62vw));--pw:min(400px,calc(100vw - var(--bs) - 56px))}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0%,#3a2478 0%,#1a1038 55%,#0d0820 100%);color:#efe8ff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;display:flex;flex-direction:column;align-items:center;padding:10px 0 40px;user-select:none}
-h1{font-size:20px;margin:4px 0 8px;letter-spacing:1px}
+body{margin:0;height:100vh;height:100dvh;background:radial-gradient(circle at 50% 0%,#3a2478 0%,#1a1038 55%,#0d0820 100%);color:#efe8ff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;user-select:none;overflow:hidden}
+h1{font-size:20px;margin:0;letter-spacing:1px}
 h1 small{font-weight:400;font-size:12px;opacity:.6;margin-left:6px}
-#scores{display:flex;gap:6px;width:var(--bs);margin-bottom:8px}
+#scores{display:flex;gap:6px;width:var(--pw)}
 .sc{flex:1;background:#ffffff12;border:2px solid transparent;border-radius:10px;padding:4px 6px;min-height:46px;font-size:12px}
 .sc.cur{border-color:var(--pc);background:#ffffff22;box-shadow:0 0 12px var(--pc)}
 .sc b{color:var(--pc)}
 .sc .got{font-size:14px;letter-spacing:1px;line-height:1.2;word-break:break-all}
-#target{display:flex;align-items:center;gap:10px;width:var(--bs);background:#00000040;border-radius:12px;padding:6px 12px;margin-bottom:8px}
+#target{display:flex;align-items:center;gap:10px;width:var(--pw);background:#00000040;border-radius:12px;padding:6px 12px}
 #target .t{font-size:12px;opacity:.75}
 #target .s{font-size:34px;line-height:1}
 #msg{flex:1;text-align:right;font-size:13px;min-height:34px;display:flex;align-items:center;justify-content:flex-end}
 #msg.bad{color:#ff8a8a}#msg.good{color:#8dffb4}
-#boardwrap{width:var(--bs);height:var(--bs);position:relative;border-radius:14px;padding:0;background:#2a1a5c;box-shadow:0 8px 30px #000a,inset 0 0 0 3px #7c5cff}
+#boardwrap{width:var(--bs);height:var(--bs);flex:none;position:relative;border-radius:14px;padding:0;background:#2a1a5c;box-shadow:0 8px 30px #000a,inset 0 0 0 3px #7c5cff}
 #board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);border-radius:12px;overflow:hidden}
 .cell{position:relative;background:#35227a;display:flex;align-items:center;justify-content:center;border:1px solid #ffffff10}
 .cell.alt{background:#2c1c68}
@@ -37,45 +38,50 @@ h1 small{font-weight:400;font-size:12px;opacity:.6;margin-left:6px}
 @keyframes pulse{to{opacity:.45}}
 #boardwrap.shake{animation:shake .35s}
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-#ctl{display:flex;gap:10px;align-items:center;width:var(--bs);margin-top:12px}
+#ctl{display:flex;gap:10px;align-items:center;width:var(--pw)}
 #die{width:58px;height:58px;border-radius:12px;background:#fff;color:#2a1a5c;font-size:32px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 3px 8px #0008}
 button{font:inherit;border:0;border-radius:12px;padding:12px 14px;background:#7c5cff;color:#fff;font-weight:700;cursor:pointer}
 button:disabled{opacity:.35;cursor:default}
 button.sec{background:#ffffff22}
 #ctl button{flex:1}
-#steps{font-size:12px;opacity:.8;width:var(--bs);margin-top:6px;text-align:center;min-height:16px}
-details{width:var(--bs);margin-top:14px;background:#00000030;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.55}
+#steps{font-size:12px;opacity:.8;width:var(--pw);text-align:center;min-height:16px}
+details{width:var(--pw);margin-top:14px;background:#00000030;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.55}
 summary{cursor:pointer;font-weight:700}
 .ov{position:fixed;inset:0;background:#0d0820ee;display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
 .ov.hide{display:none}
-.card{background:#241552;border:2px solid #7c5cff;border-radius:18px;padding:20px;max-width:380px;width:100%;text-align:center}
+.card{max-height:100%;overflow:auto;background:#241552;border:2px solid #7c5cff;border-radius:18px;padding:20px;max-width:380px;width:100%;text-align:center}
 .card h2{margin:0 0 4px}
 .opt{display:flex;gap:6px;justify-content:center;margin:6px 0 14px}
 .opt button{flex:1;background:#ffffff1a;padding:10px 4px;font-size:14px}
 .opt button.on{background:#7c5cff}
 .lbl{font-size:13px;opacity:.75;margin-top:10px;text-align:left}
-.top{display:flex;gap:6px;justify-content:flex-end;width:var(--bs)}
+.top{display:flex;gap:6px;justify-content:flex-end;width:var(--pw)}
 .top button{padding:6px 10px;font-size:12px}
+#app{height:100vh;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:6px 0;overflow:auto}
+#side{display:contents}
+.top{order:1}h1{order:2}#scores{order:3}#target{order:4}#boardwrap{order:5}#steps{order:6}#ctl{order:7}
+@media (min-aspect-ratio:11/10){
+ #app{flex-direction:row;gap:22px}
+ #side{display:flex;flex-direction:column;align-items:center;gap:10px;width:var(--pw)}
+ #boardwrap{order:0}
+ #scores{flex-wrap:wrap}.sc{flex:1 1 45%}
+ #die{width:64px;height:64px}
+}
+.rules ol{text-align:left;margin:8px 0 14px;padding-left:20px;font-size:13px;line-height:1.6}
 </style>
 </head>
 <body>
-<div class="top"><button class="sec" id="fsBtn" title="전체화면">⛶ 전체화면</button><button class="sec" id="sndBtn">🔊</button><button class="sec" id="newBtn">새 게임</button></div>
+<div id="app">
+<div id="boardwrap"><div id="board"></div><div id="walls"></div></div>
+<div id="side">
+<div class="top"><button class="sec" id="fsBtn" title="전체화면">⛶ 전체화면</button><button class="sec" id="sndBtn">🔊</button><button class="sec" id="ruleBtn">규칙</button><button class="sec" id="newBtn">새 게임</button></div>
 <h1>🧙 마법의 미로<small>Magic Labyrinth</small></h1>
 <div id="scores"></div>
 <div id="target"><div><div class="t">찾아라!</div><div class="s" id="tsym">?</div></div><div id="msg"></div></div>
-<div id="boardwrap"><div id="board"></div><div id="walls"></div></div>
 <div id="steps"></div>
 <div id="ctl"><div id="die">🎲</div><button id="rollBtn">주사위 굴리기</button><button id="stopBtn" class="sec">여기서 멈추기</button></div>
-<details><summary>게임 규칙</summary>
-<ol style="margin:6px 0 0;padding-left:18px">
-<li>미로의 벽은 <b>보이지 않아요</b>. 모서리 4곳에서 출발합니다.</li>
-<li>내 차례에 주사위(1·2·2·3·3·4)를 굴리고, 나온 칸 수만큼 <b>상하좌우</b>로 이동해요. 인접한 칸을 눌러(또는 방향키) 한 칸씩 움직입니다. 더 적게 움직이고 멈춰도 돼요.</li>
-<li>보이지 않는 <b>벽에 부딪히면</b> 남은 이동은 사라지고 내 시작 모서리로 돌아갑니다. 부딪힌 벽은 잠깐 빨갛게 보여요. 잘 기억하세요!</li>
-<li>다른 마법사 위는 지나갈 수 있지만, 그 칸에서 멈출 수는 없어요.</li>
-<li>찾는 심볼 칸에 도착하면 심볼을 얻고 새 심볼이 나옵니다. 누군가 이미 그 칸에 서 있으면 그 사람이 가져가요.</li>
-<li><b>심볼 5개</b>를 먼저 모으면 승리!</li>
-</ol></details>
-
+</div>
+</div>
 <div class="ov" id="setup"><div class="card">
 <h2>🧙 마법의 미로</h2>
 <div style="font-size:13px;opacity:.8">보이지 않는 벽을 기억해 심볼을 모으세요</div>
@@ -87,6 +93,15 @@ summary{cursor:pointer;font-weight:700}
 <div class="opt" id="optM"><button data-v="0" class="on">끄기</button><button data-v="1">켜기</button></div>
 <button id="startBtn" style="width:100%;margin-top:6px">게임 시작</button>
 </div></div>
+
+<div class="ov hide" id="rules"><div class="card rules"><h2>게임 규칙</h2><ol>
+<li>미로의 벽은 <b>보이지 않아요</b>. 모서리 4곳에서 출발합니다.</li>
+<li>내 차례에 주사위(1·2·2·3·3·4)를 굴리고, 나온 칸 수만큼 <b>상하좌우</b>로 이동해요. 인접한 칸을 눌러(또는 방향키) 한 칸씩 움직입니다. 더 적게 움직이고 멈춰도 돼요.</li>
+<li>보이지 않는 <b>벽에 부딪히면</b> 남은 이동은 사라지고 내 시작 모서리로 돌아갑니다. 부딪힌 벽은 잠깐 빨갛게 보여요. 잘 기억하세요!</li>
+<li>다른 마법사 위는 지나갈 수 있지만, 그 칸에서 멈출 수는 없어요.</li>
+<li>찾는 심볼 칸에 도착하면 심볼을 얻고 새 심볼이 나옵니다. 누군가 이미 그 칸에 서 있으면 그 사람이 가져가요.</li>
+<li><b>심볼 5개</b>를 먼저 모으면 승리!</li>
+</ol><button id="ruleClose" style="width:100%">닫기</button></div></div>
 
 <div class="ov hide" id="win"><div class="card"><h2 id="wt">🏆</h2><div id="wd" style="margin:8px 0 14px"></div><button id="againBtn" style="width:100%">다시 하기</button></div></div>
 
@@ -281,6 +296,8 @@ document.addEventListener("keydown",e=>{
 });
 $("#rollBtn").onclick=roll;
 $("#stopBtn").onclick=stop;
+$("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
+$("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
 $("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
 $("#newBtn").onclick=()=>{$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#againBtn").onclick=()=>{$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
