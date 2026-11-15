@@ -54,12 +54,12 @@ summary{cursor:pointer;font-weight:700}
 .opt button{flex:1;background:#ffffff1a;padding:10px 4px;font-size:14px}
 .opt button.on{background:#7c5cff}
 .lbl{font-size:13px;opacity:.75;margin-top:10px;text-align:left}
-.top{position:absolute;right:10px;top:8px;display:flex;gap:6px}
+.top{display:flex;gap:6px;justify-content:flex-end;width:var(--bs)}
 .top button{padding:6px 10px;font-size:12px}
 </style>
 </head>
 <body>
-<div class="top"><button class="sec" id="sndBtn">🔊</button><button class="sec" id="newBtn">새 게임</button></div>
+<div class="top"><button class="sec" id="fsBtn" title="전체화면">⛶ 전체화면</button><button class="sec" id="sndBtn">🔊</button><button class="sec" id="newBtn">새 게임</button></div>
 <h1>🧙 마법의 미로<small>Magic Labyrinth</small></h1>
 <div id="scores"></div>
 <div id="target"><div><div class="t">찾아라!</div><div class="s" id="tsym">?</div></div><div id="msg"></div></div>
@@ -292,6 +292,21 @@ function bindOpt(id,key){
 }
 bindOpt("#optP","p");bindOpt("#optD","d");bindOpt("#optM","m");
 $("#startBtn").onclick=()=>{$("#setup").classList.add("hide");$("#die").textContent="🎲";newGame()};
+
+
+// 전체화면 전환
+(function(){
+  const d=document, el=d.documentElement, btn=$("#fsBtn");
+  const isFs=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);
+  const sync=()=>{btn.textContent=isFs()?"✕ 전체화면 해제":"⛶ 전체화면"};
+  btn.onclick=async()=>{
+    try{
+      if(isFs()){await (d.exitFullscreen||d.webkitExitFullscreen).call(d)}
+      else{const f=el.requestFullscreen||el.webkitRequestFullscreen;if(!f)throw 0;await f.call(el)}
+    }catch(e){setMsg("이 환경에서는 전체화면을 쓸 수 없어요. 아이폰은 공유 → 홈 화면에 추가를 이용하세요","bad")}
+  };
+  d.addEventListener("fullscreenchange",sync);d.addEventListener("webkitfullscreenchange",sync);
+})();
 
 // 초기 화면용 빈 상태
 G={players:COLORS.slice(0,2).map((c,i)=>({...c,start:CORNERS[2][i],pos:CORNERS[2][i].slice(),got:[]})),cellSym:{},symCell:{},walls:new Set(),known:new Set(),collected:new Set(),cur:0,phase:"idle",steps:0,target:"?",over:true};
