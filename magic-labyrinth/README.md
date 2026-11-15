@@ -2,7 +2,10 @@
 
 보이지 않는 벽을 기억해 마법 심볼을 모으는 보드게임 *The Magic Labyrinth*의 웹 버전 프로토타입입니다. (2~4인, 한 기기 돌려 하기)
 
-## 실행
+## 플레이
+▶ https://kjt7942.github.io/boardGames/magic-labyrinth/
+
+## 로컬 실행
 `index.html`을 브라우저로 열면 됩니다. 빌드가 필요 없습니다.
 
 ## 규칙 요약
