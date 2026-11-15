@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마법의 미로</title>
+<style>
+:root{--bs:min(94vw,470px);--cs:calc(var(--bs)/6)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0%,#3a2478 0%,#1a1038 55%,#0d0820 100%);color:#efe8ff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;display:flex;flex-direction:column;align-items:center;padding:10px 0 40px;user-select:none}
+h1{font-size:20px;margin:4px 0 8px;letter-spacing:1px}
+h1 small{font-weight:400;font-size:12px;opacity:.6;margin-left:6px}
+#scores{display:flex;gap:6px;width:var(--bs);margin-bottom:8px}
+.sc{flex:1;background:#ffffff12;border:2px solid transparent;border-radius:10px;padding:4px 6px;min-height:46px;font-size:12px}
+.sc.cur{border-color:var(--pc);background:#ffffff22;box-shadow:0 0 12px var(--pc)}
+.sc b{color:var(--pc)}
+.sc .got{font-size:14px;letter-spacing:1px;line-height:1.2;word-break:break-all}
+#target{display:flex;align-items:center;gap:10px;width:var(--bs);background:#00000040;border-radius:12px;padding:6px 12px;margin-bottom:8px}
+#target .t{font-size:12px;opacity:.75}
+#target .s{font-size:34px;line-height:1}
+#msg{flex:1;text-align:right;font-size:13px;min-height:34px;display:flex;align-items:center;justify-content:flex-end}
+#msg.bad{color:#ff8a8a}#msg.good{color:#8dffb4}
+#boardwrap{width:var(--bs);height:var(--bs);position:relative;border-radius:14px;padding:0;background:#2a1a5c;box-shadow:0 8px 30px #000a,inset 0 0 0 3px #7c5cff}
+#board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);border-radius:12px;overflow:hidden}
+.cell{position:relative;background:#35227a;display:flex;align-items:center;justify-content:center;border:1px solid #ffffff10}
+.cell.alt{background:#2c1c68}
+.cell.adj{background:#5a3fc0;cursor:pointer}
+.cell .sym{font-size:calc(var(--cs)*.5);filter:drop-shadow(0 0 4px #ffe58a88)}
+.cell.done .sym{opacity:.25;filter:grayscale(1)}
+.cell .start{position:absolute;inset:5px;border:2px dashed var(--pc);border-radius:50%;opacity:.7}
+.tok{position:absolute;width:calc(var(--cs)*.56);height:calc(var(--cs)*.56);border-radius:50%;background:var(--pc);display:flex;align-items:center;justify-content:center;font-size:calc(var(--cs)*.34);box-shadow:0 2px 6px #000b;border:2px solid #fff;transform:translate(calc(var(--i)*7px),calc(var(--i)*-5px));transition:all .15s}
+.tok.cur{animation:bob .8s infinite alternate;z-index:3}
+@keyframes bob{to{margin-top:-4px}}
+#walls{position:absolute;inset:0;pointer-events:none}
+.wall{position:absolute;background:#ff4d6d;border-radius:3px;box-shadow:0 0 10px #ff4d6d;animation:pulse .5s infinite alternate}
+.wall.known{background:#ff4d6d88;box-shadow:none;animation:none}
+@keyframes pulse{to{opacity:.45}}
+#boardwrap.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+#ctl{display:flex;gap:10px;align-items:center;width:var(--bs);margin-top:12px}
+#die{width:58px;height:58px;border-radius:12px;background:#fff;color:#2a1a5c;font-size:32px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 3px 8px #0008}
+button{font:inherit;border:0;border-radius:12px;padding:12px 14px;background:#7c5cff;color:#fff;font-weight:700;cursor:pointer}
+button:disabled{opacity:.35;cursor:default}
+button.sec{background:#ffffff22}
+#ctl button{flex:1}
+#steps{font-size:12px;opacity:.8;width:var(--bs);margin-top:6px;text-align:center;min-height:16px}
+details{width:var(--bs);margin-top:14px;background:#00000030;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.55}
+summary{cursor:pointer;font-weight:700}
+.ov{position:fixed;inset:0;background:#0d0820ee;display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
+.ov.hide{display:none}
+.card{background:#241552;border:2px solid #7c5cff;border-radius:18px;padding:20px;max-width:380px;width:100%;text-align:center}
+.card h2{margin:0 0 4px}
+.opt{display:flex;gap:6px;justify-content:center;margin:6px 0 14px}
+.opt button{flex:1;background:#ffffff1a;padding:10px 4px;font-size:14px}
+.opt button.on{background:#7c5cff}
+.lbl{font-size:13px;opacity:.75;margin-top:10px;text-align:left}
+.top{position:absolute;right:10px;top:8px;display:flex;gap:6px}
+.top button{padding:6px 10px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="top"><button class="sec" id="sndBtn">🔊</button><button class="sec" id="newBtn">새 게임</button></div>
+<h1>🧙 마법의 미로<small>Magic Labyrinth</small></h1>
+<div id="scores"></div>
+<div id="target"><div><div class="t">찾아라!</div><div class="s" id="tsym">?</div></div><div id="msg"></div></div>
+<div id="boardwrap"><div id="board"></div><div id="walls"></div></div>
+<div id="steps"></div>
+<div id="ctl"><div id="die">🎲</div><button id="rollBtn">주사위 굴리기</button><button id="stopBtn" class="sec">여기서 멈추기</button></div>
+<details><summary>게임 규칙</summary>
+<ol style="margin:6px 0 0;padding-left:18px">
+<li>미로의 벽은 <b>보이지 않아요</b>. 모서리 4곳에서 출발합니다.</li>
+<li>내 차례에 주사위(1·2·2·3·3·4)를 굴리고, 나온 칸 수만큼 <b>상하좌우</b>로 이동해요. 인접한 칸을 눌러(또는 방향키) 한 칸씩 움직입니다. 더 적게 움직이고 멈춰도 돼요.</li>
+<li>보이지 않는 <b>벽에 부딪히면</b> 남은 이동은 사라지고 내 시작 모서리로 돌아갑니다. 부딪힌 벽은 잠깐 빨갛게 보여요. 잘 기억하세요!</li>
+<li>다른 마법사 위는 지나갈 수 있지만, 그 칸에서 멈출 수는 없어요.</li>
+<li>찾는 심볼 칸에 도착하면 심볼을 얻고 새 심볼이 나옵니다. 누군가 이미 그 칸에 서 있으면 그 사람이 가져가요.</li>
+<li><b>심볼 5개</b>를 먼저 모으면 승리!</li>
+</ol></details>
+
+<div class="ov" id="setup"><div class="card">
+<h2>🧙 마법의 미로</h2>
+<div style="font-size:13px;opacity:.8">보이지 않는 벽을 기억해 심볼을 모으세요</div>
+<div class="lbl">플레이어 수</div>
+<div class="opt" id="optP"><button data-v="2" class="on">2명</button><button data-v="3">3명</button><button data-v="4">4명</button></div>
+<div class="lbl">난이도 (벽 개수)</div>
+<div class="opt" id="optD"><button data-v="18">쉬움</button><button data-v="24" class="on">보통</button><button data-v="25">어려움</button></div>
+<div class="lbl">연습 모드 (부딪힌 벽을 계속 표시)</div>
+<div class="opt" id="optM"><button data-v="0" class="on">끄기</button><button data-v="1">켜기</button></div>
+<button id="startBtn" style="width:100%;margin-top:6px">게임 시작</button>
+</div></div>
+
+<div class="ov hide" id="win"><div class="card"><h2 id="wt">🏆</h2><div id="wd" style="margin:8px 0 14px"></div><button id="againBtn" style="width:100%">다시 하기</button></div></div>
+
+<script>
+const N=6, FACES=[1,2,2,3,3,4];
+const SYMS=["🔮","🗝️","📜","🧪","💎","🕯️","🦉","🐸","🌙","⭐","🍄","🪄","🐉","🦄","🧿","📖","⚗️","🪶","🔥","❄️","🍀","🕸️","🦇","🌿"];
+const COLORS=[{n:"빨강",c:"#ff5d73"},{n:"파랑",c:"#4dabff"},{n:"노랑",c:"#ffd24d"},{n:"초록",c:"#4ddf8a"}];
+const CORNERS={2:[[0,0],[5,5]],3:[[0,0],[5,5],[0,5]],4:[[0,0],[5,5],[0,5],[5,0]]};
+const $=s=>document.querySelector(s);
+const rnd=n=>Math.floor(Math.random()*n);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function edge(r,c,dr,dc){return dr===1?`h${r},${c}`:dr===-1?`h${r-1},${c}`:dc===1?`v${r},${c}`:`v${r},${c-1}`}
+const inB=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
+
+let sel={p:2,d:24,m:0}, G=null, soundOn=true, ac=null;
+
+function beep(f,d,type="sine",v=.07,delay=0){
+  if(!soundOn)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
+    o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}
+}
+
+function genWalls(target){
+  const all=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(c<N-1)all.push(`v${r},${c}`);if(r<N-1)all.push(`h${r},${c}`)}
+  const seen=Array.from({length:N},()=>Array(N).fill(false)), open=new Set();
+  (function dfs(r,c){seen[r][c]=true;
+    for(const [dr,dc] of shuffle([[1,0],[-1,0],[0,1],[0,-1]])){
+      const nr=r+dr,nc=c+dc;
+      if(inB(nr,nc)&&!seen[nr][nc]){open.add(edge(r,c,dr,dc));dfs(nr,nc)}
+    }})(rnd(N),rnd(N));
+  const walls=shuffle(all.filter(k=>!open.has(k)));
+  while(walls.length>target)walls.pop();
+  return new Set(walls);
+}
+
+function newGame(){
+  const np=sel.p, corners=CORNERS[np];
+  const cs=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if((r===0||r===N-1)&&(c===0||c===N-1))continue;
+    cs.push(`${r},${c}`);
+  }
+  shuffle(cs);
+  const syms=shuffle(SYMS.slice());
+  const cellSym={}, symCell={};
+  for(let i=0;i<24;i++){cellSym[cs[i]]=syms[i];symCell[syms[i]]=cs[i]}
+  G={
+    walls:genWalls(sel.d), known:new Set(), practice:!!sel.m,
+    players:corners.map((p,i)=>({id:i,...COLORS[i],start:p.slice(),pos:p.slice(),got:[]})),
+    cellSym, symCell, bag:shuffle(SYMS.slice()), target:null, collected:new Set(),
+    cur:0, phase:"roll", steps:0, lastBump:null, over:false
+  };
+  G.target=G.bag.pop();
+  resolveOccupied();
+  if(!G.over){setMsg(`${G.players[G.cur].n} 차례! 주사위를 굴리세요`);}
+  render();
+}
+
+// 찾는 심볼 칸에 이미 누가 서 있으면 그 사람이 가져감
+function resolveOccupied(){
+  let guard=0;
+  while(!G.over&&guard++<30){
+    const cell=G.symCell[G.target];
+    const who=G.players.find(p=>`${p.pos[0]},${p.pos[1]}`===cell);
+    if(!who)break;
+    award(who);
+  }
+}
+function award(p){
+  p.got.push(G.target);G.collected.add(G.target);
+  beep(660,.12,"triangle",.09);beep(880,.12,"triangle",.09,.1);beep(1175,.2,"triangle",.09,.2);
+  if(p.got.length>=5){G.over=true;G.phase="over";showWin(p);return}
+  G.target=G.bag.pop();
+}
+
+function setMsg(t,k=""){const m=$("#msg");m.textContent=t;m.className=k}
+
+function render(){
+  const cur=G.players[G.cur];
+  const here=(r,c)=>G.players.filter(p=>p.pos[0]===r&&p.pos[1]===c);
+  let h="";
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const key=`${r},${c}`, sym=G.cellSym[key];
+    let adj=false;
+    if(G.phase==="move"&&G.steps>0&&Math.abs(cur.pos[0]-r)+Math.abs(cur.pos[1]-c)===1)adj=true;
+    const st=G.players.find(p=>p.start[0]===r&&p.start[1]===c);
+    h+=`<div class="cell${(r+c)%2?" alt":""}${adj?" adj":""}${sym&&G.collected.has(sym)?" done":""}" data-r="${r}" data-c="${c}">`
+      +(sym?`<span class="sym">${sym}</span>`:"")
+      +(st?`<span class="start" style="--pc:${st.c}"></span>`:"")
+      +here(r,c).map((p,i)=>`<div class="tok${p===cur&&!G.over?" cur":""}" style="--pc:${p.c};--i:${i}">🧙</div>`).join("")
+      +`</div>`;
+  }
+  $("#board").innerHTML=h;
+  // 벽 오버레이
+  const u=100/N, T=1.4;
+  const draw=(k,cls)=>{
+    const t=k[0],[r,c]=k.slice(1).split(",").map(Number);
+    return t==="h"
+      ?`<div class="wall ${cls}" style="left:${c*u}%;top:calc(${(r+1)*u}% - ${T/2}%);width:${u}%;height:${T}%"></div>`
+      :`<div class="wall ${cls}" style="top:${r*u}%;left:calc(${(c+1)*u}% - ${T/2}%);height:${u}%;width:${T}%"></div>`;
+  };
+  let w="";
+  if(G.practice)G.known.forEach(k=>{w+=draw(k,"known")});
+  if(G.lastBump&&Date.now()-G.lastBump.t<2200)w+=draw(G.lastBump.k,"");
+  $("#walls").innerHTML=w;
+  // 점수판
+  $("#scores").innerHTML=G.players.map(p=>`<div class="sc${p===cur&&!G.over?" cur":""}" style="--pc:${p.c}"><b>${p.n}</b> ${p.got.length}/5<div class="got">${p.got.join("")||"&nbsp;"}</div></div>`).join("");
+  $("#tsym").textContent=G.target;
+  $("#steps").textContent=G.phase==="move"?`남은 이동: ${G.steps}칸 — 인접한 칸을 눌러 이동`:"";
+  $("#rollBtn").disabled=G.phase!=="roll";
+  const shared=G.players.some(p=>p!==cur&&p.pos[0]===cur.pos[0]&&p.pos[1]===cur.pos[1]);
+  $("#stopBtn").disabled=!(G.phase==="move"&&!shared);
+}
+
+function nextTurn(){
+  G.cur=(G.cur+1)%G.players.length;G.phase="roll";G.steps=0;
+  setMsg(`${G.players[G.cur].n} 차례! 주사위를 굴리세요`);
+  render();
+}
+
+function roll(){
+  if(G.phase!=="roll")return;
+  G.phase="rolling";render();$("#rollBtn").disabled=true;
+  let n=0;const die=$("#die");
+  const t=setInterval(()=>{
+    die.textContent=FACES[rnd(6)];beep(300+rnd(200),.04,"square",.03);
+    if(++n>9){clearInterval(t);
+      const v=FACES[rnd(6)];die.textContent=v;G.steps=v;G.phase="move";
+      setMsg(`${v}칸 이동! 벽 조심!`);render();}
+  },65);
+}
+
+function tryMove(dr,dc){
+  if(G.phase!=="move"||G.steps<=0)return;
+  const p=G.players[G.cur],[r,c]=p.pos,nr=r+dr,nc=c+dc;
+  if(!inB(nr,nc)){setMsg("판 밖으로는 못 나가요","bad");return}
+  if(G.steps===1&&G.players.some(q=>q!==p&&q.pos[0]===nr&&q.pos[1]===nc)){setMsg("다른 마법사가 있는 칸에서는 멈출 수 없어요","bad");return}
+  const k=edge(r,c,dr,dc);
+  if(G.walls.has(k)){bump(k);return}
+  p.pos=[nr,nc];G.steps--;beep(520,.06,"sine",.06);
+  if(`${nr},${nc}`===G.symCell[G.target]){
+    const sym=G.target;award(p);
+    if(G.over){render();return}
+    resolveOccupied();
+    if(!G.over){setMsg(`${p.n} 마법사가 ${sym} 획득! 🎉`,"good");G.cur=(G.cur+1)%G.players.length;G.phase="roll";G.steps=0;}
+    render();return;
+  }
+  if(G.steps===0){nextTurn();return}
+  setMsg(`${G.steps}칸 남음`);render();
+}
+
+function bump(k){
+  G.phase="bump";G.known.add(k);G.lastBump={k,t:Date.now()};
+  beep(110,.35,"sawtooth",.12);try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
+  const bw=$("#boardwrap");bw.classList.add("shake");setTimeout(()=>bw.classList.remove("shake"),400);
+  const p=G.players[G.cur];
+  setMsg(`🧱 쿵! ${p.n} 마법사가 벽에 부딪혔어요`,"bad");
+  render();
+  setTimeout(()=>{p.pos=p.start.slice();G.steps=0;nextTurn();setTimeout(()=>{if(G&&!G.over)render()},2300)},900);
+}
+
+function stop(){
+  if(G.phase!=="move")return;
+  nextTurn();
+}
+
+function showWin(p){
+  $("#wt").textContent=`🏆 ${p.n} 마법사 승리!`;
+  $("#wd").textContent=`마법 심볼 5개를 모았어요 ${p.got.join(" ")}`;
+  beep(523,.15,"triangle",.1);beep(659,.15,"triangle",.1,.15);beep(784,.15,"triangle",.1,.3);beep(1047,.4,"triangle",.1,.45);
+  $("#win").classList.remove("hide");
+}
+
+// 이벤트
+$("#board").addEventListener("click",e=>{
+  if(!G||G.over)return;
+  const el=e.target.closest(".cell");if(!el)return;
+  if(G.phase==="roll"){setMsg("먼저 주사위를 굴리세요");return}
+  if(G.phase!=="move")return;
+  const p=G.players[G.cur],dr=+el.dataset.r-p.pos[0],dc=+el.dataset.c-p.pos[1];
+  if(Math.abs(dr)+Math.abs(dc)===1)tryMove(dr,dc);
+  else setMsg("바로 옆 칸을 눌러 주세요");
+});
+document.addEventListener("keydown",e=>{
+  if(!G||G.over)return;
+  const m={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[e.key];
+  if(m){e.preventDefault();tryMove(...m)}
+  else if((e.key===" "||e.key==="Enter")&&G.phase==="roll"){e.preventDefault();roll()}
+});
+$("#rollBtn").onclick=roll;
+$("#stopBtn").onclick=stop;
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+$("#newBtn").onclick=()=>{$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+$("#againBtn").onclick=()=>{$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+function bindOpt(id,key){
+  $(id).addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=+b.dataset.v;
+  });
+}
+bindOpt("#optP","p");bindOpt("#optD","d");bindOpt("#optM","m");
+$("#startBtn").onclick=()=>{$("#setup").classList.add("hide");$("#die").textContent="🎲";newGame()};
+
+// 초기 화면용 빈 상태
+G={players:COLORS.slice(0,2).map((c,i)=>({...c,start:CORNERS[2][i],pos:CORNERS[2][i].slice(),got:[]})),cellSym:{},symCell:{},walls:new Set(),known:new Set(),collected:new Set(),cur:0,phase:"idle",steps:0,target:"?",over:true};
+render();
+</script>
+</body>
+</html>
