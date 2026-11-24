@@ -121,60 +121,12 @@ window.CA = (function () {
     return `<span class="hs" style="background-position:${f((c % 8) / 7 * 100)}% ${f(((c / 8) | 0) / 5 * 100)}%"></span>`;
   }
 
-  // ── 트럼프 ──
-  const SP = {
-    0: s => `<path transform="scale(${s})" d="M0 -10 C-4 -4 -12 -1 -10 4 C-8 8 -3 7 -1.5 4 C-1.5 8 -2.5 10 -4.5 11 L4.5 11 C2.5 10 1.5 8 1.5 4 C3 7 8 8 10 4 C12 -1 4 -4 0 -10Z"/>`,
-    1: s => `<path transform="scale(${s})" d="M0 10 C-14 0 -11 -9 -5.5 -9 C-2.5 -9 0 -6.5 0 -4.2 C0 -6.5 2.5 -9 5.5 -9 C11 -9 14 0 0 10Z"/>`,
-    2: s => `<path transform="scale(${s})" d="M0 -11 L8 0 L0 11 L-8 0Z"/>`,
-    3: s => `<g transform="scale(${s})"><circle cx="0" cy="-5" r="4.6"/><circle cx="-5.2" cy="2" r="4.6"/><circle cx="5.2" cy="2" r="4.6"/><path d="M0 0 L-2.6 11 L2.6 11Z"/></g>`
-  };
-  const suitAt = (su, x, y, s, rot, col) => `<g fill="${col}" transform="translate(${x} ${y})${rot ? " rotate(180)" : ""}">${SP[su](s)}</g>`;
-  const PIPS = { // [x, y]
-    1: [[50, 72]],
-    2: [[50, 34], [50, 110]],
-    3: [[50, 34], [50, 72], [50, 110]],
-    4: [[33, 34], [67, 34], [33, 110], [67, 110]],
-    5: [[33, 34], [67, 34], [50, 72], [33, 110], [67, 110]],
-    6: [[33, 34], [67, 34], [33, 72], [67, 72], [33, 110], [67, 110]],
-    7: [[33, 34], [67, 34], [50, 53], [33, 72], [67, 72], [33, 110], [67, 110]],
-    8: [[33, 34], [67, 34], [50, 53], [33, 72], [67, 72], [50, 91], [33, 110], [67, 110]],
-    9: [[33, 34], [67, 34], [33, 59], [67, 59], [50, 72], [33, 85], [67, 85], [33, 110], [67, 110]],
-    10: [[33, 34], [67, 34], [50, 46], [33, 59], [67, 59], [33, 85], [67, 85], [50, 98], [33, 110], [67, 110]]
-  };
-  function halfFigure(r, col, col2) { // 위쪽 절반 (y 24~72)
-    const robe = path("M26 72 L30 56 Q50 48 70 56 L74 72Z", col, "#0006", .8) + path("M44 54 L50 72 L56 54Z", col2) + line("M30 62 H70", col2, 1.4);
-    const face = circ(50, 45, 8, "#f6d5b0", "#6a4a2a", .8) + circ(47, 44, .9, "#222") + circ(53, 44, .9, "#222") + line("M47.5 49 Q50 51 52.5 49", "#a03030", .9);
-    let head = "";
-    if (r === 13) head = path("M40 38 L39 27 L45 32 L50 24 L55 32 L61 27 L60 38Z", "#f0c040", "#8a6a10", .8) + circ(50, 24, 1.6, "#d02a2a") + path("M43 48 Q50 64 57 48 Q50 54 43 48Z", "#d8d8d8", "#777", .6) + line("M45 48 Q50 52 55 48", "#999", .8);
-    else if (r === 12) head = path("M39 41 Q37 56 44 60 L45 48 Z M61 41 Q63 56 56 60 L55 48Z", "#6a3a1a") + path("M41 38 L42 29 L46 33 L50 27 L54 33 L58 29 L59 38Z", "#f0c040", "#8a6a10", .8) + circ(50, 28, 1.4, "#3a8ad8") + path("M44 36 Q50 32 56 36", "none", "#6a3a1a", 1.4);
-    else head = path("M39 40 Q50 22 61 40 Q50 36 39 40Z", col2, "#0006", .8) + path("M58 31 Q72 22 68 42", "none", "#e8e8e8", 1.8) + path("M39 40 H61", "none", "#0006", .8);
-    return robe + face + head;
-  }
+  // 트럼프: 제공받은 그림(trump.webp, 13열×5행 스프라이트: 무늬별 A~K 4줄 + 조커 2장)
+  const TIMG = SRC.replace(/cardart\.js.*$/, "trump.webp");
+  st.textContent += `.ts{position:absolute;inset:0;background:url("${TIMG}") no-repeat;background-size:1300% 500%}`;
   function trump(c) {
-    if (c >= 52) { // 조커
-      const k = c === 53 ? "#d8283b" : "#222";
-      return `<svg viewBox="0 0 100 145"><rect x="3" y="3" width="94" height="139" rx="9" fill="#fff"/>
-        <g transform="translate(50 74)">${path("M-26 -8 Q-34 -40 -22 -52 Q-14 -38 -6 -18Z M26 -8 Q34 -40 22 -52 Q14 -38 6 -18Z M-8 -16 Q-2 -52 0 -56 Q2 -52 8 -16Z", k)}${circ(-22, -52, 4, "#f0c040", "#8a6a10", .8)}${circ(22, -52, 4, "#f0c040", "#8a6a10", .8)}${circ(0, -56, 4, "#f0c040", "#8a6a10", .8)}
-        ${path("M-26 -8 Q0 -22 26 -8 L26 0 Q0 -12 -26 0Z", c === 53 ? "#f0c040" : "#e0e0e0", "#555", .8)}
-        ${circ(0, 14, 24, "#f6d5b0", "#6a4a2a", 1.4)}${circ(-8, 8, 3, "#222")}${circ(8, 8, 3, "#222")}${path("M-10 20 Q0 32 10 20", "none", "#c02020", 2)}${circ(0, 14, 3, "#e05050")}
-        ${path("M-24 38 L-16 56 L0 44 L16 56 L24 38 L10 34 Q0 40 -10 34Z", k)}${circ(-16, 56, 3, "#f0c040")}${circ(16, 56, 3, "#f0c040")}</g>
-        <text font-size="9" font-weight="800" fill="${k}" font-family="sans-serif" text-anchor="middle" transform="rotate(-90 12 30)" x="12" y="30">JOKER</text>
-        <text x="88" y="115" font-size="9" font-weight="800" fill="${k}" font-family="sans-serif" text-anchor="middle" transform="rotate(90 88 115)">JOKER</text></svg>`;
-    }
-    const su = (c / 13) | 0, r = c % 13 + 1, rd = su === 1 || su === 2, col = rd ? "#d8283b" : "#1c1c28";
-    const RKT = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"][r];
-    let s = `<rect x="3" y="3" width="94" height="139" rx="9" fill="#fff"/>`;
-    s += `<text x="13" y="26" font-size="${r === 10 ? 20 : 24}" font-weight="800" fill="${col}" font-family="Georgia,'Times New Roman',serif" text-anchor="middle">${RKT}</text>` + suitAt(su, 13, 40, .78, 0, col);
-    s += `<g transform="rotate(180 50 72.5)"><text x="13" y="26" font-size="${r === 10 ? 20 : 24}" font-weight="800" fill="${col}" font-family="Georgia,'Times New Roman',serif" text-anchor="middle">${RKT}</text>${suitAt(su, 13, 40, .78, 0, col)}</g>`;
-    if (r <= 10) {
-      PIPS[r].forEach(([x, y]) => s += suitAt(su, x, y, r === 1 ? 2.6 : r >= 9 ? .92 : r >= 7 ? 1.02 : 1.12, y > 72 && r !== 1, col));
-    } else {
-      const c1 = rd ? "#d8283b" : "#2a3f8a", c2 = "#f0c040";
-      s += `<rect x="24" y="26" width="52" height="93" rx="4" fill="#fffbe8" stroke="${col}" stroke-width="1.4"/>`;
-      s += halfFigure(r, c1, c2) + `<g transform="rotate(180 50 72.5)">${halfFigure(r, c1, c2)}</g>`;
-      s += line("M24 72.5 H76", col, 1) + suitAt(su, 33, 36, .62, 0, col) + suitAt(su, 67, 109, .62, 1, col);
-    }
-    return `<svg viewBox="0 0 100 145">${s}</svg>`;
+    const col = c < 52 ? c % 13 : c - 52, row = c < 52 ? (c / 13) | 0 : 4;
+    return `<span class="ts" style="background-position:${f(col / 12 * 100)}% ${f(row / 4 * 100)}%"></span>`;
   }
   return { hwatu, trump, isSS };
 })();
