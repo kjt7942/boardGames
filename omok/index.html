@@ -221,7 +221,7 @@ $("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
 })();
 G=blank(15,1,"normal");render();
 (function(){
-  if(/\/(magic-labyrinth|wall-go|janggi|baduk|omok)\/?(index\.html)?$/.test(location.pathname)){
+  if(/\/(magic-labyrinth|wall-go|janggi|baduk|omok|chess)\/?(index\.html)?$/.test(location.pathname)){
     const b=document.getElementById("homeBtn");b.style.display="";b.onclick=()=>{location.href="../"};
   }
 })();

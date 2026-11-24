@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="보드게임즈">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+<title>체스 (Chess)</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:radial-gradient(circle at 50% 40%,#2a3a5e 0%,#141c33 60%,#090d1a 100%);color:#e8eeff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;user-select:none;touch-action:manipulation}
+button{font:inherit;border:0;border-radius:12px;padding:10px 8px;background:#4d7cff;color:#fff;font-weight:700;cursor:pointer}
+button:disabled{opacity:.3;cursor:default}
+button.sec{background:#ffffff22}
+
+#stage{position:fixed;inset:0;display:grid;padding:8px;gap:8px;
+  grid-template-columns:minmax(0,1fr) 250px;grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"board tl" "board menu" "board msg" "board br"}
+#boardarea{grid-area:board;display:flex;align-items:center;justify-content:center;container-type:size;min-height:0;min-width:0}
+#boardwrap{width:min(100cqw,100cqh);aspect-ratio:1;position:relative;border-radius:10px;box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 30px var(--cc,#4d7cff),0 8px 30px #000a;overflow:hidden}
+#boardwrap svg{display:block;width:100%;height:100%}
+#menu{grid-area:menu;justify-self:center;display:flex;gap:8px}
+#menu button{width:44px;height:44px;border-radius:50%;padding:0;font-size:19px}
+#pTL{grid-area:tl}#pBR{grid-area:br}
+.panel{background:#00000055;border:3px solid var(--pc);border-radius:18px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;text-align:center}
+.panel.cur{background:#ffffff20;box-shadow:0 0 22px var(--pc),inset 0 0 18px #ffffff18}
+.ph{display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px}
+.ph .dot{width:18px;height:18px;border-radius:50%;background:var(--sc);border:2px solid #fff8;box-shadow:0 0 8px var(--pc)}
+.ph b{color:#fff}
+.caps{font-size:15px}
+.info{font-size:12px;opacity:.8}
+.pbtns{display:flex;gap:6px}.pbtns button{flex:1;font-size:14px;padding:11px 4px}
+#bigmsg{grid-area:msg;align-self:center;justify-self:stretch;min-height:56px;display:flex;align-items:center;justify-content:center;text-align:center;border:3px solid var(--cc,#4d7cff);border-radius:16px;background:#00000066;font-size:clamp(16px,2.1vw,28px);font-weight:800;line-height:1.3;padding:6px 12px;word-break:keep-all}
+#bigmsg.bad{color:#ff9a9a}#bigmsg.good{color:#8dffb4}#bigmsg.warn{color:#ffd24d}
+
+.ov{position:fixed;inset:0;background:#090d1aee;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.ov.hide{display:none}
+.card{max-height:100%;overflow:auto;background:#1b2747;border:2px solid #4d7cff;border-radius:18px;padding:20px;max-width:420px;width:100%;text-align:center}
+.card h2{margin:0 0 4px}
+.opt{display:flex;gap:6px;justify-content:center;margin:6px 0 14px}
+.opt button{flex:1;background:#ffffff1a;padding:10px 4px;font-size:14px}
+.opt button.on{background:#4d7cff}
+.lbl{font-size:13px;opacity:.75;margin-top:10px;text-align:left}
+.rules ol{text-align:left;margin:8px 0 10px;padding-left:20px;font-size:13px;line-height:1.6}
+.rules .note{font-size:12px;opacity:.7;text-align:left;margin-bottom:12px}
+@keyframes pulse{to{opacity:.35}}
+.pulse{animation:pulse .7s infinite alternate}
+
+@media (max-aspect-ratio:11/10){
+  #stage{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;grid-template-areas:"tl" "menu" "board" "msg" "br"}
+  #bigmsg{font-size:clamp(16px,4.4vw,26px)}
+  .panel{padding:5px 8px;gap:3px}.info{display:none}
+  .pbtns button{padding:8px 4px}
+}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="panel" id="pTL"></div>
+  <div id="menu">
+    <button class="sec" id="homeBtn" title="게임 목록" style="display:none">🏠</button>
+    <button class="sec" id="fsBtn" title="전체화면">⛶</button>
+    <button class="sec" id="sndBtn" title="소리">🔊</button>
+    <button class="sec" id="ruleBtn" title="규칙">❓</button>
+    <button class="sec" id="newBtn" title="새 게임">↻</button>
+  </div>
+  <div id="boardarea"><div id="boardwrap"><svg id="svg" viewBox="0 0 880 880"></svg></div></div>
+  <div id="bigmsg"></div>
+  <div class="panel" id="pBR"></div>
+</div>
+
+<div class="ov" id="setup"><div class="card">
+<h2>♞ 체스</h2>
+<div style="font-size:13px;opacity:.8">🤖 혼자 한 판 — 백이 먼저 둡니다</div>
+<div class="lbl">내 기물</div>
+<div class="opt" id="optMe"><button data-v="1" class="on">백 (선공)</button><button data-v="-1">흑 (후공)</button></div>
+<div class="lbl">난이도</div>
+<div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div>
+<button id="startBtn" style="width:100%;margin-top:6px;padding:14px">게임 시작</button>
+</div></div>
+
+<div class="ov hide" id="promo"><div class="card"><h2>프로모션</h2><div style="font-size:13px;opacity:.8;margin-bottom:8px">어떤 기물로 바꿀까요?</div>
+<div class="opt" id="promoOpt" style="font-size:34px"><button data-v="5">♛</button><button data-v="4">♜</button><button data-v="3">♝</button><button data-v="2">♞</button></div></div></div>
+
+<div class="ov hide" id="rules"><div class="card rules"><h2>체스 규칙</h2>
+<ol>
+<li><b>백</b>이 먼저 둡니다. 상대 <b>킹</b>이 피할 수 없게 공격받으면(체크메이트) 이겨요.</li>
+<li>킹 1칸 · 퀸 모든 방향 · 룩 직선 · 비숍 대각선 · 나이트 L자(뛰어넘기 가능) · 폰 앞으로 1칸(처음엔 2칸), 대각선 앞으로 잡기.</li>
+<li><b>캐슬링</b>: 킹과 룩이 안 움직였고 사이가 비었으며 킹이 체크 중이 아니면, 킹을 룩 쪽으로 2칸 옮기고 룩이 넘어가요.</li>
+<li><b>앙파상</b>: 상대 폰이 2칸 전진해 내 폰 옆에 서면, 바로 다음 수에 한 칸 지나간 것처럼 잡을 수 있어요.</li>
+<li>폰이 끝줄에 닿으면 <b>프로모션</b>(퀸·룩·비숍·나이트 중 선택).</li>
+<li>체크는 반드시 피해야 해요. 움직일 수 없는데 체크가 아니면 <b>스테일메이트(무승부)</b>. 같은 모양 3번 반복, 50수 동안 진전 없음, 기물 부족도 무승부예요.</li>
+</ol>
+<button id="ruleClose" style="width:100%">닫기</button></div></div>
+
+<div class="ov hide" id="win"><div class="card">
+<h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div>
+<button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
+
+<script src="engine.js"></script>
+<script>
+const C=Chess,$=s=>document.querySelector(s);
+const CELL=100,MAR=90,SIDE={1:{n:"백",c:"#ffd24d"},"-1":{n:"흑",c:"#8aa4ff"}};
+const GL={1:"♟\uFE0E",2:"♞",3:"♝",4:"♜",5:"♛",6:"♚"};
+let sel={me:1,lv:"normal"},G=null,soundOn=true,ac=null,gen=0;
+function beep(f,d,type="sine",v=.07,delay=0){
+  if(!soundOn)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
+    o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}
+}
+const flip=()=>G.me===-1;
+const pos=i=>{let r=i>>3,c=i&7;if(flip()){r=7-r;c=7-c}return [MAR+c*CELL,MAR+r*CELL]};
+function blank(me,lv){const S=C.initial();S.keys.push(C.key(S));return {S,me,lv,sel:-1,moves:[],last:null,hist:[],over:true,busy:false,msg:"",kind:"",cap:{1:[],"-1":[]},check:false,pend:null}}
+function newGame(){gen++;G=blank(sel.me,sel.lv);G.over=false;setTurnMsg();render();if(G.S.side!==G.me)aiTurn()}
+function setTurnMsg(){
+  if(G.over)return;
+  if(G.S.side===G.me){G.msg=G.check?"⚠️ 체크! 킹을 지키세요":(G.sel>=0?"갈 곳을 누르세요":"내 차례 — 움직일 기물을 누르세요");G.kind=G.check?"warn":""}
+  else{G.msg=G.check?"체크!":"🤖 생각하는 중…";G.kind=G.check?"warn":""}
+}
+function render(){
+  const b=G.S.b;let h="";
+  for(let i=0;i<64;i++){const [x,y]=pos(i),dark=((i>>3)+(i&7))&1;
+    h+=`<rect x="${x-CELL/2}" y="${y-CELL/2}" width="${CELL}" height="${CELL}" fill="${dark?"#b58863":"#f0d9b5"}"/>`}
+  if(G.last)for(const i of [G.last.from,G.last.to]){const [x,y]=pos(i);h+=`<rect x="${x-CELL/2}" y="${y-CELL/2}" width="${CELL}" height="${CELL}" fill="#ffe14d" opacity=".5"/>`}
+  if(G.check){const k=C.kingSq(b,G.S.side),[x,y]=pos(k);h+=`<rect x="${x-CELL/2}" y="${y-CELL/2}" width="${CELL}" height="${CELL}" fill="#ff3b3b" opacity=".55"/>`}
+  if(G.sel>=0){const [x,y]=pos(G.sel);h+=`<rect x="${x-CELL/2}" y="${y-CELL/2}" width="${CELL}" height="${CELL}" fill="#4dff88" opacity=".5"/>`}
+  for(let k=0;k<8;k++){
+    const f=flip()?7-k:k,rk=flip()?k+1:8-k,fx=MAR+k*CELL;
+    h+=`<text x="${fx}" y="868" font-size="26" fill="#5a3a10" text-anchor="middle" font-weight="700">${"abcdefgh"[f]}</text><text x="20" y="${MAR+k*CELL+9}" font-size="26" fill="#5a3a10" text-anchor="middle" font-weight="700">${rk}</text>`;
+  }
+  for(let i=0;i<64;i++){const v=b[i];if(!v)continue;const [x,y]=pos(i),w=v>0;
+    h+=`<text x="${x}" y="${y+27}" font-size="84" text-anchor="middle" font-family="'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',serif" fill="${w?"#fff":"#1a1a1a"}" stroke="${w?"#222":"#ddd"}" stroke-width="${w?3:2}" paint-order="stroke">${GL[Math.abs(v)]}</text>`}
+  const dests=new Set(G.moves.map(m=>(m>>6)&63));
+  for(const t of dests){const [x,y]=pos(t);h+=b[t]||(Math.abs(b[G.sel])===1&&(t&7)!==(G.sel&7))?`<circle cx="${x}" cy="${y}" r="46" fill="none" stroke="#2a8f4f" stroke-width="9" opacity=".9"/>`:`<circle cx="${x}" cy="${y}" r="15" fill="#2a8f4f" opacity=".85"/>`}
+  $("#svg").innerHTML=`<rect width="880" height="880" fill="#8a5a24"/>`+h;
+  $("#boardwrap").style.setProperty("--cc",SIDE[G.S.side].c);
+  const opp=-G.me;
+  const pn=(side,mine)=>{
+    let s=`<div class="ph"><span class="dot" style="--sc:${side===1?"#f4f4f4":"#111"}"></span><b>${mine?"나":"🤖 컴퓨터"}</b> (${SIDE[side].n})</div><div class="caps" style="font-size:22px;min-height:28px;letter-spacing:1px">${G.cap[side].map(t=>GL[t]).join("")}</div>`;
+    if(mine&&!G.over)s+=`<div class="pbtns"><button data-act="undo" class="sec" ${G.hist.length&&!G.busy?"":"disabled"}>무르기</button><button data-act="resign" class="sec">기권</button></div>`;
+    return s;
+  };
+  $("#pTL").innerHTML=pn(opp,false);$("#pBR").innerHTML=pn(G.me,true);
+  for(const [id,side] of [["#pTL",opp],["#pBR",G.me]]){const e=$(id);e.style.setProperty("--pc",SIDE[side].c);e.classList.toggle("cur",!G.over&&G.S.side===side)}
+  const m=$("#bigmsg");m.textContent=G.msg;m.className=G.kind;m.classList.toggle("pulse",G.busy&&!G.over);
+}
+function doMove(m){
+  const side=G.S.side;
+  if(side===G.me)G.hist.push({S:C.clone(G.S),cap:{1:G.cap[1].slice(),"-1":G.cap[-1].slice()},last:G.last});
+  const u=C.make(G.S,m);G.S.keys.push(C.key(G.S));
+  if(u.cap)G.cap[side].push(Math.abs(u.cap));
+  G.last={from:m&63,to:(m>>6)&63};G.sel=-1;G.moves=[];
+  G.check=C.inCheck(G.S);
+  beep(u.cap?300:480,.08,"triangle");if(G.check)beep(700,.1,"square",.05,.08);
+  const st=C.status(G.S);
+  if(st)return end(st);
+  setTurnMsg();render();if(G.S.side!==G.me)aiTurn();
+}
+function aiTurn(){
+  G.busy=true;setTurnMsg();render();const g=gen;
+  setTimeout(()=>{
+    if(g!==gen||!G||G.over)return;
+    const m=C.chooseMove(G.S,G.lv,1);G.busy=false;
+    if(m==null)return end("stalemate");doMove(m);
+  },200);
+}
+function end(st){
+  G.over=true;G.busy=false;G.sel=-1;G.moves=[];
+  let t,d,win=false;
+  if(st==="mate"){const loser=G.S.side;win=loser!==G.me;t=win?"🎉 체크메이트 — 승리!":"🤖 컴퓨터의 체크메이트";d=`${SIDE[-loser].n}의 승리`}
+  else{t="🤝 무승부";d={stalemate:"스테일메이트 (둘 곳이 없어요)",draw50:"50수 규칙",rep:"같은 모양 3회 반복",insuf:"기물 부족"}[st]}
+  G.msg=t;G.kind=win?"good":st==="mate"?"bad":"warn";render();
+  $("#wt").textContent=t.replace(" — 승리!","").replace("체크메이트","").trim()||"끝";
+  $("#wt").textContent=st==="mate"?(win?"🎉 승리했어요!":"🤖 컴퓨터 승리"):"🤝 무승부";$("#wd").textContent=st==="mate"?"체크메이트! "+d:d;
+  beep(win?784:196,.3,"triangle",.1);if(win)beep(1047,.4,"triangle",.1,.25);
+  setTimeout(()=>$("#win").classList.remove("hide"),1100);
+}
+$("#svg").addEventListener("click",e=>{
+  if(!G||G.over||G.busy||G.S.side!==G.me)return;
+  const r0=$("#svg").getBoundingClientRect();
+  const x=(e.clientX-r0.left)*880/r0.width,y=(e.clientY-r0.top)*880/r0.height;
+  let c=Math.floor((x-MAR+CELL/2+CELL/2)/CELL-1+0),r=Math.floor((y-MAR+CELL/2)/CELL);c=Math.floor((x-MAR+CELL/2)/CELL);
+  if(r<0||r>7||c<0||c>7)return;
+  if(flip()){r=7-r;c=7-c}
+  const i=r*8+c,v=G.S.b[i];
+  if(v&&(v>0)===(G.me>0)){
+    G.sel=i;G.moves=C.legal(G.S).filter(m=>(m&63)===i);
+    if(!G.moves.length){G.sel=-1;G.msg="이 기물은 움직일 수 없어요";G.kind="bad";render();return}
+    setTurnMsg();beep(500,.05);render();return;
+  }
+  if(G.sel>=0){
+    const ms=G.moves.filter(m=>((m>>6)&63)===i);
+    if(ms.length>1){G.pend=ms;$("#promo").classList.remove("hide");return}
+    if(ms.length===1){doMove(ms[0]);return}
+  }
+  G.sel=-1;G.moves=[];setTurnMsg();render();
+});
+$("#promoOpt").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b||!G.pend)return;
+  const p=+b.dataset.v,m=G.pend.find(m=>(m>>12)===p);G.pend=null;$("#promo").classList.add("hide");if(m)doMove(m);
+});
+$("#stage").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]");if(!b||!G||G.over||G.busy)return;
+  if(b.dataset.act==="undo"&&G.hist.length){
+    const h=G.hist.pop();G.S=C.clone(h.S);G.S.keys=h.S.keys.slice();G.cap=h.cap;G.last=h.last;G.sel=-1;G.moves=[];G.check=C.inCheck(G.S);setTurnMsg();render();
+  }else if(b.dataset.act==="resign"&&confirm("기권할까요?")){
+    G.over=true;render();$("#wt").textContent="🏳️ 기권했어요";$("#wd").textContent="컴퓨터가 이겼어요";$("#win").classList.remove("hide");
+  }
+});
+$("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
+$("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+const again=()=>{gen++;$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+$("#newBtn").onclick=again;$("#againBtn").onclick=again;
+function bindOpt(id,key,num){
+  $(id).addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=num?+b.dataset.v:b.dataset.v;
+  });
+}
+bindOpt("#optMe","me",true);bindOpt("#optLv","lv");
+$("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
+(function(){
+  const d=document,el=d.documentElement,btn=$("#fsBtn");
+  const isFs=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);
+  const sync=()=>{btn.textContent=isFs()?"✕":"⛶"};
+  btn.onclick=async()=>{
+    try{if(isFs()){await(d.exitFullscreen||d.webkitExitFullscreen).call(d)}
+      else{const f=el.requestFullscreen||el.webkitRequestFullscreen;if(!f)throw 0;await f.call(el)}
+    }catch(e){if(G){G.msg="이 환경에서는 전체화면을 쓸 수 없어요";G.kind="bad";render()}}
+  };
+  d.addEventListener("fullscreenchange",sync);d.addEventListener("webkitfullscreenchange",sync);
+})();
+G=blank(1,"normal");render();
+(function(){
+  if(/\/(magic-labyrinth|wall-go|janggi|baduk|omok|chess)\/?(index\.html)?$/.test(location.pathname)){
+    const b=document.getElementById("homeBtn");b.style.display="";b.onclick=()=>{location.href="../"};
+  }
+})();
+</script>
+<script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("../sw.js").catch(()=>{}));</script>
+</body>
+</html>
