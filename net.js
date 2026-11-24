@@ -86,6 +86,11 @@
 .bgcd{text-align:center;font-size:30px;font-weight:800;min-height:46px;margin:10px 0}
 .bgcd.s{font-size:14px;font-weight:600;opacity:.8;padding-top:14px}
 .bgbig{width:100%;padding:15px 10px;font-size:17px}
+.bgg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.bgg button{flex:0 0 auto;padding:9px 12px;font-size:14px;background:#ffffff1a}
+.bgg button.on{background:#4d7cff}
+.bgpick{font-size:15px;text-align:center;margin:6px 0 2px}
+#bgFrame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:150;background:#090d1a}
 `;
   let root = null, bodyEl = null, titleEl = null;
   function ensureUI() {
@@ -107,6 +112,7 @@
 
   function open(opts) {
     ensureUI(); O = opts; titleEl.textContent = "🌐 온라인 · " + opts.title;
+    if (opts.hub) O.game = "*";
     root.classList.remove("hide");
     if (!DB) { bodyEl.innerHTML = `<div class="bgempty">온라인 서버가 아직 설정되지 않았어요.<br><br><small>firebase-config.js 에 Realtime Database 주소를 넣어 주세요.</small></div><button class="sec bgbig" data-a="close">닫기</button>`; return; }
     viewList();
@@ -162,7 +168,7 @@
     const name = cleanName(), rn = ($("#bgRN").value.trim() || name + "의 방").slice(0, 16), pw = $("#bgRP").value;
     const id = rs().slice(0, 6), ph = pw ? await hash(id + ":" + pw) : "", t = NOW();
     try {
-      await put("rooms/" + id, { np: C.np, g: O.game, host: uid, players: { [uid]: { n: name, t, ready: false, hb: t } } });
+      await put("rooms/" + id, { np: C.np, g: O.game, host: uid, pick: O.hub ? (hubGames(C.np)[0] || {}).k || "" : null, players: { [uid]: { n: name, t, ready: false, hb: t } } });
       await put("lobby/" + id, { g: O.game, name: rn, host: name, np: C.np, ph, count: 1, hb: t, t });
       enterRoom(id, true, rn);
     } catch (e) { msg("서버에 연결할 수 없어요"); }
@@ -186,7 +192,7 @@
   // ----- 대기방 -----
   function enterRoom(id, isHost, rname) {
     stopLobby();
-    R = { id, isHost, rname, next: 0, seen: {}, started: false, joined: false, order: [], players: {}, room: null, cd: null, cdLeft: 0, lastCount: 0, ctx: null, left: {} };
+    R = { id, isHost, rname, next: 0, round: 0, lastRound: 0, seen: {}, started: false, joined: false, order: [], players: {}, room: null, cd: null, cdLeft: 0, lastCount: 0, ctx: null, left: {} };
     bodyEl.innerHTML = `<div id="bgRoom"></div><div class="bgm" id="bgMsg"></div>`;
     R.stream = listen("rooms/" + id, onRoom, () => backToList("서버 연결이 끊겼어요"));
     R.hb = setInterval(heartbeat, 4000);
@@ -197,7 +203,7 @@
   function heartbeat() {
     if (!R) return;
     if (R.players[uid] || R.started) patch(`rooms/${R.id}/players/${uid}`, { hb: NOW() }).catch(() => {});
-    if (R.isHost && !R.started) patch(`lobby/${R.id}`, { hb: NOW() }).catch(() => {});
+    if (R.isHost && (!R.started || O.hub)) patch(`lobby/${R.id}`, { hb: NOW() }).catch(() => {});
   }
   function checkStale() {
     if (!R) return;
@@ -232,16 +238,16 @@
     for (const u in R.seen) if (!pl[u]) delete R.seen[u];
 
     if (R.started) {            // 대국 중: 이벤트 전달 + 나감 감지
-      const ev = room.ev || {};
+      const ev = room[R.round ? "ev" + R.round : "ev"] || {};
       for (;;) {
         const e = ev["e" + pad(R.next)]; if (!e) break;
         R.next++;
-        if (e.s !== R.ctx.me && R.ctx.onEvent) R.ctx.onEvent(e.d);
+        if (e.s !== R.ctx.me) R.ctx._push(e.d);
       }
       R.ctx.order.forEach(u => { if (u !== uid && !pl[u]) reportLeft(u); });
       return;
     }
-    if (room.play) { startGame(room); return; }
+    if (room.play && (room.play.round || 1) > R.lastRound) { startGame(room); return; }
     if (pl[uid]) R.joined = true;
     else if (R.joined) { backToList("방에서 나가졌어요"); return; }
     const order = sortedOrder(pl);
@@ -255,6 +261,7 @@
     const el = $("#bgRoom"); if (!el || !R.room) return;
     const np = R.room.np, pl = R.players, me = pl[uid];
     let h = `<div style="font-size:15px;opacity:.8;margin-bottom:8px">${esc(R.rname || "")} · ${R.order.length}/${np}명</div>`;
+    if (O.hub) h += pickHtml(np);
     for (let i = 0; i < np; i++) {
       const u = R.order[i], p = u && pl[u];
       h += p ? `<div class="bgp${p.ready ? " ok" : ""}"><span>${u === R.hostUid ? "👑 " : ""}${esc(p.n)}${u === uid ? " (나)" : ""}</span><span>${p.ready ? "✅ 준비" : "대기"}</span></div>`
@@ -283,8 +290,11 @@
   }
   function hostStart() {
     if (!R || R.started || !allReady()) { if (R) { R.cd = null; updateCountdown(); } return; }
-    put(`rooms/${R.id}/play`, { order: R.order, t: NOW() }).catch(() => msg("시작하지 못했어요"));
-    del("lobby/" + R.id).catch(() => {});
+    const pick = O.hub ? currentPick() : "";
+    if (O.hub && !pick) { R.cd = null; updateCountdown(); return; }
+    const round = O.hub ? ((R.room.play && R.room.play.round) || 0) + 1 : 0;
+    put(`rooms/${R.id}/play`, O.hub ? { order: R.order, t: NOW(), game: pick, round } : { order: R.order, t: NOW() }).catch(() => msg("시작하지 못했어요"));
+    if (!O.hub) del("lobby/" + R.id).catch(() => {});
   }
 
   // ----- 게임 시작 -----
@@ -292,18 +302,48 @@
     if (R.cd) { clearInterval(R.cd); R.cd = null; }
     const order = room.play.order || [], pl = room.players || {};
     if (order.indexOf(uid) < 0) { backToList("게임에 참여하지 못했어요"); return; }
-    R.started = true;
+    R.started = true; R.round = O.hub ? (room.play.round || 1) : 0; R.lastRound = room.play.round || 1; R.next = 0;
+    let _onEv = null; const _buf = [];
     const ctx = R.ctx = {
       me: order.indexOf(uid), order, np: order.length, isHost: R.isHost,
       names: order.map(u => (pl[u] && pl[u].n) || "?"),
-      send(ev) { const k = "e" + pad(R.next++); put(`rooms/${R.id}/ev/${k}`, { s: ctx.me, d: ev }).catch(() => {}); },
-      onEvent: null, onLeft: null,
-      leave() { leaveRoom(); },
-      finish() { const id = R && R.id; if (R && R.isHost) setTimeout(() => del("rooms/" + id).catch(() => {}), 30000); }
+      send(ev) { const k = "e" + pad(R.next++); put(`rooms/${R.id}/${R.round ? "ev" + R.round : "ev"}/${k}`, { s: ctx.me, d: ev }).catch(() => {}); },
+      get onEvent() { return _onEv; },
+      set onEvent(f) { _onEv = f; if (f) while (_buf.length) f(_buf.shift()); },
+      _push(e) { if (_onEv) _onEv(e); else _buf.push(e); },
+      onLeft: null,
+      leave() { if (O.hub) hubReturn(); else leaveRoom(); },
+      finish() { if (O.hub) return; const id = R && R.id; if (R && R.isHost) setTimeout(() => del("rooms/" + id).catch(() => {}), 30000); }
     };
     root.classList.add("hide");
-    O.onStart(ctx);
+    if (O.hub) launchHub(ctx, room.play.game); else O.onStart(ctx);
     onRoom(room); // 이미 쌓인 이벤트 처리
+  }
+
+  // ----- 허브(대기실): 방은 유지한 채 게임을 바꿔 가며 -----
+  const hubGames = np => (O.games || []).filter(g => g.np.indexOf(np) >= 0);
+  const currentPick = () => { const r = R && R.room; const list = hubGames(r.np); const p = r.pick; return list.some(g => g.k === p) ? p : (list[0] || {}).k || ""; };
+  function pickHtml(np) {
+    const list = hubGames(np), cur = currentPick();
+    if (R.isHost) return `<div class="bglbl">할 게임 고르기</div><div class="bgg">${list.map(g => `<button data-a="pick" data-k="${g.k}" class="${g.k === cur ? "on" : ""}">${g.icon || ""} ${esc(g.name)}</button>`).join("")}</div>`;
+    const g = list.find(x => x.k === cur);
+    return `<div class="bgpick">🎮 방장이 고른 게임: <b>${g ? (g.icon || "") + " " + esc(g.name) : "-"}</b></div>`;
+  }
+  function launchHub(ctx, key) {
+    const old = document.getElementById("bgFrame"); if (old) old.remove();
+    window.__BGHUB = { ctx, back: hubReturn };
+    const f = document.createElement("iframe"); f.id = "bgFrame"; f.setAttribute("allow", "fullscreen");
+    f.src = `${key}/index.html?hub=1`; document.body.appendChild(f);
+  }
+  function hubReturn() {
+    const f = document.getElementById("bgFrame"); if (f) f.remove();
+    window.__BGHUB = null;
+    if (!R) return;
+    R.started = false; R.ctx = null; R.next = 0; R.left = {};
+    if (R.players[uid]) patch(`rooms/${R.id}/players/${uid}`, { ready: false }).catch(() => {});
+    root.classList.remove("hide");
+    bodyEl.innerHTML = `<div id="bgRoom"></div><div class="bgm" id="bgMsg"></div>`;
+    R.order = Object.keys(R.players || {}); if (R.room) { R.order = sortedOrder(R.players); renderRoom(); }
   }
 
   // ----- 나가기 -----
@@ -337,9 +377,28 @@
     }
     else if (a === "pwok") { if (L.pw) tryJoin(L.pw, $("#bgPw").value); }
     else if (a === "pwcancel") { L.pw = null; $("#bgPwBox").style.display = "none"; }
+    else if (a === "pick") { if (R && R.isHost) patch(`rooms/${R.id}`, { pick: b.dataset.k }).catch(() => msg("서버에 연결할 수 없어요")); }
     else if (a === "ready") { if (R && R.players[uid]) patch(`rooms/${R.id}/players/${uid}`, { ready: !R.players[uid].ready }).catch(() => msg("서버에 연결할 수 없어요")); }
     else if (a === "leave") backToList();
   }
 
   window.BGNet = { configured: !!DB, open, close, uid };
+
+  // ----- 허브 안(iframe)에서 열린 게임 페이지: 방 정보를 부모에서 받아 바로 온라인으로 시작 -----
+  try {
+    if (window.parent !== window && window.parent.__BGHUB) {
+      const H = window.parent.__BGHUB;
+      window.BGNet.configured = true;
+      window.BGNet.open = opts => { opts.onStart(H.ctx); };
+      window.addEventListener("load", () => {
+        const q = s => document.querySelector(s);
+        const on = q('#optMode button[data-v="online"]'); if (on) on.click();
+        const mode = q("#optMode"); if (mode) { mode.style.display = "none"; if (mode.previousElementSibling) mode.previousElementSibling.style.display = "none"; }
+        const note = q("#olNote"); if (note) note.style.display = "none";
+        const start = q("#startBtn");
+        if (start) { if (H.ctx.isHost) start.textContent = "▶ 시작하기"; else start.click(); }
+        const hb = q("#homeBtn"); if (hb) { hb.style.display = ""; hb.onclick = () => H.back(); }
+      });
+    }
+  } catch (e) {}
 })();

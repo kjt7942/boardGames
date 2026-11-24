@@ -38,11 +38,14 @@ footer a{color:inherit}
   <h1>🎲 보드게임 모음</h1>
   <p>태블릿을 바닥에 놓고 둘러앉아, 하고 싶은 게임을 골라 보세요</p>
 </header>
+<div style="text-align:center;margin:0 0 14px"><button id="hubOnline" style="font:inherit;font-weight:800;font-size:17px;padding:14px 22px;border:0;border-radius:14px;background:#4d7cff;color:#fff;cursor:pointer">🌐 온라인 대기실 (여러 게임 돌아가며)</button></div>
 <main id="grid"></main>
 <footer>
   새 게임은 이 목록에 계속 추가됩니다<br>
   <a href="https://github.com/kjt7942/boardGames">GitHub · kjt7942/boardGames</a>
 </footer>
+<script src="firebase-config.js"></script>
+<script src="net.js"></script>
 <script>
 // 게임을 추가하려면 이 배열에 항목을 하나 더 넣으면 됩니다.
 const GAMES=[
@@ -65,6 +68,12 @@ const GAMES=[
    desc:"킹을 지키며 상대 킹을 체크메이트로 몰아넣는 세계적인 전략 게임.",
    tags:["1인 가능 🤖","온라인 🌐","2인","전략","20분"]},
 ];
+const HUBG=[
+ {k:"janggi",icon:"♟️",name:"장기",np:[2]},{k:"baduk",icon:"⚫",name:"바둑",np:[2]},
+ {k:"omok",icon:"⚪",name:"오목",np:[2]},{k:"chess",icon:"♞",name:"체스",np:[2]},
+ {k:"magic-labyrinth",icon:"🧙",name:"마법의 미로",np:[2,3,4]},{k:"wall-go",icon:"🧱",name:"벽바둑",np:[2,3]}];
+document.getElementById("hubOnline").onclick=()=>BGNet.open({hub:true,game:"*",title:"대기실",games:HUBG,
+  sizes:[{np:2,label:"2인"},{np:3,label:"3인"},{np:4,label:"4인"}],onStart(){},onClose(){}});
 const grid=document.getElementById("grid");
 grid.innerHTML=GAMES.map(g=>`
   <a class="card" href="${g.path}" style="--c:${g.color}">
