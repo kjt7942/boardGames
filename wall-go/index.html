@@ -112,11 +112,12 @@ button.sec{background:#ffffff22}
 <h2>🧱 벽바둑</h2>
 <div style="font-size:13px;opacity:.8">말을 움직이고 벽을 세워 더 넓은 영역을 차지하세요</div>
 <div class="lbl">플레이 방식</div>
-<div class="opt" id="optMode"><button data-v="solo" class="on">🤖 혼자 (컴퓨터와)</button><button data-v="multi">👥 여럿이서</button></div>
-<div class="lbl">플레이어 수 <span id="pHint" style="opacity:.7">(나 + 컴퓨터 1)</span></div>
-<div class="opt" id="optP"><button data-v="2" class="on">2명</button><button data-v="3">3명 (벽 부수기)</button></div>
+<div class="opt" id="optMode"><button data-v="solo" class="on">🤖 혼자 (컴퓨터와)</button><button data-v="multi">👥 여럿이서</button><button data-v="online">🌐 온라인</button></div>
+<div id="pBox"><div class="lbl">플레이어 수 <span id="pHint" style="opacity:.7">(나 + 컴퓨터 1)</span></div>
+<div class="opt" id="optP"><button data-v="2" class="on">2명</button><button data-v="3">3명 (벽 부수기)</button></div></div>
 <div id="lvBox"><div class="lbl">컴퓨터 난이도</div>
 <div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div></div>
+<div id="olNote" style="font-size:12px;color:#ffb3b3;min-height:16px"></div>
 <button id="startBtn" style="width:100%;margin-top:6px;padding:14px">게임 시작</button>
 </div></div>
 
@@ -138,11 +139,17 @@ button.sec{background:#ffffff22}
 <h2 class="wt"></h2><div class="wd" style="margin:6px 0 14px;line-height:1.6"></div>
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
+<script src="../firebase-config.js"></script>
+<script src="../net.js"></script>
 <script>
 const N=7;
 const COLORS=[{n:"빨강",c:"#ff5d73"},{n:"파랑",c:"#4dabff"},{n:"노랑",c:"#ffd24d"}];
 const PANELS={2:["#pBR","#pTL"],3:["#pBR","#pTL","#pTR"]};
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+function panelOf(i){
+  if(G.online){const rel=(i-G.me+G.np)%G.np;return rel===0?"#pBR":rel===1?"#pTL":"#pTR"}
+  return PANELS[G.np][i];
+}
 const $=s=>document.querySelector(s);
 const inB=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
 function edge(r,c,dr,dc){return dr===1?`h${r},${c}`:dr===-1?`h${r-1},${c}`:dc===1?`v${r},${c}`:`v${r},${c-1}`}
@@ -216,11 +223,11 @@ function territory(){
   return {regs,seen,scores,largest,over:regs.every(g=>g.owner!==-1)};
 }
 
-function newGame(){
-  const np=sel.p;
-  const solo=sel.mode==="solo";aiGen++;
-  document.body.classList.toggle("solo",solo);
-  G={np,solo,lv:sel.lv,players:COLORS.slice(0,np).map((x,i)=>({...x,n:solo?(i===0?x.n+"(나)":"🤖 "+x.n):x.n,cpu:solo&&i>0,breaks:np===3?1:0})),pieces:[],walls:new Map(),
+function newGame(net){
+  const np=net?net.np:sel.p;
+  const solo=!net&&sel.mode==="solo";aiGen++;
+  document.body.classList.toggle("solo",solo||!!net);
+  G={np,solo,online:net||null,me:net?net.me:0,ver:0,lv:sel.lv,players:COLORS.slice(0,np).map((x,i)=>({...x,n:net?net.names[i]+(i===net.me?"(나)":""):solo?(i===0?x.n+"(나)":"🤖 "+x.n):x.n,cpu:solo&&i>0,breaks:np===3?1:0})),pieces:[],walls:new Map(),
      phase:"place",cur:0,sel:null,armed:false,moved:null,msg:"",kind:"",placeOrder:[],placeIdx:0};
   if(np===2){
     [[0,1,1],[0,5,5],[1,1,5],[1,5,1]].forEach(([o,r,c])=>G.pieces.push({owner:o,r,c}));
@@ -233,6 +240,7 @@ function newGame(){
 function updMsg(){
   const n=G.players[G.cur].n;
   if(G.players[G.cur].cpu){G.msg=`${n} 생각하는 중…`;G.kind="";return}
+  if(G.online&&G.cur!==G.me){G.msg=`${n} 차례… 기다리는 중`;G.kind="";return}
   const m={
     place:`${n}: 말을 놓을 빈 칸을 누르세요`,
     select:`${n} 차례: 움직일 내 말을 누르세요`,
@@ -258,7 +266,7 @@ function onCell(r,c){
   const p=pieceAt(r,c);
   if(G.phase==="place"){
     if(p){setMsg("이미 말이 있는 칸이에요","bad");return render()}
-    G.pieces.push({owner:G.cur,r,c});beep(440,.08,"triangle");
+    G.pieces.push({owner:G.cur,r,c});beep(440,.08,"triangle");G.ver++;
     G.placeIdx++;
     if(G.placeIdx>=G.placeOrder.length){G.cur=0;beginTurn()}
     else{G.cur=G.placeOrder[G.placeIdx];updMsg()}
@@ -266,16 +274,16 @@ function onCell(r,c){
   }
   if(G.phase==="select"||G.phase==="move"){
     if(p&&p.owner===G.cur){
-      if(G.phase==="move"&&p===G.sel&&!G.armed){G.moved=p;G.phase="wall";beep(520,.07);updMsg();return render()}
+      if(G.phase==="move"&&p===G.sel&&!G.armed){G.moved=p;G.phase="wall";beep(520,.07);G.ver++;updMsg();return render()}
       const d=reach(p,G.armed);
       if(!d.size){setMsg("이 말은 움직일 수 없어요","bad");return render()}
-      G.sel=p;G.phase="move";updMsg();return render();
+      G.sel=p;G.phase="move";G.ver++;updMsg();return render();
     }
     if(G.phase==="move"){
       const d=reach(G.sel,G.armed).get(r+","+c);
       if(!d){setMsg("그 칸으로는 갈 수 없어요","bad");return render()}
       if(d.bk){G.walls.delete(d.bk);G.players[G.cur].breaks--;G.armed=false;beep(160,.25,"sawtooth",.1)}
-      G.sel.r=r;G.sel.c=c;G.moved=G.sel;G.phase="wall";beep(520,.07);
+      G.sel.r=r;G.sel.c=c;G.moved=G.sel;G.phase="wall";beep(520,.07);G.ver++;
       updMsg();return render();
     }
     setMsg("내 말을 눌러 주세요","bad");return render();
@@ -284,7 +292,7 @@ function onCell(r,c){
 
 function onWall(key){
   if(!G||G.phase!=="wall"||(G.players[G.cur].cpu&&!aiAct))return;
-  G.walls.set(key,G.cur);beep(300,.12,"square",.06);
+  G.walls.set(key,G.cur);beep(300,.12,"square",.06);G.ver++;
   const T=territory();
   if(T.over){finish();return render()}
   G.cur=(G.cur+1)%G.np;beginTurn();render();maybeAI();
@@ -296,7 +304,8 @@ function finish(){
   const rank=G.players.map((p,i)=>({i,s:T.scores[i],l:T.largest[i]})).sort((a,b)=>b.s-a.s||b.l-a.l);
   const draw=rank.length>1&&rank[0].s===rank[1].s&&rank[0].l===rank[1].l;
   const w=G.players[rank[0].i];
-  const wt=draw?"🤝 무승부!":G.solo?(rank[0].i===0?"🎉 승리했어요!":"🤖 컴퓨터 승리"):`🏆 ${w.n} 승리!`;
+  const wt=G.left?`🏁 ${G.left} 님이 나갔어요`:draw?"🤝 무승부!":G.solo?(rank[0].i===0?"🎉 승리했어요!":"🤖 컴퓨터 승리"):G.online?(rank[0].i===G.me?"🎉 승리했어요!":`🏆 ${w.n} 승리!`):`🏆 ${w.n} 승리!`;
+  if(G.online)G.online.finish();
   document.querySelectorAll(".wt").forEach(e=>e.textContent=wt);
   const lines=rank.map((x,k)=>`${k+1}위 <b style="color:${G.players[x.i].c}">${G.players[x.i].n}</b> ${x.s}칸`).join("<br>");
   document.querySelectorAll(".wd").forEach(e=>e.innerHTML=lines);
@@ -337,12 +346,12 @@ function render(){
   // 패널
   ["#pTL","#pTR","#pBL","#pBR"].forEach(id=>{const e=$(id);e.classList.add("empty");e.classList.remove("cur");e.innerHTML=""});
   G.players.forEach((p,i)=>{
-    const el=$(PANELS[G.np][i]);
+    const el=$(panelOf(i));
     const mine=i===G.cur&&!over;
     el.classList.remove("empty");el.classList.toggle("cur",mine);el.style.setProperty("--pc",p.c);
     const cnt=G.pieces.filter(x=>x.owner===i).length;
-    const canBrk=mine&&G.np===3&&p.breaks>0&&(G.phase==="select"||G.phase==="move");
-    const canCancel=mine&&G.phase==="move";
+    const canBrk=mine&&(!G.online||i===G.me)&&G.np===3&&p.breaks>0&&(G.phase==="select"||G.phase==="move");
+    const canCancel=mine&&(!G.online||i===G.me)&&G.phase==="move";
     el.innerHTML=`<div class="ph"><span class="dot"></span><b>${p.n}</b></div>`
       +`<div class="score">${T.scores[i]}<small>칸 확보</small></div>`
       +`<div class="info">말 ${cnt}개${G.np===3?` · 🔨 ${p.breaks}회`:""}</div>`
@@ -473,31 +482,47 @@ function aiChoose(me,lv){
 }
 
 // 이벤트
+function toggleBrk(){
+  G.armed=!G.armed;
+  if(G.sel&&G.phase==="move"){
+    if(!reach(G.sel,G.armed).size){G.armed=false;setMsg("부수고 갈 수 있는 칸이 없어요","bad");return render()}
+  }else{G.phase="select"}
+  if(G.armed&&G.phase==="select")setMsg("🔨 이제 움직일 내 말을 누르세요");else updMsg();
+  G.ver++;render();
+}
+function doCancel(){G.sel=null;G.armed=false;G.phase="select";updMsg();G.ver++;render()}
+function applyEv(e){
+  if(!G||G.phase==="over")return;
+  if(e.t==="c")onCell(e.r,e.c);else if(e.t==="w")onWall(e.k);else if(e.t==="b")toggleBrk();else if(e.t==="x")doCancel();
+}
+// 사람이 직접 누른 동작: 온라인이면 내 차례에만 허용하고, 바뀐 경우 상대에게 전송
+function userAct(ev){
+  if(!G||G.phase==="over"||G.phase==="idle")return;
+  if(G.players[G.cur].cpu)return;
+  if(G.online&&G.cur!==G.me)return;
+  const v=G.ver;applyEv(ev);
+  if(G.online&&G.ver!==v)G.online.send(ev);
+}
+function onPlayerLeft(i,name){
+  if(!G||G.phase==="over")return;
+  G.left=name;finish();render();
+}
 $("#board").addEventListener("click",e=>{
   const el=e.target.closest(".cell");if(!el||!G)return;
-  onCell(+el.dataset.r,+el.dataset.c);
+  userAct({t:"c",r:+el.dataset.r,c:+el.dataset.c});
 });
 $("#stage").addEventListener("click",e=>{
   if(!G)return;
   const cd=e.target.closest(".cand");
-  if(cd){onWall(cd.dataset.k);return}
+  if(cd){userAct({t:"w",k:cd.dataset.k});return}
   const b=e.target.closest("button[data-act]");
-  if(!b||+b.dataset.p!==G.cur||G.phase==="over"||G.players[G.cur].cpu)return;
-  if(b.dataset.act==="brk"){
-    G.armed=!G.armed;
-    if(G.sel&&G.phase==="move"){
-      if(!reach(G.sel,G.armed).size){G.armed=false;setMsg("부수고 갈 수 있는 칸이 없어요","bad");return render()}
-    }else{G.phase="select"}
-    if(G.armed&&G.phase==="select")setMsg("🔨 이제 움직일 내 말을 누르세요");else updMsg();
-    render();
-  }else if(b.dataset.act==="cancel"){
-    G.sel=null;G.armed=false;G.phase="select";updMsg();render();
-  }
+  if(!b||+b.dataset.p!==G.cur||G.phase==="over")return;
+  userAct({t:b.dataset.act==="brk"?"b":"x"});
 });
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
 $("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
-const again=()=>{aiGen++;$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+const again=()=>{aiGen++;if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
 function bindOpt(id,key,num){
   $(id).addEventListener("click",e=>{
@@ -507,10 +532,23 @@ function bindOpt(id,key,num){
 }
 function syncSetup(){
   $("#lvBox").style.display=sel.mode==="solo"?"":"none";
+  $("#pBox").style.display=sel.mode==="online"?"none":"";
   $("#pHint").textContent=sel.mode==="solo"?`(나 + 컴퓨터 ${sel.p-1})`:"";
+  $("#startBtn").textContent=sel.mode==="online"?"🌐 방 목록 열기":"게임 시작";
+  $("#olNote").textContent=sel.mode==="online"&&!(window.BGNet&&BGNet.configured)?"온라인 서버 설정이 아직 안 되어 있어요":"";
 }
 bindOpt("#optP","p",true);bindOpt("#optMode","mode");bindOpt("#optLv","lv");syncSetup();
-$("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
+$("#startBtn").onclick=()=>{
+  if(sel.mode==="online"){
+    if(!window.BGNet){$("#olNote").textContent="온라인 모듈을 불러오지 못했어요 (저장소 주소로 열어 주세요)";return}
+    $("#setup").classList.add("hide");
+    BGNet.open({game:"wall-go",title:"벽바둑",sizes:[{np:2,label:"2명"},{np:3,label:"3명 (벽 부수기)"}],
+      onStart:ctx=>{$("#win").classList.add("hide");newGame(ctx);ctx.onEvent=applyEv;ctx.onLeft=onPlayerLeft},
+      onClose:()=>$("#setup").classList.remove("hide")});
+    return;
+  }
+  $("#setup").classList.add("hide");newGame();
+};
 
 (function(){
   const d=document,el=d.documentElement,btn=$("#fsBtn");
