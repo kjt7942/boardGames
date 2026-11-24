@@ -17,6 +17,25 @@ window.CK = (function () {
     if (c < 0) return `<div class="pc back ${extra || ""}" ${data || ""}></div>`;
     return `<div class="pc art ${extra || ""}" data-cid="${c}" ${data || ""}>${CA.trump(c)}</div>`;
   }
+  // ── 효과음: 카드 휙! (WebAudio 합성, 파일 없음) ──
+  let AC = null, nbuf = null, soundOn = true;
+  try { soundOn = localStorage.getItem("bgSnd") !== "0"; } catch (e) { }
+  function audio() {
+    try {
+      if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); const n = AC.sampleRate * .3 | 0; nbuf = AC.createBuffer(1, n, AC.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
+      if (AC.state === "suspended") AC.resume();
+    } catch (e) { AC = null; }
+    return AC;
+  }
+  function whoosh(delayMs, vol) {
+    if (!soundOn || !audio()) return;
+    const t = AC.currentTime + (delayMs || 0) / 1000, src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    src.buffer = nbuf; f.type = "bandpass"; f.Q.value = 1.4;
+    f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(3200, t + .2);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol || .3, t + .05); g.gain.exponentialRampToValueAtTime(.001, t + .24);
+    src.connect(f); f.connect(g); g.connect(AC.destination); src.start(t); src.stop(t + .3);
+  }
+  window.addEventListener("pointerdown", () => audio(), { once: true });
   const CSS = `
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden}
@@ -31,6 +50,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
 #bigmsg.bad{color:#ff9a9a}#bigmsg.good{color:#8dffb4}#bigmsg.warn{color:#ffd24d}
 .ov{position:fixed;inset:0;background:#06100bee;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
 .ov.hide{display:none}
+#win{top:62px}#menu{position:relative;z-index:60}
 .cd{max-height:100%;overflow:auto;background:#1b2747;border:2px solid #4d7cff;border-radius:18px;padding:20px;max-width:420px;width:100%;text-align:center}
 .cd h2{margin:0 0 4px}
 .opt{display:flex;gap:6px;justify-content:center;margin:6px 0 14px}
@@ -64,7 +84,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
     const npHtml = def.np.length > 1 ? `<div id="npBox"><div class="lbl">참가 인원 (나 + 컴퓨터)</div><div class="opt" id="optNp">${def.np.map((n, i) => `<button data-v="${n}"${i ? "" : ' class="on"'}>${n}명</button>`).join("")}</div></div>` : "";
     document.body.innerHTML = `
 <div id="stage"><div id="menu">
- <button class="sec" id="homeBtn" title="게임 목록">🏠</button><button class="sec" id="fsBtn">⛶</button><button class="sec" id="ruleBtn">❓</button><button class="sec" id="newBtn">↻</button></div>
+ <button class="sec" id="homeBtn" title="게임 목록">🏠</button><button class="sec" id="fsBtn">⛶</button><button class="sec" id="sndBtn" title="효과음">🔊</button><button class="sec" id="ruleBtn">❓</button><button class="sec" id="newBtn">↻</button></div>
  <div id="table"></div><div id="bigmsg"></div></div>
 <div class="ov" id="setup"><div class="cd"><h2>${def.icon} ${def.title}</h2>
  <div style="font-size:13px;opacity:.8">${def.tagline || ""}</div>
@@ -73,7 +93,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
  <div id="olNote" style="font-size:12px;color:#ffb3b3;min-height:16px"></div>
  <button id="startBtn" style="width:100%;margin-top:6px;padding:14px">게임 시작</button></div></div>
 <div class="ov hide" id="rules"><div class="cd rules"><h2>${def.title} 규칙</h2><ol>${def.rules.map(r => `<li>${r}</li>`).join("")}</ol><button id="ruleClose" style="width:100%">닫기</button></div></div>
-<div class="ov hide" id="win"><div class="cd"><h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div><button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>`;
+<div class="ov hide" id="win"><div class="cd"><h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div><button id="againBtn" style="width:100%;padding:14px">다시 하기</button><button id="winHome" class="sec" style="width:100%;padding:14px;margin-top:8px">🏠 게임 선택으로</button></div></div>`;
     let S = null, me = 0, names = [], ctx = null, ui = {}, gen = 0;
     const sel = { mode: "solo", np: def.np[0], lv: "normal" };
     // ── 카드 이동 모션: 이전 위치 → 새 위치로 날아가기 (먹을 땐 바닥을 거쳐 내 쪽으로) ──
@@ -89,7 +109,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
       const sr = actor === me ? { left: fr.left + fr.width * .25, top: fr.top + fr.height * .5, width: 20, height: 28 }
         : (seats[Math.max(0, Math.min(idx, seats.length - 2))] || seats[0] || felt || T).getBoundingClientRect();
       const mid = { x: fr.left + fr.width / 2, y: fr.top + fr.height / 2 };
-      const seen = new Set(); let k = 0;
+      const seen = new Set(); let k = 0, sc = 0;
       T.querySelectorAll("[data-cid]").forEach(e => {
         const id = e.dataset.cid; if (seen.has(id)) return; seen.add(id);
         const r = e.getBoundingClientRect(), o = old[id], inCap = !!e.closest(".cap");
@@ -110,6 +130,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
         e.style.zIndex = 40;
         const an = e.animate(kf, { duration: dur, delay: k * 70, easing: "cubic-bezier(.22,.8,.3,1)", fill: "backwards" });
         an.onfinish = an.oncancel = () => { e.style.zIndex = ""; };
+        if (sc < 6) { whoosh(k * 70, .26); sc++; if (dur > 800 && sc < 6) { whoosh(k * 70 + dur * .56, .22); sc++; } }
         k++;
       });
     }
@@ -193,6 +214,9 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
       d.addEventListener("fullscreenchange", () => btn.textContent = isFs() ? "✕" : "⛶");
     })();
     $("#homeBtn").onclick = () => { location.href = "../"; };
+    $("#winHome").onclick = () => $("#homeBtn").click();
+    const sb = $("#sndBtn"); sb.textContent = soundOn ? "🔊" : "🔇";
+    sb.onclick = () => { soundOn = !soundOn; sb.textContent = soundOn ? "🔊" : "🔇"; try { localStorage.setItem("bgSnd", soundOn ? "1" : "0"); } catch (e) { } if (soundOn) whoosh(0, .3); };
   }
   return { run, rnd, shuf, card, suit, rank, red, SU, RK, $ };
 })();
