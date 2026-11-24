@@ -89,6 +89,8 @@ button.sec{background:#ffffff22}
 .lbl{font-size:13px;opacity:.75;margin-top:10px;text-align:left}
 .rules ol{text-align:left;margin:8px 0 14px;padding-left:20px;font-size:13px;line-height:1.6}
 .rot{transform:rotate(180deg)}
+.solo .p-tl,.solo .p-tr{transform:none}
+.solo .rot{display:none}
 
 /* ===== 세로(폰) 화면 ===== */
 @media (max-aspect-ratio:11/10){
@@ -128,9 +130,13 @@ button.sec{background:#ffffff22}
 <div class="ov" id="setup"><div class="card">
 <h2>🧙 마법의 미로</h2>
 <div style="font-size:13px;opacity:.8">태블릿을 바닥에 놓고 둘러앉아 즐기세요</div>
-<div class="lbl">플레이어 수</div>
+<div class="lbl">플레이 방식</div>
+<div class="opt" id="optMode"><button data-v="solo" class="on">🤖 혼자 (컴퓨터와)</button><button data-v="multi">👥 여럿이서</button></div>
+<div class="lbl">플레이어 수 <span id="pHint" style="opacity:.7"></span></div>
 <div class="opt" id="optP"><button data-v="2" class="on">2명</button><button data-v="3">3명</button><button data-v="4">4명</button></div>
-<div class="lbl">난이도 (벽 개수)</div>
+<div id="lvBox"><div class="lbl">컴퓨터 실력 (벽을 기억하는 정도)</div>
+<div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div></div>
+<div class="lbl">미로 난이도 (벽 개수)</div>
 <div class="opt" id="optD"><button data-v="18">쉬움</button><button data-v="24" class="on">보통</button><button data-v="25">어려움</button></div>
 <div class="lbl">연습 모드 (부딪힌 벽을 계속 표시)</div>
 <div class="opt" id="optM"><button data-v="0" class="on">끄기</button><button data-v="1">켜기</button></div>
@@ -157,6 +163,8 @@ const N=6, FACES=[1,2,2,3,3,4];
 const SYMS=["🔮","🗝️","📜","🧪","💎","🕯️","🦉","🐸","🌙","⭐","🍄","🪄","🐉","🦄","🧿","📖","⚗️","🪶","🔥","❄️","🍀","🕸️","🦇","🌿"];
 const COLORS=[{n:"빨강",c:"#ff5d73"},{n:"파랑",c:"#4dabff"},{n:"노랑",c:"#ffd24d"},{n:"초록",c:"#4ddf8a"}];
 const CORNERS={2:[[0,0],[5,5]],3:[[0,0],[5,5],[0,5]],4:[[0,0],[5,5],[0,5],[5,0]]};
+const SOLO_CORNERS=[[5,5],[0,0],[0,5],[5,0]];
+const D4=[[1,0],[-1,0],[0,1],[0,-1]];
 const PANEL_OF={"0,0":"#pTL","0,5":"#pTR","5,0":"#pBL","5,5":"#pBR"};
 const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8]};
 const $=s=>document.querySelector(s);
@@ -165,7 +173,7 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[
 function edge(r,c,dr,dc){return dr===1?`h${r},${c}`:dr===-1?`h${r-1},${c}`:dc===1?`v${r},${c}`:`v${r},${c-1}`}
 const inB=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
 
-let sel={p:2,d:24,m:0}, G=null, soundOn=true, ac=null, diceTimer=null;
+let sel={p:2,d:24,m:0,mode:"solo",lv:"normal"}, G=null, aiTimer=null, soundOn=true, ac=null, diceTimer=null;
 
 function beep(f,d,type="sine",v=.07,delay=0){
   if(!soundOn)return;
@@ -190,7 +198,9 @@ function genWalls(target){
 }
 
 function newGame(){
-  const corners=CORNERS[sel.p];
+  const solo=sel.mode==="solo";
+  const corners=solo?SOLO_CORNERS.slice(0,sel.p):CORNERS[sel.p];
+  document.body.classList.toggle("solo",solo);
   const cs=[];
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){
     if((r===0||r===N-1)&&(c===0||c===N-1))continue;
@@ -202,16 +212,19 @@ function newGame(){
   for(let i=0;i<24;i++){cellSym[cs[i]]=syms[i];symCell[syms[i]]=cs[i]}
   G={
     walls:genWalls(sel.d), known:new Set(), practice:!!sel.m,
-    players:corners.map((p,i)=>({id:i,...COLORS[i],start:p.slice(),pos:p.slice(),got:[]})),
+    players:corners.map((p,i)=>({id:i,...COLORS[i],n:solo?(i===0?COLORS[i].n+"(나)":"🤖 "+COLORS[i].n):COLORS[i].n,cpu:solo&&i>0,mem:{walls:new Set(),safe:new Set()},idle:0,start:p.slice(),pos:p.slice(),got:[]})),
+    solo, lv:sel.lv, W:sel.d, turnNo:0,
     cellSym, symCell, bag:shuffle(SYMS.slice()), target:null, collected:new Set(),
     cur:0, phase:"roll", steps:0, lastBump:null, over:false, msg:"", kind:""
   };
   G.target=G.bag.pop();
   resolveOccupied();
-  if(!G.over)setMsg(`${G.players[G.cur].n} 차례! 🎲를 굴리세요`);
+  if(!G.over)setMsg(turnMsg());
   hideDice(true);
   render();
+  clearInterval(aiTimer);aiTimer=solo?setInterval(aiTick,750):null;
 }
+function turnMsg(){const p=G.players[G.cur];return `${p.n} 차례! ${p.cpu?"생각하는 중…":"🎲를 굴리세요"}`}
 
 function resolveOccupied(){
   let guard=0;
@@ -273,14 +286,14 @@ function render(){
       +`<div class="got">${p.got.join(" ")||"&nbsp;"}</div>`
       +`<div class="gem"><small>찾아라</small><span>${G.target}</span></div>`
       +`<div class="pmsg ${G.kind}">${mine&&G.phase==="move"?`남은 이동 ${G.steps}칸 · `:""}${G.msg}</div>`
-      +`<div class="pbtns"><button class="roll" data-act="roll" data-p="${i}"${mine&&G.phase==="roll"?"":" disabled"}>🎲 굴리기</button>`
-      +`<button class="sec" data-act="stop" data-p="${i}"${mine&&G.phase==="move"&&!shared?"":" disabled"}>✋ 멈추기</button></div>`;
+      +(p.cpu?"":`<div class="pbtns"><button class="roll" data-act="roll" data-p="${i}"${mine&&G.phase==="roll"?"":" disabled"}>🎲 굴리기</button>`
+      +`<button class="sec" data-act="stop" data-p="${i}"${mine&&G.phase==="move"&&!shared?"":" disabled"}>✋ 멈추기</button></div>`);
   });
 }
 
 function nextTurn(){
   G.cur=(G.cur+1)%G.players.length;G.phase="roll";G.steps=0;
-  setMsg(`${G.players[G.cur].n} 차례! 🎲를 굴리세요`);
+  setMsg(turnMsg());
   render();
 }
 
@@ -294,7 +307,7 @@ function hideDice(now){
 }
 function roll(){
   if(G.phase!=="roll")return;
-  G.phase="rolling";setMsg("주사위를 굴리는 중...");render();
+  G.phase="rolling";G.turnNo++;setMsg("주사위를 굴리는 중...");render();
   const d=$("#dice");clearTimeout(diceTimer);
   d.classList.remove("pop");d.classList.add("show","tumble");
   let n=0;
@@ -317,7 +330,7 @@ function tryMove(dr,dc){
   if(G.steps===1&&G.players.some(q=>q!==p&&q.pos[0]===nr&&q.pos[1]===nc)){setMsg("다른 마법사가 있는 칸에서는 멈출 수 없어요","bad");render();return}
   const k=edge(r,c,dr,dc);
   if(G.walls.has(k)){bump(k);return}
-  p.pos=[nr,nc];G.steps--;beep(520,.06,"sine",.06);
+  p.pos=[nr,nc];G.steps--;beep(520,.06,"sine",.06);learn("safe",k);
   if(`${nr},${nc}`===G.symCell[G.target]){
     const sym=G.target;award(p);
     if(G.over){render();return}
@@ -331,7 +344,7 @@ function tryMove(dr,dc){
 
 function bump(k){
   G.phase="bump";G.known.add(k);G.lastBump={k,t:Date.now()};
-  beep(110,.35,"sawtooth",.12);try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
+  learn("walls",k);beep(110,.35,"sawtooth",.12);try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
   const bw=$("#boardwrap");bw.classList.add("shake");setTimeout(()=>bw.classList.remove("shake"),400);
   const p=G.players[G.cur];
   setMsg(`🧱 쿵! ${p.n} 벽에 부딪혔어요`,"bad");
@@ -342,15 +355,74 @@ function bump(k){
 function stop(){ if(G.phase==="move")nextTurn(); }
 
 function showWin(p){
-  document.querySelectorAll(".wt").forEach(e=>e.textContent=`🏆 ${p.n} 마법사 승리!`);
+  document.querySelectorAll(".wt").forEach(e=>e.textContent=G.solo?(p.cpu?"🤖 컴퓨터 승리":"🎉 승리했어요!"):`🏆 ${p.n} 마법사 승리!`);
   document.querySelectorAll(".wd").forEach(e=>e.textContent=`마법 심볼 5개를 모았어요 ${p.got.join(" ")}`);
   beep(523,.15,"triangle",.1);beep(659,.15,"triangle",.1,.15);beep(784,.15,"triangle",.1,.3);beep(1047,.4,"triangle",.1,.45);
   $("#win").classList.remove("hide");
 }
 
+// ===== 컴퓨터 상대 =====
+const REM={easy:.5,normal:.85,hard:1};
+function learn(kind,k){G.players.forEach(p=>{if(p.cpu&&Math.random()<REM[p.lv||G.lv])p.mem[kind].add(k)})}
+function aiTick(){
+  if(!G||G.over||!G.solo)return;
+  const p=G.players[G.cur];if(!p||!p.cpu)return;
+  if(G.phase==="roll")roll();
+  else if(G.phase==="move")aiMove(p);
+}
+function distToTarget(p){
+  const [tr,tc]=G.symCell[G.target].split(",").map(Number);
+  const d=Array.from({length:N},()=>Array(N).fill(99));
+  d[tr][tc]=0;const q=[[tr,tc]];
+  for(let h=0;h<q.length;h++){
+    const [r,c]=q[h];
+    for(const [dr,dc] of D4){
+      const nr=r+dr,nc=c+dc;
+      if(!inB(nr,nc)||p.mem.walls.has(edge(r,c,dr,dc)))continue;
+      if(d[nr][nc]>d[r][c]+1){d[nr][nc]=d[r][c]+1;q.push([nr,nc])}
+    }
+  }
+  return d;
+}
+function qUnknown(p){
+  if((p.lv||G.lv)==="hard"){
+    const unk=2*N*(N-1)-p.mem.walls.size-p.mem.safe.size,wl=Math.max(0,G.W-p.mem.walls.size);
+    return unk>0?Math.min(.95,Math.max(.15,1-wl/unk)):.5;
+  }
+  return (p.lv||G.lv)==="normal"?.55:.5;
+}
+function aiMove(p){
+  const [r,c]=p.pos,steps=G.steps,lv=p.lv||G.lv;
+  if(p.seen!==G.turnNo){p.seen=G.turnNo;p.first=steps}
+  const occ=(a,b)=>G.players.some(o=>o!==p&&o.pos[0]===a&&o.pos[1]===b);
+  const shared=occ(r,c);
+  const dirs=D4.filter(([dr,dc])=>inB(r+dr,c+dc)&&!(steps===1&&occ(r+dr,c+dc)));
+  const doStop=()=>{p.idle=(steps===p.first)?(p.idle||0)+1:0;stop()};
+  const eps=lv==="easy"?.3:lv==="normal"?.06:0;
+  if(Math.random()<eps){
+    if(!shared&&Math.random()<.3)return doStop();
+    if(!dirs.length)return doStop();
+    return tryMove(...dirs[rnd(dirs.length)]);
+  }
+  const dT=distToTarget(p),q0=qUnknown(p),dStart=dT[p.start[0]][p.start[1]],idleB=Math.min(p.idle||0,3)*.5;
+  let best=null,bv=-1e9;
+  for(const [dr,dc] of dirs){
+    const nr=r+dr,nc=c+dc,k=edge(r,c,dr,dc);
+    if(p.mem.walls.has(k))continue;
+    const safe=p.mem.safe.has(k),q=safe?1:q0;
+    const gain=dT[r][c]-dT[nr][nc];
+    const reach=(steps-1>=dT[nr][nc])?6*Math.pow(q0,dT[nr][nc]*.7):0;
+    const ev=q*(gain+reach)+(1-q)*(dT[r][c]-dStart)+(safe?0:idleB)+Math.random()*.05;
+    if(ev>bv){bv=ev;best=[dr,dc]}
+  }
+  if(best&&bv>.02)return tryMove(...best);
+  if(shared){const d=best||(dirs.length?dirs[rnd(dirs.length)]:null);if(d)return tryMove(...d)}
+  doStop();
+}
+
 // ----- 이벤트 -----
 $("#board").addEventListener("click",e=>{
-  if(!G||G.over)return;
+  if(!G||G.over||G.players[G.cur].cpu)return;
   const el=e.target.closest(".cell");if(!el)return;
   if(G.phase==="roll"){setMsg("먼저 🎲를 굴리세요");render();return}
   if(G.phase!=="move")return;
@@ -360,11 +432,11 @@ $("#board").addEventListener("click",e=>{
 });
 $("#stage").addEventListener("click",e=>{
   const b=e.target.closest("button[data-act]");if(!b||!G||G.over)return;
-  if(+b.dataset.p!==G.cur)return;
+  if(+b.dataset.p!==G.cur||G.players[G.cur].cpu)return;
   if(b.dataset.act==="roll")roll();else stop();
 });
 document.addEventListener("keydown",e=>{
-  if(!G||G.over)return;
+  if(!G||G.over||G.players[G.cur].cpu)return;
   const m={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[e.key];
   if(m){e.preventDefault();tryMove(...m)}
   else if((e.key===" "||e.key==="Enter")&&G.phase==="roll"){e.preventDefault();roll()}
@@ -372,15 +444,26 @@ document.addEventListener("keydown",e=>{
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
 $("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
-$("#newBtn").onclick=()=>{$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
-$("#againBtn").onclick=()=>{$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+$("#newBtn").onclick=()=>{clearInterval(aiTimer);$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+$("#againBtn").onclick=()=>{clearInterval(aiTimer);$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 function bindOpt(id,key){
   $(id).addEventListener("click",e=>{
     const b=e.target.closest("button");if(!b)return;
     [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=+b.dataset.v;
   });
 }
-bindOpt("#optP","p");bindOpt("#optD","d");bindOpt("#optM","m");
+function bindStr(id,key){
+  $(id).addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=b.dataset.v;syncSetup();
+  });
+}
+function syncSetup(){
+  $("#lvBox").style.display=sel.mode==="solo"?"":"none";
+  $("#pHint").textContent=sel.mode==="solo"?`(나 + 컴퓨터 ${sel.p-1})`:"";
+}
+bindOpt("#optP","p");bindOpt("#optD","d");bindOpt("#optM","m");bindStr("#optMode","mode");bindStr("#optLv","lv");
+$("#optP").addEventListener("click",syncSetup);syncSetup();
 $("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
 
 // 전체화면 전환

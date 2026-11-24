@@ -75,6 +75,9 @@ button.sec{background:#ffffff22}
 .rules ol{text-align:left;margin:8px 0 10px;padding-left:20px;font-size:13px;line-height:1.6}
 .rules .note{font-size:12px;opacity:.7;text-align:left;margin-bottom:12px}
 .rot{transform:rotate(180deg)}
+.solo .p-tl,.solo .p-tr{transform:none}
+.solo .rot{display:none}
+.panel .thinking{animation:pulse .7s infinite alternate}
 
 @media (max-aspect-ratio:11/10){
   :root{--bs:max(220px,min(calc(100vw - 16px),calc(100dvh - 400px)));--pw:calc(50vw - 14px)}
@@ -108,8 +111,12 @@ button.sec{background:#ffffff22}
 <div class="ov" id="setup"><div class="card">
 <h2>🧱 벽바둑</h2>
 <div style="font-size:13px;opacity:.8">말을 움직이고 벽을 세워 더 넓은 영역을 차지하세요</div>
-<div class="lbl">플레이어 수</div>
+<div class="lbl">플레이 방식</div>
+<div class="opt" id="optMode"><button data-v="solo" class="on">🤖 혼자 (컴퓨터와)</button><button data-v="multi">👥 여럿이서</button></div>
+<div class="lbl">플레이어 수 <span id="pHint" style="opacity:.7">(나 + 컴퓨터 1)</span></div>
 <div class="opt" id="optP"><button data-v="2" class="on">2명</button><button data-v="3">3명 (벽 부수기)</button></div>
+<div id="lvBox"><div class="lbl">컴퓨터 난이도</div>
+<div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div></div>
 <button id="startBtn" style="width:100%;margin-top:6px;padding:14px">게임 시작</button>
 </div></div>
 
@@ -140,7 +147,7 @@ const $=s=>document.querySelector(s);
 const inB=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
 function edge(r,c,dr,dc){return dr===1?`h${r},${c}`:dr===-1?`h${r-1},${c}`:dc===1?`v${r},${c}`:`v${r},${c-1}`}
 
-let sel={p:2}, G=null, soundOn=true, ac=null;
+let sel={p:2,mode:"solo",lv:"normal"}, G=null, soundOn=true, ac=null;
 
 function beep(f,d,type="sine",v=.07,delay=0){
   if(!soundOn)return;
@@ -211,22 +218,25 @@ function territory(){
 
 function newGame(){
   const np=sel.p;
-  G={np,players:COLORS.slice(0,np).map(x=>({...x,breaks:np===3?1:0})),pieces:[],walls:new Map(),
+  const solo=sel.mode==="solo";aiGen++;
+  document.body.classList.toggle("solo",solo);
+  G={np,solo,lv:sel.lv,players:COLORS.slice(0,np).map((x,i)=>({...x,n:solo?(i===0?x.n+"(나)":"🤖 "+x.n):x.n,cpu:solo&&i>0,breaks:np===3?1:0})),pieces:[],walls:new Map(),
      phase:"place",cur:0,sel:null,armed:false,moved:null,msg:"",kind:"",placeOrder:[],placeIdx:0};
   if(np===2){
     [[0,1,1],[0,5,5],[1,1,5],[1,5,1]].forEach(([o,r,c])=>G.pieces.push({owner:o,r,c}));
     G.placeOrder=[0,1,1,0];
   }else G.placeOrder=[0,1,2,2,1,0];
   G.cur=G.placeOrder[0];
-  updMsg();render();
+  updMsg();render();maybeAI();
 }
 
 function updMsg(){
   const n=G.players[G.cur].n;
+  if(G.players[G.cur].cpu){G.msg=`${n} 생각하는 중…`;G.kind="";return}
   const m={
     place:`${n}: 말을 놓을 빈 칸을 누르세요`,
     select:`${n} 차례: 움직일 내 말을 누르세요`,
-    move:G.armed?`🔨 부술 벽을 지나 이동할 칸을 누르세요`:`이동할 칸을 누르세요 (제자리도 가능)`,
+    move:G.armed?`🔨 부술 벽을 지나 이동할 칸을 누르세요`:`이동할 칸을 누르세요 (제자리: 내 말을 한 번 더)`,
     wall:`벽을 세울 면을 누르세요`,
   }[G.phase];
   if(m){G.msg=m;G.kind=""}
@@ -244,7 +254,7 @@ function beginTurn(){
 }
 
 function onCell(r,c){
-  if(!G||G.phase==="over")return;
+  if(!G||G.phase==="over"||(G.players[G.cur]&&G.players[G.cur].cpu&&!aiAct))return;
   const p=pieceAt(r,c);
   if(G.phase==="place"){
     if(p){setMsg("이미 말이 있는 칸이에요","bad");return render()}
@@ -252,10 +262,11 @@ function onCell(r,c){
     G.placeIdx++;
     if(G.placeIdx>=G.placeOrder.length){G.cur=0;beginTurn()}
     else{G.cur=G.placeOrder[G.placeIdx];updMsg()}
-    return render();
+    render();maybeAI();return;
   }
   if(G.phase==="select"||G.phase==="move"){
     if(p&&p.owner===G.cur){
+      if(G.phase==="move"&&p===G.sel&&!G.armed){G.moved=p;G.phase="wall";beep(520,.07);updMsg();return render()}
       const d=reach(p,G.armed);
       if(!d.size){setMsg("이 말은 움직일 수 없어요","bad");return render()}
       G.sel=p;G.phase="move";updMsg();return render();
@@ -272,11 +283,11 @@ function onCell(r,c){
 }
 
 function onWall(key){
-  if(!G||G.phase!=="wall")return;
+  if(!G||G.phase!=="wall"||(G.players[G.cur].cpu&&!aiAct))return;
   G.walls.set(key,G.cur);beep(300,.12,"square",.06);
   const T=territory();
   if(T.over){finish();return render()}
-  G.cur=(G.cur+1)%G.np;beginTurn();render();
+  G.cur=(G.cur+1)%G.np;beginTurn();render();maybeAI();
 }
 
 function finish(){
@@ -285,7 +296,8 @@ function finish(){
   const rank=G.players.map((p,i)=>({i,s:T.scores[i],l:T.largest[i]})).sort((a,b)=>b.s-a.s||b.l-a.l);
   const draw=rank.length>1&&rank[0].s===rank[1].s&&rank[0].l===rank[1].l;
   const w=G.players[rank[0].i];
-  document.querySelectorAll(".wt").forEach(e=>e.textContent=draw?"🤝 무승부!":`🏆 ${w.n} 승리!`);
+  const wt=draw?"🤝 무승부!":G.solo?(rank[0].i===0?"🎉 승리했어요!":"🤖 컴퓨터 승리"):`🏆 ${w.n} 승리!`;
+  document.querySelectorAll(".wt").forEach(e=>e.textContent=wt);
   const lines=rank.map((x,k)=>`${k+1}위 <b style="color:${G.players[x.i].c}">${G.players[x.i].n}</b> ${x.s}칸`).join("<br>");
   document.querySelectorAll(".wd").forEach(e=>e.innerHTML=lines);
   beep(523,.15,"triangle",.1);beep(659,.15,"triangle",.1,.15);beep(784,.15,"triangle",.1,.3);beep(1047,.4,"triangle",.1,.45);
@@ -335,10 +347,129 @@ function render(){
       +`<div class="score">${T.scores[i]}<small>칸 확보</small></div>`
       +`<div class="info">말 ${cnt}개${G.np===3?` · 🔨 ${p.breaks}회`:""}</div>`
       +`<div class="pmsg ${G.kind}">${G.msg}</div>`
-      +`<div class="pbtns">`
+      +(p.cpu?"":`<div class="pbtns">`
       +(G.np===3?`<button class="brk${mine&&G.armed?" on":""}" data-act="brk" data-p="${i}"${canBrk?"":" disabled"}>🔨 벽 부수기</button>`:"")
-      +`<button class="sec" data-act="cancel" data-p="${i}"${canCancel?"":" disabled"}>↩ 취소</button></div>`;
+      +`<button class="sec" data-act="cancel" data-p="${i}"${canCancel?"":" disabled"}>↩ 취소</button></div>`);
   });
+}
+
+// ===== 컴퓨터 상대 =====
+let aiGen=0,aiAct=false;
+const rnd=n=>Math.floor(Math.random()*n);
+const LV={easy:{rand:.6,noise:4,look:0},normal:{rand:.06,noise:1.2,look:0},hard:{rand:0,noise:.15,look:1,k:8}};
+function later(fn,ms){const g=aiGen;setTimeout(()=>{if(g===aiGen&&G&&G.phase!=="over")fn()},ms)}
+function act(fn){aiAct=true;try{fn()}finally{aiAct=false}}
+function maybeAI(){
+  if(!G||G.phase==="over"||G.phase==="idle")return;
+  const pl=G.players[G.cur];if(!pl||!pl.cpu)return;
+  later(aiTurn,G.phase==="place"?550:800);
+}
+function aiTurn(){
+  const me=G.cur,lv=G.players[me].lv||G.lv;
+  if(!G.players[me].cpu)return;
+  if(G.phase==="place"){const [r,c]=aiPlace(me,lv);act(()=>onCell(r,c));return}
+  if(G.phase!=="select")return;
+  const a=aiChoose(me,lv);if(!a)return;
+  G.armed=a.armed;
+  act(()=>onCell(a.p.r,a.p.c));
+  later(()=>{act(()=>onCell(a.r,a.c));later(()=>act(()=>onWall(a.wall)),550)},600);
+}
+function actions(me){
+  const out=[],pl=G.players[me];
+  for(const p of G.pieces)if(p.owner===me){
+    for(const armed of (pl.breaks>0?[false,true]:[false])){
+      for(const [,v] of reach(p,armed))for(const k of sides(v.r,v.c,v.bk))out.push({p,r:v.r,c:v.c,bk:v.bk,wall:k,armed});
+    }
+  }
+  return out;
+}
+function simApply(a,me){
+  const pl=G.players[me];
+  const u={p:a.p,r:a.p.r,c:a.p.c,bk:a.bk,bo:a.bk?G.walls.get(a.bk):null,w:a.wall,br:pl.breaks};
+  if(a.bk){G.walls.delete(a.bk);pl.breaks--}
+  a.p.r=a.r;a.p.c=a.c;G.walls.set(a.wall,me);
+  return u;
+}
+function simUndo(u,me){
+  G.walls.delete(u.w);
+  if(u.bk){G.walls.set(u.bk,u.bo);G.players[me].breaks=u.br}
+  u.p.r=u.r;u.p.c=u.c;
+}
+function voronoi(){
+  const np=G.np,dist=G.players.map(()=>new Array(N*N).fill(99));
+  for(let i=0;i<np;i++){
+    const q=[];
+    for(const p of G.pieces)if(p.owner===i){dist[i][p.r*N+p.c]=0;q.push([p.r,p.c])}
+    for(let h=0;h<q.length;h++){
+      const [r,c]=q[h],d=dist[i][r*N+c];
+      for(const [dr,dc] of DIRS){
+        const nr=r+dr,nc=c+dc;
+        if(!inB(nr,nc)||G.walls.has(edge(r,c,dr,dc)))continue;
+        if(dist[i][nr*N+nc]>d+1){dist[i][nr*N+nc]=d+1;q.push([nr,nc])}
+      }
+    }
+  }
+  const V=Array(np).fill(0);
+  for(let k=0;k<N*N;k++){
+    let m=99,o=-1,tie=false;
+    for(let i=0;i<np;i++){const d=dist[i][k];if(d<m){m=d;o=i;tie=false}else if(d===m&&d<99)tie=true}
+    if(o>=0&&!tie)V[o]++;
+  }
+  return V;
+}
+function evalFor(me){
+  const T=territory(),np=G.np;
+  if(T.over&&G.phase!=="place"){
+    let b=-1,bl=-1;
+    for(let i=0;i<np;i++)if(i!==me){b=Math.max(b,T.scores[i]);bl=Math.max(bl,T.largest[i])}
+    const d=T.scores[me]-b;
+    if(d)return d>0?1000+d:-1000+d;
+    return T.largest[me]>bl?500:T.largest[me]<bl?-500:0;
+  }
+  const V=voronoi(),val=i=>V[i]+1.2*T.scores[i];
+  let mx=-1e9;
+  for(let i=0;i<np;i++)if(i!==me)mx=Math.max(mx,val(i));
+  return val(me)-mx;
+}
+function aiPlace(me,lv){
+  const empty=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!pieceAt(r,c))empty.push([r,c]);
+  if(lv==="easy"||Math.random()<(lv==="normal"?.12:0))return empty[rnd(empty.length)];
+  let best=empty[0],bs=-1e9;
+  for(const [r,c] of empty){
+    const p={owner:me,r,c};G.pieces.push(p);
+    const s=evalFor(me)+Math.random()*(lv==="hard"?.2:1.2);
+    G.pieces.pop();
+    if(s>bs){bs=s;best=[r,c]}
+  }
+  return best;
+}
+function aiChoose(me,lv){
+  const acts=actions(me);if(!acts.length)return null;
+  const cfg=LV[lv]||LV.normal;
+  if(Math.random()<cfg.rand)return acts[rnd(acts.length)];
+  const sc=acts.map(a=>{const u=simApply(a,me);const s=evalFor(me)+Math.random()*cfg.noise;simUndo(u,me);return {a,s}});
+  sc.sort((x,y)=>y.s-x.s);
+  if(!cfg.look)return sc[0].a;
+  const top=sc.slice(0,cfg.k);
+  for(const x of top){
+    const u=simApply(x.a,me);
+    let s;
+    if(territory().over)s=evalFor(me);
+    else{
+      const nx=(me+1)%G.np,rep=actions(nx);
+      if(!rep.length)s=evalFor(me);
+      else{
+        let bs=-1e9,ba=null;
+        for(const b of rep){const u2=simApply(b,nx);const v=evalFor(nx);simUndo(u2,nx);if(v>bs){bs=v;ba=b}}
+        const u2=simApply(ba,nx);s=evalFor(me);simUndo(u2,nx);
+      }
+    }
+    simUndo(u,me);
+    x.s2=s+Math.random()*cfg.noise;
+  }
+  top.sort((x,y)=>y.s2-x.s2);
+  return top[0].a;
 }
 
 // 이벤트
@@ -351,7 +482,7 @@ $("#stage").addEventListener("click",e=>{
   const cd=e.target.closest(".cand");
   if(cd){onWall(cd.dataset.k);return}
   const b=e.target.closest("button[data-act]");
-  if(!b||+b.dataset.p!==G.cur||G.phase==="over")return;
+  if(!b||+b.dataset.p!==G.cur||G.phase==="over"||G.players[G.cur].cpu)return;
   if(b.dataset.act==="brk"){
     G.armed=!G.armed;
     if(G.sel&&G.phase==="move"){
@@ -366,12 +497,19 @@ $("#stage").addEventListener("click",e=>{
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
 $("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
-const again=()=>{$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+const again=()=>{aiGen++;$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
-$("#optP").addEventListener("click",e=>{
-  const b=e.target.closest("button");if(!b)return;
-  [...$("#optP").children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel.p=+b.dataset.v;
-});
+function bindOpt(id,key,num){
+  $(id).addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=num?+b.dataset.v:b.dataset.v;syncSetup();
+  });
+}
+function syncSetup(){
+  $("#lvBox").style.display=sel.mode==="solo"?"":"none";
+  $("#pHint").textContent=sel.mode==="solo"?`(나 + 컴퓨터 ${sel.p-1})`:"";
+}
+bindOpt("#optP","p",true);bindOpt("#optMode","mode");bindOpt("#optLv","lv");syncSetup();
 $("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
 
 (function(){
