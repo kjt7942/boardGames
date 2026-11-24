@@ -77,10 +77,14 @@ button.sec{background:#ffffff22}
 <div class="ov" id="setup"><div class="card">
 <h2>♞ 체스</h2>
 <div style="font-size:13px;opacity:.8">🤖 혼자 한 판 — 백이 먼저 둡니다</div>
+<div class="lbl">모드</div>
+<div class="opt" id="optMode"><button data-v="solo" class="on">🤖 혼자</button><button data-v="online">🌐 온라인</button></div>
 <div class="lbl">내 기물</div>
 <div class="opt" id="optMe"><button data-v="1" class="on">백 (선공)</button><button data-v="-1">흑 (후공)</button></div>
-<div class="lbl">난이도</div>
-<div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div>
+<div id="lvBox"><div class="lbl">난이도</div>
+<div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div></div>
+<div id="olNote" style="font-size:12px;color:#ffb3b3;min-height:16px"></div>
+<div id="onNote" style="font-size:12px;opacity:.7;display:none">온라인에서는 방장이 정한 기물 색으로 진행해요</div>
 <button id="startBtn" style="width:100%;margin-top:6px;padding:14px">게임 시작</button>
 </div></div>
 
@@ -103,11 +107,13 @@ button.sec{background:#ffffff22}
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
 <script src="engine.js"></script>
+<script src="../firebase-config.js"></script>
+<script src="../net.js"></script>
 <script>
 const C=Chess,$=s=>document.querySelector(s);
 const CELL=100,MAR=90,SIDE={1:{n:"백",c:"#ffd24d"},"-1":{n:"흑",c:"#8aa4ff"}};
 const GL={1:"♟\uFE0E",2:"♞",3:"♝",4:"♜",5:"♛",6:"♚"};
-let sel={me:1,lv:"normal"},G=null,soundOn=true,ac=null,gen=0;
+let sel={me:1,lv:"normal",mode:"solo"},G=null,soundOn=true,ac=null,gen=0;
 function beep(f,d,type="sine",v=.07,delay=0){
   if(!soundOn)return;
   try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
@@ -117,12 +123,16 @@ function beep(f,d,type="sine",v=.07,delay=0){
 }
 const flip=()=>G.me===-1;
 const pos=i=>{let r=i>>3,c=i&7;if(flip()){r=7-r;c=7-c}return [MAR+c*CELL,MAR+r*CELL]};
-function blank(me,lv){const S=C.initial();S.keys.push(C.key(S));return {S,me,lv,sel:-1,moves:[],last:null,hist:[],over:true,busy:false,msg:"",kind:"",cap:{1:[],"-1":[]},check:false,pend:null}}
-function newGame(){gen++;G=blank(sel.me,sel.lv);G.over=false;setTurnMsg();render();if(G.S.side!==G.me)aiTurn()}
+function blank(me,lv,net){const S=C.initial();S.keys.push(C.key(S));return {online:net||null,S,me,lv,sel:-1,moves:[],last:null,hist:[],over:true,busy:false,msg:"",kind:"",cap:{1:[],"-1":[]},check:false,pend:null}}
+function newGame(net,cfg){
+  gen++;
+  if(net)G=blank(net.isHost?cfg.side:-cfg.side,"normal",net);else G=blank(sel.me,sel.lv);
+  G.over=false;setTurnMsg();render();if(!net&&G.S.side!==G.me)aiTurn();
+}
 function setTurnMsg(){
   if(G.over)return;
   if(G.S.side===G.me){G.msg=G.check?"⚠️ 체크! 킹을 지키세요":(G.sel>=0?"갈 곳을 누르세요":"내 차례 — 움직일 기물을 누르세요");G.kind=G.check?"warn":""}
-  else{G.msg=G.check?"체크!":"🤖 생각하는 중…";G.kind=G.check?"warn":""}
+  else{G.msg=G.check?"체크!":G.online?"상대 차례… 기다리는 중":"🤖 생각하는 중…";G.kind=G.check?"warn":""}
 }
 function render(){
   const b=G.S.b;let h="";
@@ -143,16 +153,16 @@ function render(){
   $("#boardwrap").style.setProperty("--cc",SIDE[G.S.side].c);
   const opp=-G.me;
   const pn=(side,mine)=>{
-    let s=`<div class="ph"><span class="dot" style="--sc:${side===1?"#f4f4f4":"#111"}"></span><b>${mine?"나":"🤖 컴퓨터"}</b> (${SIDE[side].n})</div><div class="caps" style="font-size:22px;min-height:28px;letter-spacing:1px">${G.cap[side].map(t=>GL[t]).join("")}</div>`;
-    if(mine&&!G.over)s+=`<div class="pbtns"><button data-act="undo" class="sec" ${G.hist.length&&!G.busy?"":"disabled"}>무르기</button><button data-act="resign" class="sec">기권</button></div>`;
+    let s=`<div class="ph"><span class="dot" style="--sc:${side===1?"#f4f4f4":"#111"}"></span><b>${mine?"나":G.online?"👤 "+G.online.names[1-G.online.me]:"🤖 컴퓨터"}</b> (${SIDE[side].n})</div><div class="caps" style="font-size:22px;min-height:28px;letter-spacing:1px">${G.cap[side].map(t=>GL[t]).join("")}</div>`;
+    if(mine&&!G.over)s+=`<div class="pbtns">${G.online?"":`<button data-act="undo" class="sec" ${G.hist.length&&!G.busy?"":"disabled"}>무르기</button>`}<button data-act="resign" class="sec">기권</button></div>`;
     return s;
   };
   $("#pTL").innerHTML=pn(opp,false);$("#pBR").innerHTML=pn(G.me,true);
   for(const [id,side] of [["#pTL",opp],["#pBR",G.me]]){const e=$(id);e.style.setProperty("--pc",SIDE[side].c);e.classList.toggle("cur",!G.over&&G.S.side===side)}
   const m=$("#bigmsg");m.textContent=G.msg;m.className=G.kind;m.classList.toggle("pulse",G.busy&&!G.over);
 }
-function doMove(m){
-  const side=G.S.side;
+function doMove(m,remote){
+  const side=G.S.side;if(G.online&&!remote)G.online.send({t:"mv",m});
   if(side===G.me)G.hist.push({S:C.clone(G.S),cap:{1:G.cap[1].slice(),"-1":G.cap[-1].slice()},last:G.last});
   const u=C.make(G.S,m);G.S.keys.push(C.key(G.S));
   if(u.cap)G.cap[side].push(Math.abs(u.cap));
@@ -161,7 +171,7 @@ function doMove(m){
   beep(u.cap?300:480,.08,"triangle");if(G.check)beep(700,.1,"square",.05,.08);
   const st=C.status(G.S);
   if(st)return end(st);
-  setTurnMsg();render();if(G.S.side!==G.me)aiTurn();
+  setTurnMsg();render();if(G.S.side!==G.me&&!G.online)aiTurn();
 }
 function aiTurn(){
   G.busy=true;setTurnMsg();render();const g=gen;
@@ -172,13 +182,13 @@ function aiTurn(){
   },200);
 }
 function end(st){
-  G.over=true;G.busy=false;G.sel=-1;G.moves=[];
+  G.over=true;G.busy=false;G.sel=-1;G.moves=[];if(G.online)G.online.finish();
   let t,d,win=false;
-  if(st==="mate"){const loser=G.S.side;win=loser!==G.me;t=win?"🎉 체크메이트 — 승리!":"🤖 컴퓨터의 체크메이트";d=`${SIDE[-loser].n}의 승리`}
+  if(st==="mate"){const loser=G.S.side;win=loser!==G.me;t=win?"🎉 체크메이트 — 승리!":(G.online?"체크메이트 — 졌어요":"🤖 컴퓨터의 체크메이트");d=`${SIDE[-loser].n}의 승리`}
   else{t="🤝 무승부";d={stalemate:"스테일메이트 (둘 곳이 없어요)",draw50:"50수 규칙",rep:"같은 모양 3회 반복",insuf:"기물 부족"}[st]}
   G.msg=t;G.kind=win?"good":st==="mate"?"bad":"warn";render();
   $("#wt").textContent=t.replace(" — 승리!","").replace("체크메이트","").trim()||"끝";
-  $("#wt").textContent=st==="mate"?(win?"🎉 승리했어요!":"🤖 컴퓨터 승리"):"🤝 무승부";$("#wd").textContent=st==="mate"?"체크메이트! "+d:d;
+  $("#wt").textContent=st==="mate"?(win?"🎉 승리했어요!":G.online?"😢 졌어요":"🤖 컴퓨터 승리"):"🤝 무승부";$("#wd").textContent=st==="mate"?"체크메이트! "+d:d;
   beep(win?784:196,.3,"triangle",.1);if(win)beep(1047,.4,"triangle",.1,.25);
   setTimeout(()=>$("#win").classList.remove("hide"),1100);
 }
@@ -202,6 +212,16 @@ $("#svg").addEventListener("click",e=>{
   }
   G.sel=-1;G.moves=[];setTurnMsg();render();
 });
+function resignWin(why,win){
+  if(!G||G.over)return;G.over=true;G.busy=false;if(G.online)G.online.finish();render();
+  $("#wt").textContent=win?"🎉 승리했어요!":"🏳️ 기권했어요";$("#wd").textContent=why;$("#win").classList.remove("hide");
+}
+function onNet(e){
+  if(e.t==="cfg"){if(!G||!G.online||G.started)return;newGame(G.online,e);G.started=true;return}
+  if(!G||G.over)return;
+  if(e.t==="mv"&&G.S.side!==G.me&&C.legal(G.S).includes(e.m))doMove(e.m,true);
+  else if(e.t==="resign")resignWin("상대가 기권했어요",true);
+}
 $("#promoOpt").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b||!G.pend)return;
   const p=+b.dataset.v,m=G.pend.find(m=>(m>>12)===p);G.pend=null;$("#promo").classList.add("hide");if(m)doMove(m);
@@ -211,22 +231,43 @@ $("#stage").addEventListener("click",e=>{
   if(b.dataset.act==="undo"&&G.hist.length){
     const h=G.hist.pop();G.S=C.clone(h.S);G.S.keys=h.S.keys.slice();G.cap=h.cap;G.last=h.last;G.sel=-1;G.moves=[];G.check=C.inCheck(G.S);setTurnMsg();render();
   }else if(b.dataset.act==="resign"&&confirm("기권할까요?")){
-    G.over=true;render();$("#wt").textContent="🏳️ 기권했어요";$("#wd").textContent="컴퓨터가 이겼어요";$("#win").classList.remove("hide");
+    if(G.online)G.online.send({t:"resign"});resignWin(G.online?"상대가 이겼어요":"컴퓨터가 이겼어요",false);
   }
 });
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
 $("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
-const again=()=>{gen++;$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+const again=()=>{gen++;if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
 function bindOpt(id,key,num){
   $(id).addEventListener("click",e=>{
     const b=e.target.closest("button");if(!b)return;
-    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=num?+b.dataset.v:b.dataset.v;
+    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=num?+b.dataset.v:b.dataset.v;syncSetup();
   });
 }
-bindOpt("#optMe","me",true);bindOpt("#optLv","lv");
-$("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
+function syncSetup(){
+  const on=sel.mode==="online";
+  $("#lvBox").style.display=on?"none":"";$("#onNote").style.display=on?"":"none";
+  $("#startBtn").textContent=on?"🌐 방 목록 열기":"게임 시작";
+  $("#olNote").textContent=on&&!(window.BGNet&&BGNet.configured)?"온라인 서버 설정이 아직 안 되어 있어요":"";
+}
+bindOpt("#optMode","mode");bindOpt("#optMe","me",true);bindOpt("#optLv","lv");syncSetup();
+$("#startBtn").onclick=()=>{
+  if(sel.mode==="online"){
+    if(!window.BGNet){$("#olNote").textContent="온라인 모듈을 불러오지 못했어요 (저장소 주소로 열어 주세요)";return}
+    $("#setup").classList.add("hide");
+    BGNet.open({game:"chess",title:"체스",sizes:[{np:2,label:"2명"}],
+      onStart:ctx=>{
+        $("#win").classList.add("hide");
+        G=blank(1,"normal",ctx);G.msg="방장이 시작하는 중…";render();
+        ctx.onEvent=onNet;ctx.onLeft=()=>resignWin("상대가 나갔어요",true);
+        if(ctx.isHost){const cfg={t:"cfg",side:sel.me};ctx.send(cfg);newGame(ctx,cfg);G.started=true}
+      },
+      onClose:()=>$("#setup").classList.remove("hide")});
+    return;
+  }
+  $("#setup").classList.add("hide");newGame();
+};
 (function(){
   const d=document,el=d.documentElement,btn=$("#fsBtn");
   const isFs=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);

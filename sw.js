@@ -1,5 +1,5 @@
 // 보드게임즈 서비스 워커: 네트워크 우선(항상 최신), 오프라인이면 저장본 사용
-const CACHE = "boardgames-v4";
+const CACHE = "boardgames-v5";
 const FILES = ["./", "index.html", "manifest.json", "net.js", "firebase-config.js",
   "magic-labyrinth/", "magic-labyrinth/index.html", "wall-go/", "wall-go/index.html",
   "janggi/", "janggi/index.html", "janggi/engine.js", "baduk/", "baduk/index.html", "baduk/engine.js", "omok/", "omok/index.html", "omok/engine.js", "chess/", "chess/index.html", "chess/engine.js",
