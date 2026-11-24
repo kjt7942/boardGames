@@ -93,7 +93,9 @@ button.sec{background:#ffffff22}
   :root{--bs:max(220px,min(calc(100vw - 16px),calc(100dvh - 462px)));--pw:calc(50vw - 14px)}
   #stage{grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr auto auto;
     grid-template-areas:"tl tr" "menu menu" "board board" "msg msg" "bl br"}
-  #bigmsg{width:var(--bs);justify-self:center;font-size:clamp(16px,4.4vw,26px)}
+  #bigmsg{width:auto;justify-self:stretch;font-size:clamp(16px,4.4vw,26px)}
+  #boardarea{container-type:size;min-height:0}
+  #boardwrap{width:min(100cqw,100cqh);height:min(100cqw,100cqh)}
   #menu{flex-direction:row}
   #menu button{width:40px;height:40px;font-size:17px}
   .p-tl{justify-self:start}.p-tr{justify-self:end}
