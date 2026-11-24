@@ -35,7 +35,7 @@ const DAN=m=>[0,1,2].includes(m)?"홍":[5,8,9].includes(m)?"청":[3,4,6].include
 const KN={G:"광",Y:"열",T:"띠",P:"피"};
 function hw(c,extra,data){
   const t=ty(c),m=mo(c),d=t==="T"?DAN(m):"";
-  return `<div class="hw ${t} ${extra||""}" title="${m+1}월 ${t==="P"&&SS(c)?"쌍피":KN[t]}" ${data||""}>${CA.hwatu(c)}</div>`;
+  return `<div class="hw ${t} ${extra||""}" data-cid="${c}" title="${m+1}월 ${t==="P"&&SS(c)?"쌍피":KN[t]}" ${data||""}>${CA.hwatu(c)}</div>`;
 }
 function score(cards){
   let s=0,det=[];const cnt={G:0,Y:0,T:0,P:0};
@@ -51,19 +51,29 @@ function afterTurn(S,p){
   if(S.hands.every(h=>!h.length)){S.over=true;return}
   S.cur=(p+1)%S.np;
 }
+function mFlip(S,p){
+  if(S.stock.length){
+    const f=S.stock.pop();S.pc.f=f;
+    const g=S.floor.filter(x=>mo(x)===mo(f));
+    if(g.length===2){S.phase="pick";S.pk={stage:"flip",card:f,opts:g};return}
+    if(g.length){S.floor=S.floor.filter(x=>mo(x)!==mo(f));S.pc.cap2=[f,...g];S.cap[p].push(...S.pc.cap2)}else S.floor.push(f);
+  }
+  mFinish(S,p);
+}
+function mFinish(S,p){S.last={p,c:S.pc.c,cap1:S.pc.cap1,f:S.pc.f,cap2:S.pc.cap2};S.pc=null;afterTurn(S,p)}
 CK.run({
  id:"minhwatu",title:"민화투",icon:"🎴",color:"#d8283b",np:[2,3],levels:true,
  tagline:"같은 달의 화투를 맞춰 먹고 점수를 겨뤄요 (2~3명)",
  rules:[
   "화투 48장은 12달 × 4장이에요. 2명이면 <b>10장씩</b>, 3명이면 <b>7장씩</b> 나눠 갖고 바닥에 깔려요.",
-  "내 차례에 손패 한 장을 내요. 바닥에 <b>같은 달</b>이 있으면 그 패를 전부 가져와요(먹기). 없으면 바닥에 내려놓아요.",
+  "내 차례에 손패 한 장을 내요. 바닥에 <b>같은 달</b>이 1장이면 가져와요(먹기). <b>2장이면 그중 1장을 골라서</b> 먹고, 3장이면 전부 먹어요. 없으면 바닥에 내려놓아요.",
   "이어서 더미에서 한 장을 뒤집어 같은 달이 바닥에 있으면 먹고, 없으면 바닥에 놓여요.",
   "손패가 모두 떨어지면 끝! 먹은 패 점수: <b>광 20 · 열(동물·꽃) 10 · 띠 5 · 피 0</b>",
   "<b>약</b>: 난초(5월)·단풍(10월)·비(12월) 4장 모두 먹으면 +20, 오동(11월) 4장은 +40",
   "<b>단</b>: 홍단(1·2·3월 띠)·청단(6·9·10월 띠)·초단(4·5·7월 띠)을 3장 모으면 각 +30",
   "점수가 가장 높은 사람이 승리! (전통 규칙 요약판이에요)"],
  init(seed,np){
-  const S={rs:seed,np,cur:0,over:false,last:null,hands:[],cap:[],floor:[],stock:[]};
+  const S={rs:seed,np,cur:0,over:false,last:null,hands:[],cap:[],floor:[],stock:[],phase:"play",pk:null,pc:null};
   S.stock=shuf(S,Array.from({length:48},(_,i)=>i));
   for(let p=0;p<np;p++){S.hands.push([]);S.cap.push([])}
   const [fl,per]=np===2?[4,5]:[3,4];
@@ -72,20 +82,27 @@ CK.run({
  },
  turn:S=>S.over?-1:S.cur,
  apply(S,a){
-  const p=a.p,c=a.c;S.hands[p].splice(S.hands[p].indexOf(c),1);
-  const take=m=>{const g=S.floor.filter(x=>mo(x)===m);S.floor=S.floor.filter(x=>mo(x)!==m);return g};
-  const g1=take(mo(c));let cap1=[];
-  if(g1.length){cap1=[c,...g1];S.cap[p].push(...cap1)}else S.floor.push(c);
-  let f=-1,cap2=[];
-  if(S.stock.length){
-    f=S.stock.pop();const g2=take(mo(f));
-    if(g2.length){cap2=[f,...g2];S.cap[p].push(...cap2)}else S.floor.push(f);
+  const p=a.p;
+  if(a.t==="pick"){
+    const pk=S.pk,x=a.v;S.pk=null;S.phase="play";
+    S.floor=S.floor.filter(y=>y!==x);
+    const cap=[pk.card,x];S.cap[p].push(...cap);
+    if(pk.stage==="hand"){S.pc.cap1=cap;mFlip(S,p)}else{S.pc.cap2=cap;mFinish(S,p)}
+    return;
   }
-  S.last={p,c,cap1,f,cap2};
-  afterTurn(S,p);
+  const c=a.c;S.hands[p].splice(S.hands[p].indexOf(c),1);
+  S.pc={c,cap1:[],f:-1,cap2:[]};
+  const g=S.floor.filter(x=>mo(x)===mo(c));
+  if(g.length===2){S.phase="pick";S.pk={stage:"hand",card:c,opts:g};return}
+  if(g.length){S.floor=S.floor.filter(x=>mo(x)!==mo(c));S.pc.cap1=[c,...g];S.cap[p].push(...S.pc.cap1)}else S.floor.push(c);
+  mFlip(S,p);
  },
- click(S,me,d){if(d.k==="h"){const c=+d.v;return{t:"play",p:me,c}}},
+ click(S,me,d){
+  if(S.phase==="pick")return d.k==="pk"?{t:"pick",p:me,v:+d.v}:null;
+  if(d.k==="h"){const c=+d.v;return{t:"play",p:me,c}}
+ },
  ai(S,p,lv){
+  if(S.phase==="pick"){const o=S.pk.opts;return{t:"pick",p,v:lv==="easy"?o[Math.floor(Math.random()*o.length)]:o.reduce((a,b)=>val(b)>val(a)?b:a)}}
   const h=S.hands[p];
   if(lv==="easy")return{t:"play",p,c:h[Math.floor(Math.random()*h.length)]};
   const mine=S.cap[p];
@@ -114,17 +131,18 @@ CK.run({
   let h=`<div class="row" style="align-items:flex-start">`;
   for(let k=1;k<S.np;k++){const p=(me+k)%S.np,sc=score(S.cap[p]);
    h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}">${names[p]} · 손패 ${S.hands[p].length}장<small>점수 ${sc.s}${sc.det.length?" ("+sc.det.join(", ")+")":""}</small>${capHtml(p)}</div>`}
-  h+=`</div><div class="felt"><div class="row" style="gap:6px;max-width:560px">${S.floor.map(c=>hw(c,S.last&&(S.last.f===c||S.last.c===c)?"fl":"")).join("")||"<span style='opacity:.6'>바닥이 비었어요</span>"}</div>
+  h+=`</div><div class="felt"><div class="row" style="gap:6px;max-width:560px">${S.floor.map(c=>{const pk=S.phase==="pick"&&S.cur===me&&S.pk.opts.includes(c);return pk?hw(c,"ok",`data-k="pk" data-v="${c}"`):hw(c,S.last&&(S.last.f===c||S.last.c===c)?"fl":"")}).join("")||"<span style='opacity:.6'>바닥이 비었어요</span>"}</div>
    <small style="opacity:.8">더미 ${S.stock.length}장</small></div>`;
   const sc=score(S.cap[me]);
   h+=`<div class="seat${S.cur===me&&!S.over?" cur":""}" style="align-self:center;max-width:100%">${names[me]} · 점수 <b>${sc.s}</b>${sc.det.length?" ("+sc.det.join(", ")+")":""}${capHtml(me)}</div>
-   <div class="hand">${S.hands[me].slice().sort((a,b)=>a-b).map(c=>{const ok=S.floor.some(x=>mo(x)===mo(c));return hw(c,S.cur===me&&!S.over?(ok?"ok":""):"",`data-k="h" data-v="${c}"`)}).join("")}</div>`;
+   <div class="hand">${S.hands[me].slice().sort((a,b)=>a-b).map(c=>{const ok=S.floor.some(x=>mo(x)===mo(c));return hw(c,S.cur===me&&!S.over?(ok&&S.phase==="play"?"ok":""):"",`data-k="h" data-v="${c}"`)}).join("")}</div>`;
   return h;
  },
  msg(S,me,names){
   if(S.over)return["끝! 점수를 확인해요","good"];
   const L=S.last;let t="";
   if(L){const f=a=>a.length?`먹음 ${a.length}장`:"바닥에 놓음";t=`${names[L.p]}: ${mo(L.c)+1}월 ${f(L.cap1)}, 뒤집기 ${L.f>=0?mo(L.f)+1+"월 "+f(L.cap2):""}`}
+  if(S.phase==="pick")return S.cur===me?["같은 달 패가 2장이에요\n먹을 패를 바닥에서 한 장 골라요(노란 테두리)","warn"]:[names[S.cur]+"이(가) 먹을 패를 고르는 중…",""];
   if(S.cur===me)return[(t?t+"\n":"")+"같은 달이 있는 패(노란 테두리)를 내면 먹어요","warn"];
   return[(t?t+" · ":"")+names[S.cur]+" 차례",""];
  },

@@ -15,7 +15,7 @@ window.CK = (function () {
   const red = c => c < 52 && (suit(c) === 1 || suit(c) === 2) || c === 53;
   function card(c, extra, data) {
     if (c < 0) return `<div class="pc back ${extra || ""}" ${data || ""}></div>`;
-    return `<div class="pc art ${extra || ""}" ${data || ""}>${CA.trump(c)}</div>`;
+    return `<div class="pc art ${extra || ""}" data-cid="${c}" ${data || ""}>${CA.trump(c)}</div>`;
   }
   const CSS = `
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -76,8 +76,47 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
 <div class="ov hide" id="win"><div class="cd"><h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div><button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>`;
     let S = null, me = 0, names = [], ctx = null, ui = {}, gen = 0;
     const sel = { mode: "solo", np: def.np[0], lv: "normal" };
-    function draw() {
+    // ── 카드 이동 모션: 이전 위치 → 새 위치로 날아가기 (먹을 땐 바닥을 거쳐 내 쪽으로) ──
+    function snap() {
+      const m = {};
+      $("#table").querySelectorAll("[data-cid]").forEach(e => { const k = e.dataset.cid; if (!(k in m)) m[k] = { r: e.getBoundingClientRect(), cap: !!e.closest(".cap") }; });
+      return m;
+    }
+    function fly(old, actor) {
+      const T = $("#table"), felt = T.querySelector(".felt"), seats = T.querySelectorAll(".seat");
+      const fr = felt ? felt.getBoundingClientRect() : T.getBoundingClientRect();
+      const n = S.np || names.length || 2, idx = ((actor - me + n) % n) - 1;
+      const sr = actor === me ? { left: fr.left + fr.width * .25, top: fr.top + fr.height * .5, width: 20, height: 28 }
+        : (seats[Math.max(0, Math.min(idx, seats.length - 2))] || seats[0] || felt || T).getBoundingClientRect();
+      const mid = { x: fr.left + fr.width / 2, y: fr.top + fr.height / 2 };
+      const seen = new Set(); let k = 0;
+      T.querySelectorAll("[data-cid]").forEach(e => {
+        const id = e.dataset.cid; if (seen.has(id)) return; seen.add(id);
+        const r = e.getBoundingClientRect(), o = old[id], inCap = !!e.closest(".cap");
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const from = o ? { x: o.r.left + o.r.width / 2, y: o.r.top + o.r.height / 2, s: o.r.width / r.width }
+          : { x: sr.left + sr.width / 2, y: sr.top + sr.height / 2, s: .5 };
+        const dx = from.x - cx, dy = from.y - cy;
+        if (o && Math.abs(dx) + Math.abs(dy) < 4) return;
+        const A = (x, y, s, op) => ({ transform: `translate(${x}px,${y}px) scale(${s})`, opacity: op });
+        let kf, dur = 520;
+        if (inCap && !(o && o.cap)) { // 먹은 패: 바닥에 모였다가 내 쪽으로
+          dur = 1050;
+          const hold = o && o.r.top > fr.top - 4 && o.r.bottom < fr.bottom + 4; // 원래 바닥에 있던 패는 제자리 대기
+          const m = hold ? A(dx, dy, from.s, 1) : A(mid.x - cx + (k % 2 ? 22 : -22), mid.y - cy, 1.05, 1);
+          kf = [Object.assign(A(dx, dy, from.s, o ? 1 : .3), { offset: 0 }), Object.assign(m, { offset: .48 }), Object.assign(m, { offset: .58 }), Object.assign(A(0, 0, 1, 1), { offset: 1 })];
+        } else kf = [A(dx, dy, from.s, o ? 1 : .3), A(0, 0, 1, 1)];
+        const pos = getComputedStyle(e).position; if (pos === "static") e.style.position = "relative";
+        e.style.zIndex = 40;
+        const an = e.animate(kf, { duration: dur, delay: k * 70, easing: "cubic-bezier(.22,.8,.3,1)", fill: "backwards" });
+        an.onfinish = an.oncancel = () => { e.style.zIndex = ""; };
+        k++;
+      });
+    }
+    function draw(anim) {
+      const old = anim ? snap() : null;
       $("#table").innerHTML = def.render(S, me, ui, names);
+      if (old) try { fly(old, anim.p); } catch (e) { }
       const [t, c] = def.msg(S, me, names); const b = $("#bigmsg"); b.textContent = t; b.className = c || "";
     }
     function start(seed, n, nm) {
@@ -89,12 +128,12 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
       if (p < 0) { const [t, d] = def.result(S, me, names); $("#wt").textContent = t; $("#wd").innerHTML = d; setTimeout(() => $("#win").classList.remove("hide"), 900); if (ctx) ctx.finish(); return; }
       if (!ctx && p !== me) {
         const g = gen;
-        setTimeout(() => { if (g !== gen || !S || def.turn(S) !== p) return; act(def.ai(S, p, sel.lv)); }, 650 + ((Math.random() * 500) | 0));
+        setTimeout(() => { if (g !== gen || !S || def.turn(S) !== p) return; act(def.ai(S, p, sel.lv)); }, 1250 + ((Math.random() * 500) | 0));
       }
     }
     function act(a, remote) {
       if (!a) return;
-      def.apply(S, a); if (ctx && !remote) ctx.send({ t: "a", a }); draw(); next();
+      def.apply(S, a); if (ctx && !remote) ctx.send({ t: "a", a }); draw({ p: a.p === undefined ? def.turn(S) : a.p }); next();
     }
     $("#table").addEventListener("click", e => {
       const el = e.target.closest("[data-k]"); if (!el || !S || def.turn(S) !== me) return;
