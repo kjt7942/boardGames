@@ -12,7 +12,7 @@
 <title>벽바둑 (Wall Go)</title>
 <style>
 :root{
-  --bs:max(220px,min(calc(100dvh - 16px),calc(100vw - 460px)));
+  --bs:max(220px,min(calc(100dvh - 92px),calc(100vw - 460px)));
   --pw:clamp(150px,calc((100vw - var(--bs))/2 - 24px),300px);
   --cs:calc(var(--bs)/7);
 }
@@ -26,7 +26,9 @@ button.sec{background:#ffffff22}
 #stage{position:fixed;inset:0;display:grid;padding:8px;gap:8px;
   grid-template-columns:1fr var(--bs) 1fr;grid-template-rows:auto 1fr auto;
   grid-template-areas:"tl board tr" "menu board ." "bl board br"}
-#boardarea{grid-area:board;display:flex;align-items:center;justify-content:center}
+#boardarea{grid-area:board;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center}
+#bigmsg{width:var(--bs);min-height:66px;display:flex;align-items:center;justify-content:center;text-align:center;border:3px solid var(--cc,#4d7cff);border-radius:16px;background:#00000066;font-size:clamp(17px,4.6vmin,30px);font-weight:800;line-height:1.3;padding:6px 12px;word-break:keep-all}
+#bigmsg.bad{color:#ff9a9a}#bigmsg.good{color:#8dffb4}
 #menu{grid-area:menu;align-self:center;justify-self:center;display:flex;flex-direction:column;gap:8px}
 #menu button{width:46px;height:46px;border-radius:50%;padding:0;font-size:20px}
 .p-tl{grid-area:tl;justify-self:start;align-self:start;transform:rotate(180deg)}
@@ -60,6 +62,8 @@ button.sec{background:#ffffff22}
 .cell.dest.brk::after{background:#ff9f1c;opacity:.85}
 .cell.placeable{cursor:pointer}
 .cell.placeable:hover{background:#3a4f86}
+.cell.placeable::after{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:var(--pcur,#fff);opacity:.6;animation:pulse .8s infinite alternate}
+.solo .pmsg{display:none}
 .pc{width:64%;height:64%;border-radius:50%;background:var(--pc);border:3px solid #fff;box-shadow:0 3px 8px #000b,inset 0 -4px 8px #0006;z-index:3;transition:transform .15s}
 .pc.mine{animation:bob .8s infinite alternate;cursor:pointer}
 .pc.sel{transform:scale(1.18);box-shadow:0 0 0 4px #fff,0 0 22px var(--pc)}
@@ -86,7 +90,7 @@ button.sec{background:#ffffff22}
 .panel .thinking{animation:pulse .7s infinite alternate}
 
 @media (max-aspect-ratio:11/10){
-  :root{--bs:max(220px,min(calc(100vw - 16px),calc(100dvh - 400px)));--pw:calc(50vw - 14px)}
+  :root{--bs:max(220px,min(calc(100vw - 16px),calc(100dvh - 480px)));--pw:calc(50vw - 14px)}
   #stage{grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr auto;
     grid-template-areas:"tl tr" "menu menu" "board board" "bl br"}
   #menu{flex-direction:row}
@@ -111,7 +115,7 @@ button.sec{background:#ffffff22}
     <button class="sec" id="ruleBtn" title="규칙">❓</button>
     <button class="sec" id="newBtn" title="새 게임">↻</button>
   </div>
-  <div id="boardarea"><div id="boardwrap"><div id="board"></div><div id="walls"></div></div></div>
+  <div id="boardarea"><div id="boardwrap"><div id="board"></div><div id="walls"></div></div><div id="bigmsg"></div></div>
 </div>
 
 <div class="ov" id="setup"><div class="card">
@@ -323,17 +327,20 @@ function render(){
   const cur=G.players[G.cur],T=territory();
   const over=G.phase==="over";
   const dests=G.phase==="move"?reach(G.sel,G.armed):null;
+  const canPlace=G.phase==="place"&&!cur.cpu&&(!G.online||G.cur===G.me);
   let h="";
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){
     const g=T.regs[T.seen[r][c]];
     const own=g.owner!==null&&g.owner>=0;
     const p=pieceAt(r,c);
     const d=dests&&dests.get(r+","+c);
-    h+=`<div class="cell${(r+c)%2?" alt":""}${own?" terr":""}${d?" dest"+(d.bk?" brk":""):""}${G.phase==="place"&&!p?" placeable":""}" data-r="${r}" data-c="${c}"${own?` style="--tc:${G.players[g.owner].c}"`:""}>`
+    h+=`<div class="cell${(r+c)%2?" alt":""}${own?" terr":""}${d?" dest"+(d.bk?" brk":""):""}${canPlace&&!p?" placeable":""}" data-r="${r}" data-c="${c}"${own?` style="--tc:${G.players[g.owner].c}"`:""}>`
       +(p?`<div class="pc${!over&&p.owner===G.cur&&(G.phase==="select"||G.phase==="move")?" mine":""}${G.sel===p&&G.phase!=="select"?" sel":""}" style="--pc:${G.players[p.owner].c}"></div>`:"")
       +`</div>`;
   }
   $("#board").innerHTML=h;
+  $("#board").style.setProperty("--pcur",cur.c);
+  const bm=$("#bigmsg");bm.textContent=over?"게임 종료":(G.phase==="idle"?"":G.msg);bm.className=over?"":G.kind;bm.style.setProperty("--cc",over?"#4d7cff":cur.c);bm.style.visibility=(G.phase==="idle")?"hidden":"visible";
   $("#boardwrap").style.setProperty("--cc",over?"#4d7cff":cur.c);
   // 벽
   const u=100/N,t=1.7,t2=3.6;
