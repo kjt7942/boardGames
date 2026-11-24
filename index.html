@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>보드게임 모음 · boardGames</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{min-height:100dvh;background:radial-gradient(circle at 50% 0%,#33307a 0%,#171436 55%,#0a0820 100%);color:#eef0ff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;display:flex;flex-direction:column;align-items:center;padding:28px 16px 40px}
+header{text-align:center;margin-bottom:26px}
+h1{margin:0;font-size:clamp(26px,4.5vw,40px);letter-spacing:1px}
+header p{margin:8px 0 0;opacity:.7;font-size:clamp(13px,2vw,16px)}
+#grid{width:100%;max-width:980px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,320px));justify-content:center;gap:18px}
+a.card{position:relative;display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 28%,#1b1840),#1b1840 70%);border:2px solid color-mix(in srgb,var(--c) 60%,transparent);border-radius:22px;padding:20px;min-height:230px;transition:transform .15s,box-shadow .15s}
+a.card:hover,a.card:focus-visible{transform:translateY(-4px);box-shadow:0 10px 30px color-mix(in srgb,var(--c) 45%,transparent);outline:none}
+a.card:active{transform:scale(.98)}
+.ico{font-size:56px;line-height:1}
+.name{font-size:22px;font-weight:800}
+.sub{font-size:12px;opacity:.6;margin-top:-6px}
+.desc{font-size:14px;line-height:1.55;opacity:.85;flex:1}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags span{font-size:12px;background:#ffffff1c;border-radius:999px;padding:4px 10px}
+.go{align-self:flex-start;background:var(--c);color:#13102c;font-weight:800;border-radius:12px;padding:10px 18px;font-size:15px}
+.soon{opacity:.45;border-style:dashed;pointer-events:none}
+footer{margin-top:34px;font-size:12px;opacity:.5;text-align:center;line-height:1.7}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎲 보드게임 모음</h1>
+  <p>태블릿을 바닥에 놓고 둘러앉아, 하고 싶은 게임을 골라 보세요</p>
+</header>
+<main id="grid"></main>
+<footer>
+  새 게임은 이 목록에 계속 추가됩니다<br>
+  <a href="https://github.com/kjt7942/boardGames">GitHub · kjt7942/boardGames</a>
+</footer>
+<script>
+// 게임을 추가하려면 이 배열에 항목을 하나 더 넣으면 됩니다.
+const GAMES=[
+  {path:"magic-labyrinth/",icon:"🧙",name:"마법의 미로",sub:"The Magic Labyrinth",color:"#9d7cff",
+   desc:"보이지 않는 벽을 기억해 마법 심볼을 모으세요. 벽에 부딪히면 처음 자리로!",
+   tags:["2~4인","기억력","주사위","20분"]},
+  {path:"wall-go/",icon:"🧱",name:"벽바둑",sub:"Wall Go · 데블스 플랜",color:"#4dabff",
+   desc:"말을 움직이고 벽을 세워 더 넓은 영역을 차지하세요. 쿼리도와 바둑이 만난 전략 게임.",
+   tags:["2~3인","전략","영역 싸움","15분"]},
+];
+const grid=document.getElementById("grid");
+grid.innerHTML=GAMES.map(g=>`
+  <a class="card" href="${g.path}" style="--c:${g.color}">
+    <div class="ico">${g.icon}</div>
+    <div class="name">${g.name}</div>
+    <div class="sub">${g.sub}</div>
+    <div class="desc">${g.desc}</div>
+    <div class="tags">${g.tags.map(t=>`<span>${t}</span>`).join("")}</div>
+    <span class="go">▶ 시작하기</span>
+  </a>`).join("");
+</script>
+</body>
+</html>

@@ -96,6 +96,7 @@ button.sec{background:#ffffff22}
   <div class="panel p-bl empty" id="pBL"></div>
   <div class="panel p-br empty" id="pBR"></div>
   <div id="menu">
+    <button class="sec" id="homeBtn" title="게임 목록" style="display:none">🏠</button>
     <button class="sec" id="fsBtn" title="전체화면">⛶</button>
     <button class="sec" id="sndBtn" title="소리">🔊</button>
     <button class="sec" id="ruleBtn" title="규칙">❓</button>
@@ -389,6 +390,14 @@ $("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
 // 초기 빈 화면
 G={np:2,players:COLORS.slice(0,2).map(x=>({...x,breaks:0})),pieces:[],walls:new Map(),phase:"idle",cur:0,sel:null,armed:false,moved:null,msg:"",kind:"",placeOrder:[],placeIdx:0};
 render();
+
+// 게임 목록(홈)으로 돌아가기: 저장소 폴더 구조에서 열렸을 때만 표시
+(function(){
+  if(/\/(magic-labyrinth|wall-go)\/?(index\.html)?$/.test(location.pathname)){
+    const b=document.getElementById("homeBtn");b.style.display="";
+    b.onclick=()=>{location.href="../"};
+  }
+})();
 </script>
 </body>
 </html>
