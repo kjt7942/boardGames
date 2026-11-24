@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="보드게임즈">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+<title>오목 (Omok)</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:radial-gradient(circle at 50% 40%,#2a3a5e 0%,#141c33 60%,#090d1a 100%);color:#e8eeff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;user-select:none;touch-action:manipulation}
+button{font:inherit;border:0;border-radius:12px;padding:10px 8px;background:#4d7cff;color:#fff;font-weight:700;cursor:pointer}
+button:disabled{opacity:.3;cursor:default}
+button.sec{background:#ffffff22}
+
+#stage{position:fixed;inset:0;display:grid;padding:8px;gap:8px;
+  grid-template-columns:minmax(0,1fr) 250px;grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"board tl" "board menu" "board msg" "board br"}
+#boardarea{grid-area:board;display:flex;align-items:center;justify-content:center;container-type:size;min-height:0;min-width:0}
+#boardwrap{width:min(100cqw,100cqh);aspect-ratio:1;position:relative;border-radius:10px;box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 30px var(--cc,#4d7cff),0 8px 30px #000a;overflow:hidden}
+#boardwrap svg{display:block;width:100%;height:100%}
+#menu{grid-area:menu;justify-self:center;display:flex;gap:8px}
+#menu button{width:44px;height:44px;border-radius:50%;padding:0;font-size:19px}
+#pTL{grid-area:tl}#pBR{grid-area:br}
+.panel{background:#00000055;border:3px solid var(--pc);border-radius:18px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;text-align:center}
+.panel.cur{background:#ffffff20;box-shadow:0 0 22px var(--pc),inset 0 0 18px #ffffff18}
+.ph{display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px}
+.ph .dot{width:18px;height:18px;border-radius:50%;background:var(--sc);border:2px solid #fff8;box-shadow:0 0 8px var(--pc)}
+.ph b{color:#fff}
+.caps{font-size:15px}
+.info{font-size:12px;opacity:.8}
+.pbtns{display:flex;gap:6px}.pbtns button{flex:1;font-size:14px;padding:11px 4px}
+#bigmsg{grid-area:msg;align-self:center;justify-self:stretch;min-height:56px;display:flex;align-items:center;justify-content:center;text-align:center;border:3px solid var(--cc,#4d7cff);border-radius:16px;background:#00000066;font-size:clamp(16px,2.1vw,28px);font-weight:800;line-height:1.3;padding:6px 12px;word-break:keep-all}
+#bigmsg.bad{color:#ff9a9a}#bigmsg.good{color:#8dffb4}#bigmsg.warn{color:#ffd24d}
+
+.ov{position:fixed;inset:0;background:#090d1aee;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.ov.hide{display:none}
+.card{max-height:100%;overflow:auto;background:#1b2747;border:2px solid #4d7cff;border-radius:18px;padding:20px;max-width:420px;width:100%;text-align:center}
+.card h2{margin:0 0 4px}
+.opt{display:flex;gap:6px;justify-content:center;margin:6px 0 14px}
+.opt button{flex:1;background:#ffffff1a;padding:10px 4px;font-size:14px}
+.opt button.on{background:#4d7cff}
+.lbl{font-size:13px;opacity:.75;margin-top:10px;text-align:left}
+.rules ol{text-align:left;margin:8px 0 10px;padding-left:20px;font-size:13px;line-height:1.6}
+.rules .note{font-size:12px;opacity:.7;text-align:left;margin-bottom:12px}
+@keyframes pulse{to{opacity:.35}}
+.pulse{animation:pulse .7s infinite alternate}
+
+@media (max-aspect-ratio:11/10){
+  #stage{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;grid-template-areas:"tl" "menu" "board" "msg" "br"}
+  #bigmsg{font-size:clamp(16px,4.4vw,26px)}
+  .panel{padding:5px 8px;gap:3px}.info{display:none}
+  .pbtns button{padding:8px 4px}
+}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="panel" id="pTL"></div>
+  <div id="menu">
+    <button class="sec" id="homeBtn" title="게임 목록" style="display:none">🏠</button>
+    <button class="sec" id="fsBtn" title="전체화면">⛶</button>
+    <button class="sec" id="sndBtn" title="소리">🔊</button>
+    <button class="sec" id="ruleBtn" title="규칙">❓</button>
+    <button class="sec" id="newBtn" title="새 게임">↻</button>
+  </div>
+  <div id="boardarea"><div id="boardwrap"><svg id="svg"></svg></div></div>
+  <div id="bigmsg"></div>
+  <div class="panel" id="pBR"></div>
+</div>
+
+<div class="ov" id="setup"><div class="card">
+<h2>⚪ 오목</h2>
+<div style="font-size:13px;opacity:.8">🤖 혼자 한 판 — 흑이 먼저 둡니다</div>
+<div class="lbl">판 크기</div>
+<div class="opt" id="optN"><button data-v="15" class="on">15줄</button><button data-v="19">19줄</button></div>
+<div class="lbl">내 돌</div>
+<div class="opt" id="optMe"><button data-v="1" class="on">흑 (선공)</button><button data-v="2">백 (후공)</button></div>
+<div class="lbl">난이도</div>
+<div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div>
+<button id="startBtn" style="width:100%;margin-top:6px;padding:14px">게임 시작</button>
+</div></div>
+
+<div class="ov hide" id="rules"><div class="card rules"><h2>오목 규칙</h2>
+<ol>
+<li><b>흑</b>이 먼저, 번갈아 빈 교차점에 돌을 하나씩 놓아요.</li>
+<li>가로·세로·대각선으로 <b>같은 색 돌 5개 이상</b>을 먼저 이으면 이겨요.</li>
+<li>한 번 놓은 돌은 움직이거나 따낼 수 없어요.</li>
+<li>판이 가득 차면 무승부예요.</li>
+</ol>
+<div class="note">※ 쌍삼·장목 금지가 없는 자유룰이에요. 그래서 선공(흑)이 유리하니, 어려운 상대는 백으로 도전해 보세요.</div>
+<button id="ruleClose" style="width:100%">닫기</button></div></div>
+
+<div class="ov hide" id="win"><div class="card">
+<h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div>
+<button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
+
+<script src="engine.js"></script>
+<script>
+const O=Omok,$=s=>document.querySelector(s);
+const CELL=100,MAR=70;
+const COL={1:{n:"흑",c:"#8aa4ff"},2:{n:"백",c:"#ffd24d"}};
+let sel={n:15,me:1,lv:"normal"},G=null,soundOn=true,ac=null,gen=0;
+
+function beep(f,d,type="sine",v=.07,delay=0){
+  if(!soundOn)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
+    o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}
+}
+const size=()=>MAR*2+(G.n-1)*CELL;
+function blank(n,me,lv){return {n,b:O.newBoard(n),turn:1,me,lv,last:-1,hist:[],over:true,busy:false,msg:"",kind:"",line:null}}
+function newGame(){gen++;G=blank(sel.n,sel.me,sel.lv);G.over=false;setTurnMsg();render();if(G.turn!==G.me)aiTurn()}
+function setTurnMsg(){
+  if(G.over)return;
+  if(G.turn===G.me){G.msg="내 차례 — 놓을 곳을 누르세요";G.kind=""}
+  else{G.msg="🤖 생각하는 중…";G.kind=""}
+}
+function render(){
+  const n=G.n,Z=size(),b=G.b;
+  const star=n===15?[3,7,11]:[3,9,15];
+  const sv=$("#svg");sv.setAttribute("viewBox",`0 0 ${Z} ${Z}`);
+  let h=`<defs>
+    <radialGradient id="gb" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#6a6a6a"/><stop offset=".45" stop-color="#1a1a1a"/><stop offset="1" stop-color="#000"/></radialGradient>
+    <radialGradient id="gw" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#e8e8e8"/><stop offset="1" stop-color="#b9b9b9"/></radialGradient>
+    <linearGradient id="gwood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8c27a"/><stop offset="1" stop-color="#d9ac5d"/></linearGradient></defs>
+    <rect width="${Z}" height="${Z}" fill="url(#gwood)"/><g stroke="#5a3a10" stroke-width="2.6" stroke-linecap="round">`;
+  for(let i=0;i<n;i++){const p=MAR+i*CELL;h+=`<line x1="${MAR}" y1="${p}" x2="${Z-MAR}" y2="${p}"/><line x1="${p}" y1="${MAR}" x2="${p}" y2="${Z-MAR}"/>`}
+  h+=`</g><rect x="${MAR}" y="${MAR}" width="${Z-2*MAR}" height="${Z-2*MAR}" fill="none" stroke="#5a3a10" stroke-width="5"/>`;
+  for(const r of star)for(const c of star)h+=`<circle cx="${MAR+c*CELL}" cy="${MAR+r*CELL}" r="9" fill="#3b2508"/>`;
+  const R=CELL*.46;
+  for(let i=0;i<n*n;i++){
+    const v=b[i];if(!v)continue;const x=MAR+(i%n)*CELL,y=MAR+((i/n)|0)*CELL;
+    h+=`<circle cx="${x+3}" cy="${y+5}" r="${R}" fill="#0006"/><circle cx="${x}" cy="${y}" r="${R}" fill="url(#${v===1?"gb":"gw"})"/>`;
+  }
+  if(G.line)for(const i of G.line){const x=MAR+(i%n)*CELL,y=MAR+((i/n)|0)*CELL;h+=`<circle cx="${x}" cy="${y}" r="${CELL*.2}" fill="#ff3b3b" stroke="#fff" stroke-width="4"/>`}
+  else if(G.last>=0){const x=MAR+(G.last%n)*CELL,y=MAR+((G.last/n)|0)*CELL;h+=`<circle cx="${x}" cy="${y}" r="${CELL*.17}" fill="none" stroke="${b[G.last]===1?"#fff":"#c00"}" stroke-width="7"/>`}
+  sv.innerHTML=h;
+  $("#boardwrap").style.setProperty("--cc",COL[G.turn].c);
+  const opp=3-G.me;
+  const pn=(side,mine)=>{
+    let s=`<div class="ph"><span class="dot" style="--sc:${side===1?"#111":"#f4f4f4"}"></span><b>${mine?"나":"🤖 컴퓨터"}</b> (${COL[side].n})</div>`;
+    if(mine&&!G.over)s+=`<div class="pbtns"><button data-act="undo" class="sec" ${G.hist.length&&!G.busy?"":"disabled"}>무르기</button><button data-act="resign" class="sec">기권</button></div>`;
+    return s;
+  };
+  $("#pTL").innerHTML=pn(opp,false);$("#pBR").innerHTML=pn(G.me,true);
+  for(const [id,side] of [["#pTL",opp],["#pBR",G.me]]){const e=$(id);e.style.setProperty("--pc",COL[side].c);e.classList.toggle("cur",!G.over&&G.turn===side)}
+  const m=$("#bigmsg");m.textContent=G.msg;m.className=G.kind;m.classList.toggle("pulse",G.busy&&!G.over);
+}
+function place(i){
+  const color=G.turn;G.hist.push({b:Int8Array.from(G.b),turn:color,last:G.last});
+  G.b[i]=color;G.last=i;G.turn=3-color;beep(color===1?420:520,.07,"triangle");
+  const line=O.winLine(G.b,G.n,i);
+  if(line)return finish(color,line);
+  if(!G.b.includes(0))return finish(0,null);
+  setTurnMsg();render();if(G.turn!==G.me)aiTurn();
+}
+function aiTurn(){
+  G.busy=true;setTurnMsg();render();const g=gen;
+  setTimeout(()=>{
+    if(g!==gen||!G||G.over)return;
+    const i=O.think(G.b,G.n,G.turn,G.lv);G.busy=false;
+    if(i<0)return finish(0,null);place(i);
+  },250);
+}
+function finish(winner,line){
+  G.over=true;G.busy=false;G.line=line;
+  const win=winner===G.me;
+  G.msg=winner===0?"무승부!":win?"🎉 5목 완성 — 승리!":"🤖 컴퓨터가 5목을 완성했어요";G.kind=win?"good":"bad";render();
+  $("#wt").textContent=winner===0?"🤝 무승부":win?"🎉 승리했어요!":"🤖 컴퓨터 승리";
+  $("#wd").textContent=winner===0?"판이 가득 찼어요":`${COL[winner].n}이 5목을 완성했어요`;
+  beep(win?784:196,.3,"triangle",.1);if(win)beep(1047,.4,"triangle",.1,.25);
+  setTimeout(()=>$("#win").classList.remove("hide"),1100);
+}
+$("#svg").addEventListener("click",e=>{
+  if(!G||G.over||G.busy||G.turn!==G.me)return;
+  const r0=$("#svg").getBoundingClientRect(),Z=size();
+  const x=(e.clientX-r0.left)*Z/r0.width,y=(e.clientY-r0.top)*Z/r0.height;
+  const c=Math.round((x-MAR)/CELL),r=Math.round((y-MAR)/CELL),n=G.n;
+  if(r<0||r>=n||c<0||c>=n)return;
+  if(G.b[r*n+c]){G.msg="이미 돌이 있어요";G.kind="bad";render();return}
+  place(r*n+c);
+});
+$("#stage").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]");if(!b||!G||G.over||G.busy)return;
+  if(b.dataset.act==="undo"){
+    for(let k=G.hist.length-1;k>=0;k--)if(G.hist[k].turn===G.me){const h=G.hist[k];G.b=Int8Array.from(h.b);G.turn=h.turn;G.last=h.last;G.hist.length=k;setTurnMsg();render();return}
+  }else if(b.dataset.act==="resign"&&confirm("기권할까요?")){
+    G.over=true;render();$("#wt").textContent="🏳️ 기권했어요";$("#wd").textContent="컴퓨터가 이겼어요";$("#win").classList.remove("hide");
+  }
+});
+$("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
+$("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+const again=()=>{gen++;$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+$("#newBtn").onclick=again;$("#againBtn").onclick=again;
+function bindOpt(id,key,num){
+  $(id).addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=num?+b.dataset.v:b.dataset.v;
+  });
+}
+bindOpt("#optN","n",true);bindOpt("#optMe","me",true);bindOpt("#optLv","lv");
+$("#startBtn").onclick=()=>{$("#setup").classList.add("hide");newGame()};
+(function(){
+  const d=document,el=d.documentElement,btn=$("#fsBtn");
+  const isFs=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);
+  const sync=()=>{btn.textContent=isFs()?"✕":"⛶"};
+  btn.onclick=async()=>{
+    try{if(isFs()){await(d.exitFullscreen||d.webkitExitFullscreen).call(d)}
+      else{const f=el.requestFullscreen||el.webkitRequestFullscreen;if(!f)throw 0;await f.call(el)}
+    }catch(e){if(G){G.msg="이 환경에서는 전체화면을 쓸 수 없어요";G.kind="bad";render()}}
+  };
+  d.addEventListener("fullscreenchange",sync);d.addEventListener("webkitfullscreenchange",sync);
+})();
+G=blank(15,1,"normal");render();
+(function(){
+  if(/\/(magic-labyrinth|wall-go|janggi|baduk|omok)\/?(index\.html)?$/.test(location.pathname)){
+    const b=document.getElementById("homeBtn");b.style.display="";b.onclick=()=>{location.href="../"};
+  }
+})();
+</script>
+<script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("../sw.js").catch(()=>{}));</script>
+</body>
+</html>

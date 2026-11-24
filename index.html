@@ -58,6 +58,9 @@ const GAMES=[
   {path:"baduk/",icon:"⚫",name:"바둑",sub:"Baduk · 9·13·19줄",color:"#ffd24d",
    desc:"돌을 놓아 더 넓은 집을 차지하는 바둑. 9줄로 가볍게, 19줄로 본격적으로 즐겨요.",
    tags:["1인 가능 🤖","2인","전략","전통","20분"]},
+  {path:"omok/",icon:"⚪",name:"오목",sub:"Omok · 15·19줄",color:"#ff8a5c",
+   desc:"가로·세로·대각선으로 먼저 5개를 이으면 승리! 쉽고 빠른 한 판.",
+   tags:["1인 가능 🤖","2인","전략","10분"]},
 ];
 const grid=document.getElementById("grid");
 grid.innerHTML=GAMES.map(g=>`
