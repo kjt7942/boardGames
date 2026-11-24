@@ -1,7 +1,8 @@
 // 보드게임즈 서비스 워커: 네트워크 우선(항상 최신), 오프라인이면 저장본 사용
-const CACHE = "boardgames-v1";
+const CACHE = "boardgames-v2";
 const FILES = ["./", "index.html", "manifest.json", "net.js", "firebase-config.js",
   "magic-labyrinth/", "magic-labyrinth/index.html", "wall-go/", "wall-go/index.html",
+  "janggi/", "janggi/index.html", "janggi/engine.js", "baduk/", "baduk/index.html", "baduk/engine.js",
   "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => c.add(f).catch(() => {})))).then(() => self.skipWaiting()));
