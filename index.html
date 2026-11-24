@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>보드게임 모음 · boardGames</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="보드게임즈">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>보드게임즈</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%}
@@ -58,5 +64,6 @@ grid.innerHTML=GAMES.map(g=>`
     <span class="go">▶ 시작하기</span>
   </a>`).join("");
 </script>
+<script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </body>
 </html>
