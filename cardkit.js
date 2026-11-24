@@ -15,8 +15,7 @@ window.CK = (function () {
   const red = c => c < 52 && (suit(c) === 1 || suit(c) === 2) || c === 53;
   function card(c, extra, data) {
     if (c < 0) return `<div class="pc back ${extra || ""}" ${data || ""}></div>`;
-    if (c >= 52) return `<div class="pc joker ${c === 53 ? "red" : ""} ${extra || ""}" ${data || ""}><b>🃏</b><i>JOKER</i></div>`;
-    return `<div class="pc ${red(c) ? "red" : ""} ${extra || ""}" ${data || ""}><b>${RK[rank(c)]}</b><i>${SU[suit(c)]}</i></div>`;
+    return `<div class="pc art ${extra || ""}" ${data || ""}>${CA.trump(c)}</div>`;
   }
   const CSS = `
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -44,6 +43,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
 .seat small{display:block;opacity:.8;font-size:12px}
 .pc{width:var(--cw,56px);height:calc(var(--cw,56px)*1.45);background:#fff;color:#222;border-radius:8px;border:2px solid #0004;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;font-size:calc(var(--cw,56px)*.36);line-height:1;box-shadow:0 2px 6px #0007;position:relative}
 .pc b{font-size:1.05em}.pc i{font-style:normal;font-size:1.1em}
+.pc.art{padding:0;overflow:hidden;background:#fff}.pc.art svg{width:100%;height:100%;display:block}
 .pc.red{color:#d8283b}
 .pc.joker i{font-size:.4em;letter-spacing:.5px}
 .pc.back{background:repeating-linear-gradient(45deg,#2a4d9a 0 6px,#1d377a 6px 12px);border:2px solid #fff}
@@ -57,6 +57,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
 `;
   function run(def) {
     document.title = def.title;
+    document.querySelectorAll("body style").forEach(e => document.head.appendChild(e)); // 게임별 스타일 보존
     const st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
     document.documentElement.style.setProperty("--cc", def.color || "#4d7cff");
     const lvHtml = def.levels ? `<div id="lvBox"><div class="lbl">난이도</div><div class="opt" id="optLv"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div></div>` : "";

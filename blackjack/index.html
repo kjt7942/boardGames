@@ -4,7 +4,7 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="../icons/icon-192.png"><title>블랙잭</title></head>
 <body>
-<script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script src="../cardart.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
 <script>
 const {rnd,shuf,card,rank,suit,SU,RK}=CK;
 const ROUNDS=8,BETS=[50,100,200,500];
@@ -107,12 +107,12 @@ CK.run({
  render(S,me,ui,names){
   const showAll=S.phase==="round"||S.over;
   let h=`<div class="seat" style="align-self:center;text-align:center">🎩 딜러${showAll||S.phase==="bet"?"":""}<small>${S.phase==="bet"?"":showAll?"합 "+tot(S.dealer).t:"?"}</small>
-    <div class="row" style="margin-top:4px;min-height:80px">${S.dealer.map((c,i)=>card(!showAll&&i===1?-1:c,"",'style="--cw:46px"')).join("")}</div></div>
+    <div class="row" style="margin-top:4px;min-height:80px">${S.dealer.map((c,i)=>card(!showAll&&i===1?-1:c,"",'style="--cw:60px"')).join("")}</div></div>
     <div class="felt" style="justify-content:flex-start"><div class="row" style="align-items:flex-start;gap:10px">`;
   for(let k=0;k<S.np;k++){const p=(me+k)%S.np,hand=S.hands[p];
    h+=`<div class="seat${S.cur===p&&S.phase==="play"?" cur":""}${p===me?"":""}" style="${p===me?"border-color:#6cf":""}">${names[p]}${p===me&&S.np>1?" (나)":""}
     <small>💰 ${S.chips[p]}${S.bet[p]?` · 🎯 ${S.bet[p]}`:""}</small>
-    <div class="row" style="margin:4px 0;min-height:70px">${hand.map(c=>card(c,"",'style="--cw:40px"')).join("")}</div>
+    <div class="row" style="margin:4px 0;min-height:70px">${hand.map(c=>card(c,"",'style="--cw:54px"')).join("")}</div>
     <small>${hand.length?"합 "+tot(hand).t+(tot(hand).soft?" (소프트)":""):""}</small><small style="color:#ffd24d">${S.phase==="round"?S.res[p]:(S.done[p]&&S.phase==="play"&&hand.length?"멈춤":"")}</small></div>`}
   h+=`</div></div>`;
   const myTurn=S.turn_me;

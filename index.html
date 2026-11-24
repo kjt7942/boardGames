@@ -85,13 +85,16 @@ const GAMES=[
   {path:"memory/",icon:"🐾",name:"짝 맞추기",sub:"Memory Match",color:"#ff8a5c",
    desc:"같은 그림 두 장을 찾아라! 기억력으로 겨루는 카드 뒤집기.",
    tags:["1인 가능 🤖","온라인 🌐","1~4인","기억력","10분"]},
+  {path:"matgo/",icon:"🌸",name:"맞고",sub:"Matgo · 2인 화투",color:"#e0453a",
+   desc:"화투 2인 대결! 뻑·따닥·쪽·쓸에 7점이 넘으면 고 또는 스톱.",
+   tags:["1인 가능 🤖","온라인 🌐","2인","화투","10분"]},
 ];
 const HUBG=[
  {k:"janggi",icon:"♟️",name:"장기",np:[2]},{k:"baduk",icon:"⚫",name:"바둑",np:[2]},
  {k:"omok",icon:"⚪",name:"오목",np:[2]},{k:"chess",icon:"♞",name:"체스",np:[2]},
  {k:"magic-labyrinth",icon:"🧙",name:"마법의 미로",np:[2,3,4]},{k:"wall-go",icon:"🧱",name:"벽바둑",np:[2,3]},
  {k:"onecard",icon:"🃏",name:"원카드",np:[2,3,4]},{k:"thief",icon:"🦹",name:"도둑잡기",np:[2,3,4]},
- {k:"blackjack",icon:"♠️",name:"블랙잭",np:[2,3,4]},{k:"minhwatu",icon:"🎴",name:"민화투",np:[2,3]},
+ {k:"blackjack",icon:"♠️",name:"블랙잭",np:[2,3,4]},{k:"minhwatu",icon:"🎴",name:"민화투",np:[2,3]},{k:"matgo",icon:"🌸",name:"맞고",np:[2]},
  {k:"codebreak",icon:"🔐",name:"코드 추리",np:[2,3,4]},{k:"memory",icon:"🐾",name:"짝 맞추기",np:[2,3,4]}];
 document.getElementById("hubOnline").onclick=()=>BGNet.open({hub:true,game:"*",title:"대기실",games:HUBG,
   sizes:[{np:2,label:"2인"},{np:3,label:"3인"},{np:4,label:"4인"}],onStart(){},onClose(){}});

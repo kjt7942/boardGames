@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../icons/icon-192.png"><title>맞고</title></head>
+<body>
+<style>
+/*HW*//*HW*/.hw{width:56px;height:80px;border-radius:8px;background:transparent;position:relative;display:inline-block;box-shadow:0 2px 5px #0007;color:#222}
+
+.hw .m{position:absolute;left:2px;top:2px;font-weight:800;font-size:10px;background:#fffc;border-radius:4px;padding:0 3px}
+
+.hw .t{position:absolute;left:50%;transform:translateX(-50%);bottom:2px;font-size:10px;font-weight:800;padding:0 5px;border-radius:5px;color:#fff;white-space:nowrap}
+.hw.G .t{background:#c9a000}
+.hw.Y .t{background:#3d8c2f}
+.hw.T .t{background:#d8283b}
+.hw.T.b{background:#dde8fb}.hw.T.b .t{background:#2f5fd0}
+.hw.T.c{background:#e4f5e6}.hw.T.c .t{background:#2a9d4a}
+.hw.T.n{background:#f2ece4}.hw.T.n .t{background:#8a6d4d}
+.hw.P{background:#ece7de}.hw.P .t{background:#8a8a8a}.hw.P.ss .t{background:#222}
+@media (min-width:700px){.hw{width:68px;height:97px}}
+.hw.ok{outline:3px solid #ffd24d;transform:translateY(-8px);cursor:pointer}
+.hw.fl{outline:3px solid #ff7a59}
+.hw.s{width:32px;height:46px}.hw.s .m,.hw.s .t{display:none}
+.cap{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;max-width:340px}
+.gs button{font-size:20px;padding:14px 26px}
+</style>
+<script src="../cardart.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script>
+const {rnd,shuf}=CK;
+const EM=["🌲","🌺","🌸","🌿","💐","🌷","🍀","🌕","🏵️","🍁","🌳","☔"];
+const COMP=[["G","T","P","P"],["Y","T","P","P"],["G","T","P","P"],["Y","T","P","P"],["Y","T","P","P"],["Y","T","P","P"],["Y","T","P","P"],["G","Y","P","P"],["Y","T","P","P"],["Y","T","P","P"],["G","P","P","P"],["G","Y","T","P"]];
+const mo=c=>c>>2,ty=c=>COMP[c>>2][c&3];
+const SS=c=>(mo(c)===10&&(c&3)===1)||(mo(c)===11&&(c&3)===3);
+const DAN=m=>[0,1,2].includes(m)?"홍":[5,8,9].includes(m)?"청":[3,4,6].includes(m)?"초":"";
+const KN={G:"광",Y:"열",T:"띠",P:"피"};
+function hw(c,extra,data){
+  const t=ty(c),m=mo(c),d=t==="T"?DAN(m):"";
+  return `<div class="hw ${t} ${extra||""}" title="${m+1}월 ${t==="P"&&SS(c)?"쌍피":KN[t]}" ${data||""}>${CA.hwatu(c)}</div>`;
+}
+const piV=c=>SS(c)?2:1;
+function score(cards){
+  const G=cards.filter(c=>ty(c)==="G"),Y=cards.filter(c=>ty(c)==="Y"),T=cards.filter(c=>ty(c)==="T"),P=cards.filter(c=>ty(c)==="P");
+  let s=0;const det=[];
+  if(G.length===3){const b=G.some(c=>mo(c)===11);s+=b?2:3;det.push((b?"비광포함 ":"")+"3광")}
+  else if(G.length===4){s+=4;det.push("4광")}else if(G.length===5){s+=15;det.push("5광")}
+  if(Y.length>=5){s+=Y.length-4;det.push("열끗 "+Y.length)}
+  if([1,3,7].every(m=>Y.some(c=>mo(c)===m))){s+=5;det.push("고도리")}
+  if(T.length>=5){s+=T.length-4;det.push("띠 "+T.length)}
+  ["홍","청","초"].forEach(d=>{if(T.filter(c=>DAN(mo(c))===d).length===3){s+=3;det.push(d+"단")}});
+  const pv=P.reduce((a,c)=>a+piV(c),0);if(pv>=10){s+=pv-9;det.push("피 "+pv)}
+  return{s,det,pv,g:G.length};
+}
+const other=p=>1-p;
+function steal(S,p,n){
+  for(let i=0;i<n;i++){
+    const o=S.cap[other(p)];const pis=o.filter(c=>ty(c)==="P").sort((a,b)=>piV(a)-piV(b));
+    if(!pis.length)return;
+    const c=pis[0];o.splice(o.indexOf(c),1);S.cap[p].push(c);
+  }
+}
+function finalPts(S,w){
+  const me=score(S.cap[w]),op=score(S.cap[other(w)]);let base=me.s;const g=S.go[w];
+  base+=Math.min(g,2);let mul=g>=3?Math.pow(2,g-2):1;const bak=[];
+  if(me.pv>=10&&op.pv<=5&&op.pv>=0&&me.pv>0&&op.pv<6){mul*=2;bak.push("피박")}
+  if(me.g>=3&&op.g===0){mul*=2;bak.push("광박")}
+  return{pts:base*mul,base,mul,bak};
+}
+function endGame(S,w){S.over=true;S.win=w;S.fin=w>=0?finalPts(S,w):null}
+CK.run({
+ id:"matgo",title:"맞고",icon:"🌸",color:"#e0453a",np:[2],levels:true,
+ tagline:"화투 2인 대결! 7점이 넘으면 고 또는 스톱 (2명)",
+ rules:[
+  "화투 48장. 각자 <b>10장</b>, 바닥 <b>8장</b>, 나머지는 더미예요. 선(첫 차례)은 나부터예요.",
+  "내 차례에 손패 한 장을 내요. 바닥에 <b>같은 달</b>이 있으면 함께 가져오고, 없으면 바닥에 놓아요. 이어서 더미에서 한 장을 뒤집어 같은 규칙으로 먹어요.",
+  "<b>뻑</b>: 내 패와 뒤집은 패, 바닥 패가 모두 같은 달(3장)이 돼서 못 먹고 쌓이는 것. 나중에 그 3장을 먹으면 <b>상대 피 1장</b>을 가져와요.",
+  "<b>따닥</b>(바닥 2장 + 내 패 + 뒤집은 패로 4장 먹기) · <b>쪽</b>(내가 놓은 패와 뒤집은 패가 짝) · <b>쓸</b>(바닥을 모두 비우기) → 각각 <b>상대 피 1장</b> 가져오기.",
+  "<b>점수</b>: 광 3장 3점(비광 포함 2점)·4광 4점·5광 15점 / 열끗 5장 1점(+1씩)·고도리(2·4·8월 열끗) 5점 / 띠 5장 1점(+1씩)·홍단·청단·초단 각 3점 / 피 10장 1점(+1씩, 쌍피는 2장)",
+  "<b>7점 이상</b>이 되면 <b>스톱</b>(끝내고 승리) 또는 <b>고</b>(계속)를 골라요. 고를 할 때마다 +1, +2점이고 3고부터는 점수가 2배씩 늘어요. 하지만 상대가 먼저 7점을 내면 져요!",
+  "<b>피박</b>(상대 피가 5장 이하) · <b>광박</b>(상대 광 0장)이면 최종 점수가 2배예요. 아무도 못 내고 끝나면 무승부(나가리)예요.",
+  "※ 흔들기·폭탄·총통 같은 특수 규칙은 넣지 않은 쉬운 버전이에요."],
+ init(seed,np){
+  const S={rs:seed,np:2,cur:0,over:false,win:-1,phase:"play",hands:[[],[]],cap:[[],[]],floor:[],stock:[],pp:[],go:[0,0],lg:[-1,-1],last:null,fin:null};
+  S.stock=shuf(S,Array.from({length:48},(_,i)=>i));
+  for(let r=0;r<2;r++){for(let i=0;i<4;i++)S.floor.push(S.stock.pop());for(let p=0;p<2;p++)for(let i=0;i<5;i++)S.hands[p].push(S.stock.pop())}
+  return S;
+ },
+ turn:S=>S.over?-1:S.cur,
+ apply(S,a){
+  const p=a.p;
+  if(a.t==="go"){S.go[p]++;S.lg[p]=score(S.cap[p]).s;S.phase="play";S.cur=other(p);S.last={p,ev:["고!"],cap:[],f:-1};if(!S.hands[S.cur].length&&!S.hands[p].length)endGame(S,p);return}
+  if(a.t==="stop"){endGame(S,p);return}
+  const c=a.c;S.hands[p].splice(S.hands[p].indexOf(c),1);
+  const ev=[];let st=0;const caps=[];
+  const m=mo(c),g=S.floor.filter(x=>mo(x)===m),k=g.length;
+  const rm=arr=>{S.floor=S.floor.filter(x=>!arr.includes(x))};
+  const take=(arr,mon)=>{caps.push(...arr);S.cap[p].push(...arr);if(S.pp.includes(mon)){S.pp=S.pp.filter(x=>x!==mon);st++;ev.push("뻑 먹기")}};
+  let f=-1;
+  f=S.stock.length?S.stock.pop():-1;
+  const fm=f>=0?mo(f):-1;
+  if(k===0){
+    S.floor.push(c);
+    if(f>=0&&fm===m){rm([c]);caps.push(c,f);S.cap[p].push(c,f);st++;ev.push("쪽")}
+    else if(f>=0){const g2=S.floor.filter(x=>mo(x)===fm&&x!==c);
+      if(g2.length){rm(g2);take([f,...g2],fm)}else S.floor.push(f)}
+  }else if(f>=0&&fm===m&&k===1){ // 뻑
+    S.floor.push(c,f);S.pp.push(m);ev.push("뻑");
+  }else if(f>=0&&fm===m&&k===2){rm(g);take([c,f,...g],m);st++;ev.push("따닥")}
+  else{
+    rm(g);take([c,...g],m);
+    if(f>=0){const g2=S.floor.filter(x=>mo(x)===fm);
+      if(g2.length){rm(g2);take([f,...g2],fm)}else S.floor.push(f)}
+  }
+  if(!S.floor.length&&caps.length){st++;ev.push("쓸")}
+  if(st)steal(S,p,st);
+  S.last={p,c,f,ev,cap:caps};
+  const done=!S.hands[0].length&&!S.hands[1].length;
+  const sc=score(S.cap[p]).s;
+  if(done){
+    if(sc>=7)endGame(S,p);
+    else if(S.go[other(p)]>0)endGame(S,other(p));
+    else if(S.go[p]>0)endGame(S,p);
+    else endGame(S,-1);
+    return;
+  }
+  if(sc>=7&&sc>S.lg[p]){S.phase="gs";return}
+  S.cur=other(p);
+ },
+ click(S,me,d){
+  if(S.phase==="gs"){if(d.k==="go")return{t:"go",p:me};if(d.k==="stop")return{t:"stop",p:me};return null}
+  if(d.k==="h")return{t:"play",p:me,c:+d.v};
+ },
+ ai(S,p,lv){
+  if(S.phase==="gs"){
+    const sc=score(S.cap[p]).s,left=S.hands[p].length;
+    if(lv==="easy")return{t:"stop",p};
+    if(lv==="normal")return{t:left>=4&&sc<10&&S.go[p]<2?"go":"stop",p};
+    const osc=score(S.cap[other(p)]);
+    return{t:left>=3&&osc.s<=2&&score(S.cap[other(p)]).pv<8&&S.go[p]<3?"go":"stop",p};
+  }
+  const h=S.hands[p];
+  if(lv==="easy")return{t:"play",p,c:h[Math.floor(Math.random()*h.length)]};
+  const mine=S.cap[p],base=score(mine).s;
+  const worth=c=>({G:20,Y:10,T:5,P:SS(c)?3:1})[ty(c)];
+  const sc=c=>{
+    const g=S.floor.filter(x=>mo(x)===mo(c));let s=0;
+    if(g.length){
+      const add=[c,...g];s=add.reduce((a,x)=>a+worth(x),0)+3;
+      s+=(score([...mine,...add]).s-base)*8;
+      if(g.length===1&&lv==="hard"){s-=1} // 뻑 위험 약간
+      if(g.length===3)s+=10;
+    }else{
+      s=-worth(c)*(lv==="hard"?1.3:.5);
+      if(lv==="hard"){
+        // 상대가 먹기 쉬운 달에 높은 패를 깔지 않음, 같은 달 2장 남기는 건 피함
+        if(S.pp.includes(mo(c)))s-=5;
+        s+=h.filter(x=>x!==c&&mo(x)===mo(c)).length*1.5;
+      }
+    }
+    return s+Math.random();
+  };
+  return{t:"play",p,c:h.reduce((a,b)=>sc(b)>sc(a)?b:a)};
+ },
+ render(S,me,ui,names){
+  const op=other(me),order=["G","Y","T","P"];
+  const capH=p=>`<div class="cap">${S.cap[p].slice().sort((a,b)=>order.indexOf(ty(a))-order.indexOf(ty(b))||a-b).map(c=>hw(c,"s")).join("")}</div>`;
+  const info=p=>{const x=score(S.cap[p]);return `점수 <b>${x.s}</b>${S.go[p]?" · "+S.go[p]+"고":""}${x.det.length?" ("+x.det.join(", ")+")":""}`};
+  let h=`<div class="seat${S.cur===op&&!S.over?" cur":""}" style="align-self:center;max-width:100%">${names[op]} · 손패 ${S.hands[op].length}장<small>${info(op)}</small>${capH(op)}</div>
+   <div class="felt"><div class="row" style="gap:6px;max-width:600px">${S.floor.map(c=>hw(c,S.last&&(S.last.f===c||S.last.c===c)?"fl":"")).join("")||"<span style='opacity:.6'>바닥이 비었어요</span>"}</div>
+   <small style="opacity:.8">더미 ${S.stock.length}장${S.pp.length?" · 뻑 "+S.pp.map(m=>m+1+"월").join(",")+" 🔒":""}</small>`;
+  if(!S.over&&S.phase==="gs"&&S.cur===me)h+=`<div class="row gs"><button data-k="go">🔥 고!</button><button data-k="stop" style="background:#2fbf71">✋ 스톱</button></div>`;
+  h+=`</div><div class="seat${S.cur===me&&!S.over?" cur":""}" style="align-self:center;max-width:100%">${names[me]} (나)<small>${info(me)}</small>${capH(me)}</div>
+   <div class="hand">${S.hands[me].slice().sort((a,b)=>a-b).map(c=>{const ok=S.floor.some(x=>mo(x)===mo(c));return hw(c,S.cur===me&&!S.over&&S.phase==="play"?(ok?"ok":""):"",`data-k="h" data-v="${c}"`)}).join("")}</div>`;
+  return h;
+ },
+ msg(S,me,names){
+  if(S.over)return[S.win===me?"🎉 승리!":S.win<0?"🤝 나가리 (무승부)":names[S.win]+" 승리",S.win===me?"good":"bad"];
+  const L=S.last;let t="";
+  if(L)t=`${names[L.p]}: ${L.ev.length?L.ev.join(" · "):L.cap&&L.cap.length?"먹음 "+L.cap.length+"장":"바닥에 놓음"}${L.ev.length&&L.cap&&L.cap.length?" ("+L.cap.length+"장)":""}`;
+  if(S.phase==="gs")return S.cur===me?[(t?t+"\n":"")+score(S.cap[me]).s+"점! 고 할까요, 스톱 할까요?","warn"]:[names[S.cur]+"이(가) 고/스톱을 고르는 중…",""];
+  if(S.cur===me)return[(t?t+"\n":"")+"같은 달이 있는 패(노란 테두리)를 내면 먹어요","warn"];
+  return[(t?t+" · ":"")+names[S.cur]+" 차례",""];
+ },
+ result(S,me,names){
+  if(S.win<0)return["🤝 나가리","아무도 7점을 내지 못했어요"];
+  const f=S.fin;
+  return[S.win===me?"🎉 승리했어요!":"😵 "+names[S.win]+" 승리",`<div style="text-align:left">최종 <b>${f.pts}점</b> (기본 ${f.base}점${S.go[S.win]?" · "+S.go[S.win]+"고":""}${f.bak.length?" · "+f.bak.join("·")+" ×2":""})<br>`+[0,1].map(p=>`${names[p]}: ${score(S.cap[p]).s}점 ${score(S.cap[p]).det.join(", ")}`).join("<br>")+"</div>"];
+ }
+});
+</script></body></html>
