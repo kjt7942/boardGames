@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../icons/icon-192.png"><title>블랙잭</title></head>
+<body>
+<script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script>
+const {rnd,shuf,card,rank,suit,SU,RK}=CK;
+const ROUNDS=8,BETS=[50,100,200,500];
+const val=c=>{const r=rank(c);return r===1?1:r>=10?10:r};
+function tot(h){let s=0,a=0;h.forEach(c=>{s+=val(c);if(rank(c)===1)a++});let soft=false;if(a&&s+10<=21){s+=10;soft=true}return{t:s,soft}}
+const isBJ=h=>h.length===2&&tot(h).t===21;
+function draw(S){if(S.shoe.length<20)S.shoe=shuf(S,[].concat(...[0,1,2,3].map(()=>Array.from({length:52},(_,i)=>i))));return S.shoe.pop()}
+function newRound(S){
+  S.phase="bet";S.bet=Array(S.np).fill(null);S.hand=S.hands=Array.from({length:S.np},()=>[]);S.dealer=[];S.done=Array(S.np).fill(false);S.res=Array(S.np).fill("");S.dbl=Array(S.np).fill(false);
+  S.chips.forEach((c,i)=>{if(c<=0){S.bet[i]=0;S.done[i]=true}});
+  S.round++;
+}
+function nextPlayer(S){for(let i=0;i<S.np;i++)if(!S.done[i])return i;return -1}
+function dealerPlay(S){
+  const anyLive=S.hands.some((h,i)=>S.bet[i]>0&&tot(h).t<=21&&!isBJ(h));
+  while(anyLive&&tot(S.dealer).t<17)S.dealer.push(draw(S));
+  const dt=tot(S.dealer).t,dbj=isBJ(S.dealer);
+  for(let i=0;i<S.np;i++){
+    const b=S.bet[i];if(!b){S.res[i]="";continue}
+    const h=S.hands[i],pt=tot(h).t;let d=0,t="";
+    if(pt>21){d=-b;t="버스트 💥"}
+    else if(isBJ(h)&&!dbj){d=Math.floor(b*1.5);t="블랙잭! 🎉"}
+    else if(dbj&&!isBJ(h)){d=-b;t="딜러 블랙잭"}
+    else if(dt>21){d=b;t="딜러 버스트 승리"}
+    else if(pt>dt){d=b;t="승리"}
+    else if(pt<dt){d=-b;t="패배"}
+    else{d=0;t="무승부"}
+    S.chips[i]+=d;S.res[i]=t+(d?` ${d>0?"+":""}${d}`:"");
+  }
+  S.phase="round";
+}
+function afterAct(S){const n=nextPlayer(S);if(n<0)dealerPlay(S);else S.cur=n}
+CK.run({
+ id:"blackjack",title:"블랙잭",icon:"♠️",color:"#2fbf71",np:[1,2,3,4],onp:[2,3,4],levels:true,
+ tagline:"21에 가깝게! 딜러를 이겨 칩을 모으세요 (8판 승부)",
+ rules:[
+  "카드 숫자의 합이 <b>21을 넘지 않으면서 딜러보다 크면</b> 이겨요. (J·Q·K=10, A=1 또는 11)",
+  "먼저 <b>베팅</b>(칩 걸기)을 하면 카드가 2장씩 나와요. 딜러의 카드 1장은 뒤집혀 있어요.",
+  "내 차례에 <b>히트</b>(한 장 더) · <b>스탠드</b>(멈춤) · <b>더블</b>(처음 2장일 때 베팅 2배로 딱 한 장만 더)",
+  "21을 넘으면 <b>버스트</b>로 바로 져요. 처음 2장이 A+10점 카드면 <b>블랙잭</b>(1.5배 지급).",
+  "딜러는 합이 <b>16 이하면 반드시 히트</b>, 17 이상이면 멈춰요. 같은 점수는 무승부.",
+  "시작 칩 1,000개로 <b>8판</b>을 하고 칩이 가장 많은 사람이 승리! (칩이 바닥나면 탈락)",
+  "'혼자'는 나 + 컴퓨터 친구 0~3명이 같은 딜러와 겨뤄요."],
+ init(seed,np){
+  const S={rs:seed,np,over:false,round:0,chips:Array(np).fill(1000),shoe:[],cur:0,phase:"bet",ROUNDS};
+  newRound(S);return S;
+ },
+ turn(S){
+  if(S.over)return -1;
+  if(S.phase==="bet"){for(let i=0;i<S.np;i++)if(S.bet[i]==null)return i;}
+  if(S.phase==="play")return S.cur;
+  return 0;
+ },
+ apply(S,a){
+  const p=a.p;
+  if(a.t==="bet"){
+    S.bet[p]=Math.min(a.v,S.chips[p]);
+    if(S.bet.every(b=>b!=null)){
+      for(let k=0;k<2;k++){for(let i=0;i<S.np;i++)if(S.bet[i]>0)S.hands[i].push(draw(S));S.dealer.push(draw(S))}
+      S.phase="play";
+      for(let i=0;i<S.np;i++)if(S.bet[i]>0&&(tot(S.hands[i]).t===21))S.done[i]=true;
+      afterAct(S);
+    }
+  }else if(a.t==="hit"){
+    S.hands[p].push(draw(S));const t=tot(S.hands[p]).t;
+    if(t>=21)S.done[p]=true;afterAct(S);
+  }else if(a.t==="stand"){S.done[p]=true;afterAct(S)}
+  else if(a.t==="dbl"){S.bet[p]*=2;S.hands[p].push(draw(S));S.done[p]=true;afterAct(S)}
+  else if(a.t==="next"){
+    if(S.round>=ROUNDS||S.chips.every(c=>c<50)){S.over=true;return}
+    newRound(S);
+  }
+ },
+ click(S,me,d){
+  if(d.k==="bet")return{t:"bet",p:me,v:+d.v};
+  if(d.k==="hit")return{t:"hit",p:me};
+  if(d.k==="stand")return{t:"stand",p:me};
+  if(d.k==="dbl")return{t:"dbl",p:me};
+  if(d.k==="next")return{t:"next",p:me};
+ },
+ ai(S,p,lv){
+  if(S.phase==="bet"){
+    const c=S.chips[p];let v;
+    if(lv==="easy")v=BETS[Math.floor(Math.random()*4)];
+    else if(lv==="normal")v=c>=300?100:50;
+    else v=c>1300?200:c<400?50:100;
+    return{t:"bet",p,v:Math.min(v,c)};
+  }
+  if(S.phase==="round")return{t:"next",p};
+  const h=S.hands[p],{t,soft}=tot(h),up=val(S.dealer[0]);
+  if(lv==="easy")return{t:Math.random()<(t<15?.85:t<18?.35:.05)?"hit":"stand",p};
+  if(lv==="normal")return{t:t<17?"hit":"stand",p};
+  if(h.length===2&&S.chips[p]>=S.bet[p]*2&&!soft&&(t===11||(t===10&&up<10)))return{t:"dbl",p};
+  if(soft)return{t:t<=17?"hit":"stand",p};
+  if(t>=17)return{t:"stand",p};
+  if(t>=13)return{t:up<=6?"stand":"hit",p};
+  if(t===12)return{t:up>=4&&up<=6?"stand":"hit",p};
+  return{t:"hit",p};
+ },
+ render(S,me,ui,names){
+  const showAll=S.phase==="round"||S.over;
+  let h=`<div class="seat" style="align-self:center;text-align:center">🎩 딜러${showAll||S.phase==="bet"?"":""}<small>${S.phase==="bet"?"":showAll?"합 "+tot(S.dealer).t:"?"}</small>
+    <div class="row" style="margin-top:4px;min-height:80px">${S.dealer.map((c,i)=>card(!showAll&&i===1?-1:c,"",'style="--cw:46px"')).join("")}</div></div>
+    <div class="felt" style="justify-content:flex-start"><div class="row" style="align-items:flex-start;gap:10px">`;
+  for(let k=0;k<S.np;k++){const p=(me+k)%S.np,hand=S.hands[p];
+   h+=`<div class="seat${S.cur===p&&S.phase==="play"?" cur":""}${p===me?"":""}" style="${p===me?"border-color:#6cf":""}">${names[p]}${p===me&&S.np>1?" (나)":""}
+    <small>💰 ${S.chips[p]}${S.bet[p]?` · 🎯 ${S.bet[p]}`:""}</small>
+    <div class="row" style="margin:4px 0;min-height:70px">${hand.map(c=>card(c,"",'style="--cw:40px"')).join("")}</div>
+    <small>${hand.length?"합 "+tot(hand).t+(tot(hand).soft?" (소프트)":""):""}</small><small style="color:#ffd24d">${S.phase==="round"?S.res[p]:(S.done[p]&&S.phase==="play"&&hand.length?"멈춤":"")}</small></div>`}
+  h+=`</div></div>`;
+  const myTurn=S.turn_me;
+  if(!S.over&&S.phase==="bet"&&S.bet[me]==null)h+=`<div class="row">${BETS.filter(b=>b<=S.chips[me]||b===BETS[0]).map(b=>`<button data-k="bet" data-v="${b}">🎯 ${b}</button>`).join("")}${S.chips[me]<BETS[0]?`<button data-k="bet" data-v="${S.chips[me]}">올인 ${S.chips[me]}</button>`:""}</div>`;
+  if(!S.over&&S.phase==="play"&&S.cur===me){const can=S.hands[me].length===2&&S.chips[me]>=S.bet[me]*2;
+   h+=`<div class="row"><button data-k="hit">➕ 히트</button><button data-k="stand" class="sec">✋ 스탠드</button><button data-k="dbl"${can?"":" disabled"}>✖️2 더블</button></div>`}
+  if(!S.over&&S.phase==="round")h+=`<div class="row">${me===0?`<button data-k="next">${S.round>=ROUNDS?"결과 보기":"▶ 다음 판 ("+S.round+"/"+ROUNDS+")"}</button>`:`<span style="opacity:.8">방장이 다음 판을 시작해요…</span>`}</div>`;
+  return h;
+ },
+ msg(S,me,names){
+  const r=`${S.round}/${ROUNDS}판 · `;
+  if(S.over)return["게임 끝!","good"];
+  if(S.phase==="bet")return S.bet[me]==null?[r+"베팅할 칩을 고르세요","warn"]:[r+"다른 사람의 베팅을 기다려요…",""];
+  if(S.phase==="play")return S.cur===me?[r+"히트할까요, 멈출까요?","warn"]:[r+names[S.cur]+" 차례",""];
+  return[r+"결과: "+S.res[me],"good"];
+ },
+ result(S,me,names){
+  const o=S.chips.map((c,i)=>({c,i})).sort((a,b)=>b.c-a.c);
+  const best=o[0].c;const won=S.chips[me]===best;
+  return[won?"🎉 칩 1등!":"게임 끝","<div style='text-align:left'>"+o.map((x,k)=>`${k+1}위 ${names[x.i]} — 💰 ${x.c}`).join("<br>")+"</div>"];
+ }
+});
+</script></body></html>

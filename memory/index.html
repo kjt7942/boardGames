@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../icons/icon-192.png"><title>짝 맞추기</title></head>
+<body>
+<style>
+.mg{display:grid;gap:8px;justify-content:center;margin:auto}
+.mc{width:var(--s,64px);height:var(--s,64px);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:calc(var(--s,64px)*.55);border:3px solid #fff5;background:repeating-linear-gradient(45deg,#2a4d9a 0 8px,#1d377a 8px 16px);box-shadow:0 3px 8px #0008;transition:transform .15s}
+.mc.o{background:#fff;border-color:#ffd24d}
+.mc.m{background:#ffffff22;border-color:var(--oc);opacity:.75}
+.mc.cl{cursor:pointer}.mc.cl:active{transform:scale(.94)}
+@media (max-width:700px){.mc{--s:48px}}
+</style>
+<script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script>
+const {rnd,shuf}=CK;
+const EM=["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔"];
+const PC=["#6cf","#ff8a5c","#8dffb4","#ffd24d"];
+CK.run({
+ id:"memory",title:"짝 맞추기",icon:"🐾",color:"#ff8a5c",np:[1,2,3,4],onp:[2,3,4],levels:true,
+ tagline:"같은 그림 두 장을 찾아라! 기억력 대결 (1~4명)",
+ rules:[
+  "카드는 모두 뒤집혀 있어요. 내 차례에 카드를 <b>두 장</b> 뒤집어요.",
+  "두 장이 <b>같은 그림</b>이면 내가 가져가고 <b>한 번 더</b> 뒤집어요!",
+  "다르면 잠깐 보여 준 뒤 다시 뒤집히고 다음 사람 차례예요. <b>위치를 잘 기억</b>하세요.",
+  "모든 짝을 찾으면 끝나요. <b>짝을 가장 많이 가져간 사람이 승리</b>!",
+  "'혼자'에서 인원을 1명으로 하면 혼자서 연습할 수 있어요 (컴퓨터 없이 시간 재기용). 컴퓨터 난이도는 기억력이 달라요."],
+ init(seed,np){
+  const pairs=np<=2?10:12;
+  const S={rs:seed,np,cur:0,over:false,cards:[],st:[],own:[],sc:Array(np).fill(0),f1:-1,pend:[],log:[],mem:{},ptr:{},moves:0};
+  const em=shuf(S,EM.slice()).slice(0,pairs);
+  S.cards=shuf(S,[...em,...em]);S.st=S.cards.map(()=>0);S.own=S.cards.map(()=>-1);
+  return S;
+ },
+ turn:S=>S.over?-1:S.cur,
+ apply(S,a){
+  const p=a.p,i=a.i;
+  if(S.pend.length){S.pend.forEach(k=>S.st[k]=0);S.pend=[]}
+  if(S.st[i]!==0)return;
+  S.st[i]=1;S.log.push(i);
+  if(S.f1<0){S.f1=i;return}
+  const j=S.f1;S.f1=-1;S.moves++;
+  if(S.cards[i]===S.cards[j]){
+    S.st[i]=S.st[j]=2;S.own[i]=S.own[j]=p;S.sc[p]++;S.lastOk=p;
+    if(S.st.every(x=>x===2))S.over=true;
+  }else{S.pend=[i,j];S.cur=(p+1)%S.np;S.lastOk=-1}
+ },
+ click(S,me,d){if(d.k==="c"&&S.st[+d.v]===0)return{t:"flip",p:me,i:+d.v}},
+ ai(S,p,lv){
+  const rate=lv==="easy"?.25:lv==="normal"?.65:.97;
+  const mem=S.mem[p]||(S.mem[p]={});const ptr=S.ptr[p]||0;
+  for(let k=ptr;k<S.log.length;k++){if(Math.random()<rate)mem[S.log[k]]=S.cards[S.log[k]]}
+  S.ptr[p]=S.log.length;
+  const valid=i=>S.st[i]===0;
+  const unk=[...S.cards.keys()].filter(i=>valid(i)&&!(i in mem));
+  const rand=a=>a[Math.floor(Math.random()*a.length)];
+  const kn=Object.keys(mem).map(Number).filter(valid);
+  if(S.f1>=0){
+    const m=kn.find(i=>i!==S.f1&&mem[i]===S.cards[S.f1]);
+    if(m!=null)return{t:"flip",p,i:m};
+    const pool=unk.filter(i=>i!==S.f1);
+    return{t:"flip",p,i:pool.length?rand(pool):rand(kn.filter(i=>i!==S.f1))};
+  }
+  for(const i of kn){const j=kn.find(x=>x!==i&&mem[x]===mem[i]);if(j!=null)return{t:"flip",p,i}}
+  return{t:"flip",p,i:unk.length?rand(unk):rand(kn)};
+ },
+ render(S,me,ui,names){
+  const n=S.cards.length,cols=n===20?5:6;
+  let h=`<div class="row">${names.map((nm,p)=>`<div class="seat${S.cur===p&&!S.over?" cur":""}" style="border-color:${PC[p]}">${nm}${p===me&&S.np>1?" (나)":""}<small>🏅 ${S.sc[p]}쌍</small></div>`).join("")}</div>
+   <div class="felt"><div class="mg" style="grid-template-columns:repeat(${cols},auto)">`;
+  const my=S.cur===me&&!S.over;
+  S.cards.forEach((c,i)=>{
+   const st=S.st[i];
+   if(st===2)h+=`<div class="mc m" style="--oc:${PC[S.own[i]]}">${c}</div>`;
+   else if(st===1)h+=`<div class="mc o">${c}</div>`;
+   else h+=`<div class="mc${my?" cl":""}" ${my?`data-k="c" data-v="${i}"`:""}></div>`;
+  });
+  return h+`</div></div>`;
+ },
+ msg(S,me,names){
+  if(S.over)return["모든 짝을 찾았어요!","good"];
+  let t=S.lastOk>=0&&S.lastOk!=null&&S.moves?`${names[S.lastOk]}: 짝 성공! 한 번 더`:"";
+  if(S.pend.length)t=`${names[(S.cur+S.np-1)%S.np]}: 아쉽게 실패`;
+  if(S.cur===me)return[(t?t+"\n":"")+"카드를 두 장 뒤집어 보세요","warn"];
+  return[(t?t+" · ":"")+names[S.cur]+" 차례",""];
+ },
+ result(S,me,names){
+  const best=Math.max(...S.sc),w=S.sc.map((x,i)=>x===best?i:-1).filter(i=>i>=0);
+  return[S.np===1?`🎉 ${S.moves}번 만에 완성!`:w.includes(me)?(w.length>1?"🤝 공동 1등!":"🎉 승리했어요!"):"😵 "+names[w[0]]+" 승리",
+   "<div style='text-align:left'>"+S.sc.map((x,i)=>`${names[i]}: ${x}쌍`).join("<br>")+"</div>"];
+ }
+});
+</script></body></html>

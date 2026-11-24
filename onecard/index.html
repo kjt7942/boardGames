@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../icons/icon-192.png"><title>원카드</title></head>
+<body>
+<script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script>
+const {rnd,shuf,card,suit,rank,SU,RK}=CK;
+const DMG=c=>c===52?5:c===53?7:c===0?5:c%13===0?3:c%13===1?2:0;
+function topc(S){return S.dis[S.dis.length-1]}
+function legal(S,c){
+  if(S.forced!=null&&c!==S.forced)return false;
+  const t=topc(S);
+  if(S.pend>0){
+    if(!DMG(c))return false;
+    if(c>=52||t>=52)return true;
+    return rank(c)===rank(t)||suit(c)===S.suit;
+  }
+  if(c>=52)return true;
+  return suit(c)===S.suit||(t<52&&rank(c)===rank(t));
+}
+function draw1(S,p){
+  if(!S.deck.length){const t=S.dis.pop();S.deck=shuf(S,S.dis);S.dis=[t]}
+  if(S.deck.length)S.hands[p].push(S.deck.pop());
+}
+const BANK=15;
+function fewest(S){let b=0;S.hands.forEach((h,i)=>{if(h.length<S.hands[b].length)b=i});return b}
+const nx=(S,p,k)=>((p+S.dir*k)%S.np+S.np*8)%S.np;
+CK.run({
+ id:"onecard",title:"원카드",icon:"🃏",color:"#e0453a",np:[2,3,4],levels:true,
+ tagline:"손패를 먼저 모두 내는 사람이 승리! (2~4명)",
+ rules:[
+  "카드를 <b>5장</b>씩 받아요. 앞 카드와 <b>같은 무늬 또는 같은 숫자</b>의 카드를 한 장 내요.",
+  "낼 수 있는 카드가 없으면 더미에서 <b>1장</b>을 가져와요. 가져온 카드를 낼 수 있으면 바로 내도 되고, 아니면 차례가 넘어가요.",
+  "<b>공격 카드</b>: 2(+2장) · A(+3장, ♠A는 +5장) · 조커(+5장/컬러 +7장). 공격을 받으면 <b>공격 카드로 막아</b> 다음 사람에게 합쳐서 넘기거나, 쌓인 만큼 가져와야 해요. (막을 수 있는 카드: 같은 숫자나 같은 무늬의 공격 카드, 조커)",
+  "<b>J</b> 다음 사람 건너뛰기 · <b>Q</b> 방향 바꾸기(2명이면 한 번 더) · <b>K</b> 한 번 더 내기 · <b>7</b> 무늬 바꾸기(원하는 무늬 선택)",
+  "손에 카드가 1장 남으면 자동으로 <b>원카드!</b>가 외쳐져요. 먼저 손패를 모두 내면 승리! 손패가 <b>15장 이상</b>이 되면 게임이 끝나고 카드가 가장 적은 사람이 이겨요."],
+ init(seed,np){
+  const S={rs:seed,np,dir:1,cur:0,pend:0,forced:null,over:false,win:-1,last:"",hands:[],dis:[],deck:[]};
+  S.deck=shuf(S,Array.from({length:54},(_,i)=>i));
+  for(let p=0;p<np;p++){S.hands.push([]);for(let i=0;i<5;i++)S.hands[p].push(S.deck.pop())}
+  let c;do{c=S.deck.pop();if(c>=52||[0,1,10,11,12,6].includes(c%13)){S.deck.unshift(c);c=-1}}while(c<0);
+  S.dis.push(c);S.suit=suit(c);return S;
+ },
+ turn:S=>S.over?-1:S.cur,
+ apply(S,a){
+  const p=a.p;
+  if(a.t==="draw"){
+    const n=S.pend>0?S.pend:1;for(let i=0;i<n;i++)draw1(S,p);
+    S.last=`${p}|draw|${n}`;
+    if(S.hands[p].some(c=>c>=0)&&S.hands[p].length>=BANK){S.over=true;S.win=fewest(S);return}
+    if(S.pend===0){const c=S.hands[p][S.hands[p].length-1];S.pend=0;if(c!=null&&legal(S,c)){S.forced=c;return}}
+    S.pend=0;S.cur=nx(S,p,1);return;
+  }
+  if(a.t==="pass"){S.forced=null;S.cur=nx(S,p,1);S.last=`${p}|pass|0`;return}
+  S.forced=null;
+  const h=S.hands[p];h.splice(h.indexOf(a.c),1);S.dis.push(a.c);
+  if(a.c<52)S.suit=suit(a.c);
+  const r=rank(a.c),d=DMG(a.c);if(d)S.pend+=d;
+  let again=false,skip=0;
+  if(r===11)skip=1;
+  if(r===12){S.dir*=-1;if(S.np===2)again=true}
+  if(r===13)again=true;
+  if(r===7&&a.suit!=null)S.suit=a.suit;
+  S.last=`${p}|play|${a.c}`;
+  if(!h.length){S.over=true;S.win=p;return}
+  S.cur=again?p:nx(S,p,1+skip);
+ },
+ click(S,me,d,ui){
+  if(d.k==="draw"){ui.pick=null;return S.forced!=null?{t:"pass",p:me}:{t:"draw",p:me}}
+  if(d.k==="suit"){const c=ui.pick;ui.pick=null;return{t:"play",p:me,c,suit:+d.v}}
+  if(d.k==="card"){
+    const c=+d.v;if(!legal(S,c))return null;
+    if(c<52&&rank(c)===7){ui.pick=c;return"ui"}
+    ui.pick=null;return{t:"play",p:me,c};
+  }
+ },
+ ai(S,p,lv){
+  const h=S.hands[p],pl=h.filter(c=>legal(S,c));
+  if(!pl.length)return S.forced!=null?{t:"pass",p}:{t:"draw",p};
+  if(lv==="easy"&&Math.random()<.35)return S.forced!=null?{t:"pass",p}:{t:"draw",p};
+  const nextH=S.hands[nx(S,p,1)].length;
+  const cnt=[0,0,0,0];h.forEach(c=>{if(c<52)cnt[suit(c)]++});
+  const bestSuit=()=>{let b=0;for(let i=1;i<4;i++)if(cnt[i]>cnt[b])b=i;return b};
+  let c;
+  if(lv==="easy")c=pl[Math.floor(Math.random()*pl.length)];
+  else{
+    const sc=x=>{
+      let s=Math.random()*3;
+      const r=rank(x),d=DMG(x);
+      if(d)s+=nextH<=3?(lv==="hard"?30:12):(lv==="hard"?-4:2);
+      if(S.pend>0)s+=d*(lv==="hard"?2:1);
+      if(r>=11&&r<=13)s+=nextH<=2?18:(lv==="hard"?-2:1);
+      if(x<52&&r===7)s+=h.length<=2?10:(lv==="hard"?-3:0);
+      if(x<52)s+=cnt[suit(x)]*(lv==="hard"?1.5:.6);
+      if(h.length===2)s+=5;
+      return s;
+    };
+    c=pl.reduce((a,b)=>sc(b)>sc(a)?b:a);
+  }
+  const o={t:"play",p,c};
+  if(c<52&&rank(c)===7){o.suit=lv==="easy"?Math.floor(Math.random()*4):bestSuit()}
+  return o;
+ },
+ render(S,me,ui,names){
+  let h=`<div class="row">`;
+  for(let k=1;k<S.np;k++){const p=(me+k)%S.np,n=S.hands[p].length;
+   h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}">${names[p]}<small>${n}장${n===1?" · 원카드!":""}</small><div style="margin-top:4px">${card(-1,"",'style="--cw:30px"')}</div></div>`}
+  h+=`</div><div class="felt"><div class="row" style="gap:18px">
+   <div data-k="draw" style="cursor:pointer;text-align:center">${card(-1,S.cur===me&&!S.over?"ok":"")}<small style="display:block;margin-top:4px;opacity:.8">${S.forced!=null&&S.cur===me?"넘기기":"더미 "+S.deck.length}</small></div>
+   <div style="text-align:center">${card(topc(S))}<small style="display:block;margin-top:4px">무늬 <b style="font-size:20px;color:${S.suit===1||S.suit===2?"#ff7b86":"#fff"}">${SU[S.suit]}</b> ${S.dir>0?"↻":"↺"}</small></div></div>`;
+  if(S.pend>0)h+=`<div style="color:#ff9a9a;font-weight:800">⚔️ 공격 ${S.pend}장 대기!</div>`;
+  if(ui.pick!=null)h+=`<div class="row">${[0,1,2,3].map(s=>`<button data-k="suit" data-v="${s}" style="font-size:26px;background:#fff;color:${s===1||s===2?"#d8283b":"#222"}">${SU[s]}</button>`).join("")}</div>`;
+  h+=`</div><div class="seat${S.cur===me&&!S.over?" cur":""}" style="align-self:center">${names[me]} · ${S.hands[me].length}장</div>
+   <div class="hand">${S.hands[me].slice().sort((a,b)=>a-b).map(c=>card(c,S.cur===me&&!S.over&&legal(S,c)?"ok":"dim",`data-k="card" data-v="${c}"`)).join("")}</div>`;
+  return h;
+ },
+ msg(S,me,names){
+  if(S.over)return[S.win===me?"🎉 승리!":`${names[S.win]} 승리`,S.win===me?"good":"bad"];
+  const [p,k,v]=S.last?S.last.split("|"):[];
+  let t="";
+  if(k==="play"){const c=+v,r=rank(c);t=`${names[p]}: ${c>=52?"조커":SU[suit(c)]+RK[r]}${r===7?" (무늬 "+SU[S.suit]+")":""}${r===11?" · 건너뛰기":r===12?" · 방향 바뀜":r===13?" · 한 번 더":""}`;if(S.hands[+p].length===1)t+=" · 원카드!"}
+  else if(k==="pass")t=`${names[p]}: 넘김`;
+  else if(k==="draw")t=`${names[p]}: ${v}장 가져옴`;
+  if(S.cur===me)return[(t?t+"\n":"")+(S.forced!=null?"가져온 카드를 내거나 더미를 눌러 넘기세요":S.pend>0?"공격을 막거나 더미를 눌러 가져오세요":"낼 카드를 고르거나 더미를 눌러요"),"warn"];
+  return[(t?t+" · ":"")+names[S.cur]+" 차례",""];
+ },
+ result:(S,me,names)=>[S.win===me?"🎉 승리했어요!":"😵 "+names[S.win]+" 승리",S.hands[S.win].length?"손패가 너무 많아져 끝났어요 — 카드가 가장 적은 사람이 승리":"손패를 가장 먼저 모두 낸 사람이 이겨요"]
+});
+</script></body></html>

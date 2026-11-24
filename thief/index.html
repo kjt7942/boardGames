@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../icons/icon-192.png"><title>도둑잡기</title></head>
+<body>
+<script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script>
+const {rnd,shuf,card,rank,suit,SU,RK}=CK;
+const JK=52;
+function dropPairs(S,p){ // 같은 숫자 2장씩 버리기
+  const h=S.hands[p],seen={};const keep=[];
+  h.forEach(c=>{const r=c===JK?0:rank(c);if(c!==JK&&seen[r]!=null){keep.splice(keep.indexOf(seen[r]),1);delete seen[r];S.pairs[p]++}else{if(c!==JK)seen[r]=c;keep.push(c)}});
+  S.hands[p]=shuf(S,keep);
+}
+const alive=S=>S.hands.map((h,i)=>h.length?i:-1).filter(i=>i>=0);
+function nextAlive(S,p){for(let k=1;k<=S.np;k++){const q=(p+k)%S.np;if(S.hands[q].length)return q}return -1}
+function check(S){const a=alive(S);if(a.length<=1){S.over=true;S.loser=a.length?a[0]:S.last_p;}}
+CK.run({
+ id:"thief",title:"도둑잡기",icon:"🦹",color:"#8e5cf0",np:[2,3,4],levels:false,
+ tagline:"조커를 끝까지 들고 있으면 도둑! 짝을 모두 버리세요 (2~4명)",
+ rules:[
+  "카드 52장 + <b>조커 1장</b>을 모두 나눠 가져요. 처음에 <b>같은 숫자 2장</b>(무늬는 상관없음)은 짝으로 모두 버려요.",
+  "차례가 오면 <b>다음 사람의 손패에서 카드 한 장</b>을 뽑아 와요(뒷면만 보여요!).",
+  "뽑은 카드가 내 손패와 <b>같은 숫자면 짝으로 버리고</b>, 아니면 그냥 손에 들어요.",
+  "손패를 모두 버린 사람은 먼저 탈출! 마지막까지 <b>조커를 든 사람이 도둑(패배)</b>이에요.",
+  "카드 위치는 계속 섞이니 표정(?)으로 조커를 피해 뽑아 보세요 😏"],
+ init(seed,np){
+  const S={rs:seed,np,cur:0,over:false,loser:-1,hands:[],pairs:Array(np).fill(0),last:"",last_p:0};
+  const d=shuf(S,Array.from({length:53},(_,i)=>i));
+  for(let p=0;p<np;p++)S.hands.push([]);
+  d.forEach((c,i)=>S.hands[i%np].push(c));
+  for(let p=0;p<np;p++)dropPairs(S,p);
+  check(S);
+  if(!S.over&&!S.hands[0].length)S.cur=nextAlive(S,0);
+  return S;
+ },
+ turn:S=>S.over?-1:S.cur,
+ apply(S,a){
+  const p=a.p,t=nextAlive(S,p);
+  const c=S.hands[t].splice(a.i,1)[0];
+  const r=c===JK?0:rank(c);
+  const m=c!==JK&&S.hands[p].find(x=>x!==JK&&rank(x)===r);
+  if(m!=null&&m!==false){S.hands[p].splice(S.hands[p].indexOf(m),1);S.pairs[p]++}
+  else S.hands[p].push(c);
+  S.hands[p]=shuf(S,S.hands[p]);
+  S.last=`${p}|${t}|${c}|${m!=null&&m!==false?1:0}`;S.last_p=p;
+  check(S);if(S.over)return;
+  S.cur=nextAlive(S,p);
+  if(S.cur===p)S.over=true,S.loser=p;
+ },
+ click(S,me,d){if(d.k==="take")return{t:"take",p:me,i:+d.v}},
+ ai(S,p,lv){const t=nextAlive(S,p);return{t:"take",p,i:Math.floor(Math.random()*S.hands[t].length)}},
+ render(S,me,ui,names){
+  const tg=S.over?-1:nextAlive(S,me);
+  let h=`<div class="felt" style="justify-content:flex-start;gap:14px">`;
+  for(let k=1;k<S.np;k++){const p=(me+k)%S.np,hand=S.hands[p];
+   const mine=S.cur===me&&!S.over&&p===tg;
+   h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}" style="width:100%;max-width:640px">${names[p]}${hand.length?"":" · 탈출 ✅"}<small>${hand.length}장 · 짝 ${S.pairs[p]}개${mine?" · 한 장 뽑으세요 👇":""}</small>
+    <div class="row" style="margin-top:6px">${hand.map((c,i)=>card(-1,mine?"ok":"",mine?`data-k="take" data-v="${i}" style="--cw:40px"`:'style="--cw:40px"')).join("")}</div></div>`}
+  h+=`</div><div class="seat${S.cur===me&&!S.over?" cur":""}" style="align-self:center">${names[me]} · ${S.hands[me].length}장${S.hands[me].length?"":" · 탈출 ✅"} · 짝 ${S.pairs[me]}개</div>
+   <div class="hand">${S.hands[me].slice().sort((a,b)=>(a===JK?99:a%13)-(b===JK?99:b%13)).map(c=>card(c)).join("")}</div>`;
+  return h;
+ },
+ msg(S,me,names){
+  const [p,t,c,m]=S.last?S.last.split("|"):[];
+  let tx="";if(S.last)tx=`${names[p]} → ${names[t]}의 카드를 뽑음${+m?" · 짝 버림!":""}${+p===me?(" ("+(+c===JK?"🃏조커":SU[suit(+c)]+RK[rank(+c)])+")"):+t===me?(" ("+(+c===JK?"🃏조커!":SU[suit(+c)]+RK[rank(+c)])+")"):""}`;
+  if(S.over)return[S.loser===me?"🦹 내가 도둑이에요!":names[S.loser]+" 도둑!",S.loser===me?"bad":"good"];
+  if(S.cur===me)return[(tx?tx+"\n":"")+"다음 사람의 카드를 한 장 뽑으세요","warn"];
+  return[(tx?tx+" · ":"")+names[S.cur]+" 차례",""];
+ },
+ result:(S,me,names)=>[S.loser===me?"🦹 도둑이 됐어요!":"🎉 도둑을 잡았어요!",S.loser===me?"조커를 끝까지 들고 있었어요 😅":names[S.loser]+" 님이 조커를 들고 있었어요"]
+});
+</script></body></html>

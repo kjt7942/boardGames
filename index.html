@@ -67,11 +67,32 @@ const GAMES=[
   {path:"chess/",icon:"♞",name:"체스",sub:"Chess · 캐슬링·앙파상 지원",color:"#c9a14a",
    desc:"킹을 지키며 상대 킹을 체크메이트로 몰아넣는 세계적인 전략 게임.",
    tags:["1인 가능 🤖","온라인 🌐","2인","전략","20분"]},
+  {path:"onecard/",icon:"🃏",name:"원카드",sub:"One Card · 트럼프",color:"#e0453a",
+   desc:"같은 무늬·숫자로 손패를 먼저 비우세요. 공격 카드(2·A·조커)와 J·Q·K·7 기술 카드가 있어요.",
+   tags:["1인 가능 🤖","온라인 🌐","2~4인","카드","10분"]},
+  {path:"thief/",icon:"🦹",name:"도둑잡기",sub:"Old Maid · 트럼프",color:"#8e5cf0",
+   desc:"짝을 버리고 상대 카드를 뽑아요. 조커를 끝까지 들고 있으면 도둑!",
+   tags:["1인 가능 🤖","온라인 🌐","2~4인","카드","운","5분"]},
+  {path:"blackjack/",icon:"♠️",name:"블랙잭",sub:"Blackjack · 8판 승부",color:"#2fbf71",
+   desc:"21에 가깝게! 딜러를 이겨 칩을 모으세요. 히트·스탠드·더블.",
+   tags:["1인 가능 🤖","온라인 🌐","1~4인","카드","15분"]},
+  {path:"minhwatu/",icon:"🎴",name:"민화투",sub:"Minhwatu · 화투",color:"#d8283b",
+   desc:"같은 달 화투를 맞춰 먹고 광·열·띠·약 점수로 겨뤄요.",
+   tags:["1인 가능 🤖","온라인 🌐","2~3인","화투","10분"]},
+  {path:"codebreak/",icon:"🔐",name:"코드 추리",sub:"숨은 숫자 타일 추리",color:"#5ab0ff",
+   desc:"상대의 숨은 숫자 타일을 추리로 맞혀 모두 공개시키세요.",
+   tags:["1인 가능 🤖","온라인 🌐","2~4인","추리","15분"]},
+  {path:"memory/",icon:"🐾",name:"짝 맞추기",sub:"Memory Match",color:"#ff8a5c",
+   desc:"같은 그림 두 장을 찾아라! 기억력으로 겨루는 카드 뒤집기.",
+   tags:["1인 가능 🤖","온라인 🌐","1~4인","기억력","10분"]},
 ];
 const HUBG=[
  {k:"janggi",icon:"♟️",name:"장기",np:[2]},{k:"baduk",icon:"⚫",name:"바둑",np:[2]},
  {k:"omok",icon:"⚪",name:"오목",np:[2]},{k:"chess",icon:"♞",name:"체스",np:[2]},
- {k:"magic-labyrinth",icon:"🧙",name:"마법의 미로",np:[2,3,4]},{k:"wall-go",icon:"🧱",name:"벽바둑",np:[2,3]}];
+ {k:"magic-labyrinth",icon:"🧙",name:"마법의 미로",np:[2,3,4]},{k:"wall-go",icon:"🧱",name:"벽바둑",np:[2,3]},
+ {k:"onecard",icon:"🃏",name:"원카드",np:[2,3,4]},{k:"thief",icon:"🦹",name:"도둑잡기",np:[2,3,4]},
+ {k:"blackjack",icon:"♠️",name:"블랙잭",np:[2,3,4]},{k:"minhwatu",icon:"🎴",name:"민화투",np:[2,3]},
+ {k:"codebreak",icon:"🔐",name:"코드 추리",np:[2,3,4]},{k:"memory",icon:"🐾",name:"짝 맞추기",np:[2,3,4]}];
 document.getElementById("hubOnline").onclick=()=>BGNet.open({hub:true,game:"*",title:"대기실",games:HUBG,
   sizes:[{np:2,label:"2인"},{np:3,label:"3인"},{np:4,label:"4인"}],onStart(){},onClose(){}});
 const grid=document.getElementById("grid");

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#0b1130">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../icons/icon-192.png"><title>코드 추리</title></head>
+<body>
+<style>
+.tl{width:42px;height:58px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;box-shadow:0 2px 5px #0007;position:relative;border:2px solid #888}
+.tl.k{background:#1c1c24;color:#fff;border-color:#555}.tl.w{background:#f4f4f4;color:#222}
+.tl.h{opacity:.95}.tl.h.o{font-size:18px}
+.tl.up{outline:3px solid #ffd24d}
+.tl.mine{border-style:dashed}
+.tl.pick{outline:3px solid #6cf;transform:translateY(-8px)}
+.tl.tg{cursor:pointer;animation:pulse .8s infinite alternate}
+.tl.nw::after{content:"NEW";position:absolute;top:-8px;right:-6px;background:#e0453a;color:#fff;font-size:9px;padding:1px 4px;border-radius:6px}
+.nums{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.nums button{width:44px;height:44px;padding:0;font-size:18px}
+</style>
+<script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script>
+const {rnd,shuf}=CK;
+const key=id=>(id%12)*2+(id<12?0:1),col=id=>id<12?0:1,num=id=>id%12;
+const alive=(S,p)=>S.rows[p].some(t=>!t.up);
+function insert(S,p,id,isNew){const row=S.rows[p];let i=row.findIndex(t=>key(t.id)>key(id));if(i<0)i=row.length;row.splice(i,0,{id,up:false,nw:!!isNew})}
+function startTurn(S,p){
+  S.cur=p;S.chain=0;S.rows.forEach(r=>r.forEach(t=>t.nw=false));
+  if(S.pool.length){S.drawn=S.pool.pop();insert(S,p,S.drawn,true)}else S.drawn=-1;
+}
+function nextAlive(S,p){for(let k=1;k<=S.np;k++){const q=(p+k)%S.np;if(alive(S,q))return q}return p}
+function endTurn(S){startTurn(S,nextAlive(S,S.cur))}
+function checkWin(S){const a=[...Array(S.np).keys()].filter(p=>alive(S,p));if(a.length<=1){S.over=true;S.win=a.length?a[0]:S.cur;return true}return false}
+// 플레이어 p가 알고 있는 타일 id 집합
+function known(S,p){const k=new Set();S.rows[p].forEach(t=>k.add(t.id));S.rows.forEach(r=>r.forEach(t=>{if(t.up)k.add(t.id)}));return k}
+// 상대 줄 tp의 ti번째 타일이 될 수 있는 숫자 후보
+function cands(S,p,tp,ti){
+  const row=S.rows[tp],t=row[ti],kn=known(S,p);
+  let lo=-1,hi=99;
+  for(let i=ti-1;i>=0;i--)if(row[i].up){lo=key(row[i].id);break}
+  for(let i=ti+1;i<row.length;i++)if(row[i].up){hi=key(row[i].id);break}
+  const out=[];
+  for(let n=0;n<12;n++){const id=col(t.id)*12+n;if(kn.has(id))continue;const k=key(id);if(k>lo&&k<hi)out.push(n)}
+  return out;
+}
+CK.run({
+ id:"codebreak",title:"코드 추리",icon:"🔐",color:"#5ab0ff",np:[2,3,4],levels:true,
+ tagline:"상대의 숨은 숫자를 추리해서 모두 맞혀 보세요 (2~4명)",
+ rules:[
+  "검은색·흰색 숫자 타일이 0~11까지 각각 한 장씩 있어요. 각자 타일을 받아 <b>숫자가 작은 순서로 왼쪽→오른쪽</b>에 놓아요. (같은 숫자면 <b>검정이 왼쪽</b>)",
+  "타일의 <b>색깔은 모두 보이지만 숫자는 주인만</b> 알아요. 내 차례에 더미에서 타일 한 장을 받아 내 줄에 끼워 넣어요.",
+  "상대 타일 하나를 골라 <b>숫자를 추리해서 말해요</b>. 맞으면 그 타일이 공개되고, 계속 맞히거나 그만둘 수 있어요.",
+  "<b>틀리면</b> 방금 받은 내 타일이 공개돼요(내 약점 노출!). 그리고 차례가 넘어가요.",
+  "그만두면 방금 받은 타일은 숨긴 채로 둘 수 있어요.",
+  "내 타일이 모두 공개되면 탈락! <b>마지막까지 숨은 타일이 남은 사람이 승리</b>해요.",
+  "힌트: 줄이 숫자순이라 이웃 타일을 보면 범위를 좁힐 수 있어요. 내 타일과 공개된 숫자는 정답에서 제외돼요."],
+ init(seed,np){
+  const S={rs:seed,np,over:false,win:-1,cur:0,chain:0,drawn:-1,last:null,pool:[],rows:[]};
+  S.pool=shuf(S,Array.from({length:24},(_,i)=>i));
+  const per=np===4?3:4;
+  for(let p=0;p<np;p++){S.rows.push([]);for(let i=0;i<per;i++)insert(S,p,S.pool.pop())}
+  startTurn(S,0);return S;
+ },
+ turn:S=>S.over?-1:S.cur,
+ apply(S,a){
+  const p=a.p;
+  if(a.t==="stop"){S.last={p,t:"stop"};endTurn(S);return}
+  const T=S.rows[a.tp][a.ti];
+  if(num(T.id)===a.n){
+    T.up=true;S.chain++;S.last={p,t:"ok",tp:a.tp,n:a.n};
+    if(checkWin(S))return;
+    if(!alive(S,a.tp)&&S.np>2){}
+  }else{
+    S.last={p,t:"no",tp:a.tp,n:a.n};
+    let d=S.rows[p].find(t=>t.id===S.drawn&&!t.up);
+    if(!d)d=S.rows[p].find(t=>!t.up);
+    if(d)d.up=true;
+    if(checkWin(S))return;
+    endTurn(S);
+  }
+ },
+ click(S,me,d,ui){
+  if(d.k==="t"){const [tp,ti]=d.v.split(":").map(Number);ui.sel={tp,ti};return"ui"}
+  if(d.k==="n"&&ui.sel){const a={t:"guess",p:me,tp:ui.sel.tp,ti:ui.sel.ti,n:+d.v};ui.sel=null;return a}
+  if(d.k==="stop"){ui.sel=null;return{t:"stop",p:me}}
+ },
+ ai(S,p,lv){
+  if(S.chain>0&&S.lastAi===p+"x"){}
+  // 모든 (상대, 위치) 후보 수집
+  const opts=[];
+  for(let q=0;q<S.np;q++)if(q!==p)S.rows[q].forEach((t,i)=>{if(!t.up){const c=cands(S,p,q,i);if(c.length)opts.push({q,i,c})}});
+  if(!opts.length)return{t:"stop",p};
+  opts.sort((a,b)=>a.c.length-b.c.length);
+  let pick;
+  if(lv==="easy"){pick=opts[Math.floor(Math.random()*opts.length)];
+    // 쉬움: 범위 힌트를 무시하고 모르는 숫자 중 무작위
+    const kn=known(S,p),t=S.rows[pick.q][pick.i];const pool=[];for(let n=0;n<12;n++)if(!kn.has(col(t.id)*12+n))pool.push(n);
+    if(S.chain>0&&Math.random()<.6)return{t:"stop",p};
+    return{t:"guess",p,tp:pick.q,ti:pick.i,n:pool[Math.floor(Math.random()*pool.length)]??pick.c[0]};}
+  const best=opts[0].c.length;
+  if(S.chain>0){
+    const lim=1;
+    if(best>lim||Math.random()<(lv==="hard"?.0:.25))return{t:"stop",p};
+  }
+  pick=lv==="hard"?opts[0]:(opts[Math.floor(Math.random()*Math.ceil(opts.length/2))]);
+  return{t:"guess",p,tp:pick.q,ti:pick.i,n:pick.c[Math.floor(Math.random()*pick.c.length)]};
+ },
+ render(S,me,ui,names){
+  const my=S.cur===me&&!S.over;
+  const tile=(t,p,i)=>{
+    const c=col(t.id)?"w":"k",mine=p===me;
+    if(t.up)return`<div class="tl ${c} up">${num(t.id)}</div>`;
+    if(mine)return`<div class="tl ${c} mine h${t.nw?" nw":""}">${num(t.id)}</div>`;
+    const tg=my&&alive(S,p);
+    return`<div class="tl ${c} h${tg?" tg":""}${ui.sel&&ui.sel.tp===p&&ui.sel.ti===i?" pick":""}" ${tg?`data-k="t" data-v="${p}:${i}"`:""}>?</div>`;
+  };
+  let h=`<div class="felt" style="justify-content:flex-start;gap:12px">`;
+  for(let k=0;k<S.np;k++){const p=(me+k)%S.np;if(p===me)continue;
+   h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}" style="max-width:100%">${names[p]}${alive(S,p)?"":" · 탈락 💀"}<small>숨은 타일 ${S.rows[p].filter(t=>!t.up).length}개</small><div class="row" style="margin-top:6px">${S.rows[p].map((t,i)=>tile(t,p,i)).join("")}</div></div>`}
+  h+=`<small style="opacity:.8">더미 ${S.pool.length}장</small></div>`;
+  h+=`<div class="seat${my?" cur":""}" style="align-self:center;max-width:100%">${names[me]} (나)${alive(S,me)?"":" · 탈락 💀"}<small>점선 = 아직 숨은 내 타일 · 노란 테두리 = 공개됨</small><div class="row" style="margin-top:6px">${S.rows[me].map((t,i)=>tile(t,me,i)).join("")}</div></div>`;
+  if(my&&ui.sel){
+    const t=S.rows[ui.sel.tp][ui.sel.ti],kn=known(S,me),c=cands(S,me,ui.sel.tp,ui.sel.ti);
+    h+=`<div class="nums">${Array.from({length:12},(_,n)=>`<button data-k="n" data-v="${n}" ${c.includes(n)?"":"disabled"}>${n}</button>`).join("")}</div>`;
+  }
+  if(my&&S.chain>0)h+=`<div class="row"><button data-k="stop" class="sec">✋ 그만하고 차례 넘기기</button></div>`;
+  return h;
+ },
+ msg(S,me,names){
+  if(S.over)return[S.win===me?"🎉 승리!":names[S.win]+" 승리",S.win===me?"good":"bad"];
+  const L=S.last;let t="";
+  if(L){t=L.t==="ok"?`${names[L.p]}: ${names[L.tp]}의 ${L.n} 정답!`:L.t==="no"?`${names[L.p]}: ${names[L.tp]}의 ${L.n} 오답 → 자기 타일 공개`:`${names[L.p]}: 그만둠`}
+  if(S.cur===me)return[(t?t+"\n":"")+(S.chain>0?"정답! 계속 맞히거나 그만두세요":"상대 타일을 골라 숫자를 맞혀 보세요"),"warn"];
+  return[(t?t+" · ":"")+names[S.cur]+" 차례",""];
+ },
+ result:(S,me,names)=>[S.win===me?"🎉 승리했어요!":"😵 "+names[S.win]+" 승리","마지막까지 숨은 타일이 남은 사람이 이겨요"]
+});
+</script></body></html>
