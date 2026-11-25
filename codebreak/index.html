@@ -5,20 +5,40 @@
 <link rel="apple-touch-icon" href="../icons/icon-192.png"><title>코드 추리</title></head>
 <body>
 <style>
-.tl{width:42px;height:58px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;box-shadow:0 2px 5px #0007;position:relative;border:2px solid #888}
-.tl.k{background:#1c1c24;color:#fff;border-color:#555}.tl.w{background:#f4f4f4;color:#222}
-.tl.h{opacity:.95}.tl.h.o{font-size:18px}
-.tl.up{outline:3px solid #ffd24d}
-.tl.mine{border-style:dashed}
-.tl.pick{outline:3px solid #6cf;transform:translateY(-8px)}
-.tl.tg{cursor:pointer;animation:pulse .8s infinite alternate}
-.tl.nw::after{content:"NEW";position:absolute;top:-8px;right:-6px;background:#e0453a;color:#fff;font-size:9px;padding:1px 4px;border-radius:6px}
-.nums{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.nums button{width:44px;height:44px;padding:0;font-size:18px}
-</style>
+body{background:radial-gradient(circle at 50% 0%,#1d3a6e 0,#0b1430 55%,#050914 100%)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(#5ab0ff10 1px,transparent 1px),linear-gradient(90deg,#5ab0ff10 1px,transparent 1px);background-size:32px 32px;animation:grid 12s linear infinite;mask-image:radial-gradient(circle at 50% 40%,#000 30%,transparent 80%)}
+@keyframes grid{to{background-position:32px 32px}}
+.tl{width:46px;height:64px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font:900 26px/1 ui-rounded,system-ui,sans-serif;position:relative;border:0;transform-style:preserve-3d;transition:transform .18s}
+.tl.k{background:linear-gradient(160deg,#3a3a4a,#111118 60%,#000);color:#fff;box-shadow:inset 0 2px 0 #ffffff30,inset 0 -4px 0 #0008,0 4px 0 #000,0 6px 12px #000a}
+.tl.w{background:linear-gradient(160deg,#fff,#e6e8ef 60%,#c4c8d4);color:#1b1f2b;box-shadow:inset 0 2px 0 #fff,inset 0 -4px 0 #0002,0 4px 0 #8a8fa0,0 6px 12px #000a}
+.tl.h:not(.mine){font-size:22px;color:transparent}
+.tl.h:not(.mine)::before{content:"?";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:#5ab0ff;text-shadow:0 0 10px #5ab0ff}
+.tl.w.h:not(.mine)::before{color:#2a6bd6;text-shadow:none}
+.tl.up{box-shadow:0 0 0 3px #ffd24d,0 0 16px #ffd24dcc,0 4px 10px #000a}
+.tl.up::after{content:"";position:absolute;inset:0;border-radius:9px;background:linear-gradient(115deg,transparent 35%,#ffffff55 50%,transparent 65%);background-size:250% 100%;animation:shine 2.6s infinite}
+@keyframes shine{0%{background-position:150% 0}60%,100%{background-position:-60% 0}}
+.tl.mine{outline:2px dashed #5ab0ff;outline-offset:2px}
+.tl.mine.up{outline:0}
+.tl.pick{transform:translateY(-12px) scale(1.12);box-shadow:0 0 0 3px #6cf,0 0 26px #6cf,0 14px 18px #000a !important;z-index:3}
+.tl.tg{cursor:pointer;animation:tgl 1s infinite alternate}
+.tl.tg:hover{transform:translateY(-6px)}
+@keyframes tgl{from{filter:brightness(1)}to{filter:brightness(1.35) drop-shadow(0 0 8px #5ab0ff)}}
+.tl.nw::after{content:"NEW";position:absolute;top:-9px;right:-8px;background:#e0453a;color:#fff;font:800 9px system-ui;padding:2px 5px;border-radius:6px;box-shadow:0 2px 6px #000a;animation:none}
+.nums{display:grid;grid-template-columns:repeat(6,48px);gap:7px;justify-content:center;padding:10px;border-radius:16px;background:#00000055;box-shadow:inset 0 0 0 1px #5ab0ff44,0 0 24px #5ab0ff33;animation:kpIn .25s cubic-bezier(.2,1.5,.4,1)}
+@keyframes kpIn{from{transform:scale(.7) translateY(20px);opacity:0}}
+.nums button{width:48px;height:56px;padding:0;font:900 22px ui-rounded,system-ui,sans-serif;border-radius:9px;transition:transform .1s}
+.nums.k button{background:linear-gradient(160deg,#3a3a4a,#111118);color:#fff;box-shadow:inset 0 2px 0 #ffffff30,0 3px 0 #000}
+.nums.w button{background:linear-gradient(160deg,#fff,#d8dbe4);color:#1b1f2b;box-shadow:inset 0 2px 0 #fff,0 3px 0 #8a8fa0}
+.nums button:not(:disabled):hover{transform:translateY(-3px) scale(1.06)}
+.nums button:disabled{opacity:.15}
+.combo{font:900 20px system-ui;color:#ffd24d;text-shadow:0 0 12px #ff9f1c;animation:cmb .6s ease-in-out infinite alternate}
+@keyframes cmb{to{transform:scale(1.12)}}
+.row[data-p] .tl{margin:0 1px}
+</style><script src="../fx.js"></script>
 <script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
 <script>
 const {rnd,shuf}=CK;
+const CIDK=1+(Math.random()*9973|0),cid=id=>"t"+((id+1)*CIDK%100003);
 const key=id=>(id%12)*2+(id<12?0:1),col=id=>id<12?0:1,num=id=>id%12;
 const alive=(S,p)=>S.rows[p].some(t=>!t.up);
 function insert(S,p,id,isNew){const row=S.rows[p];let i=row.findIndex(t=>key(t.id)>key(id));if(i<0)i=row.length;row.splice(i,0,{id,up:false,nw:!!isNew})}
@@ -40,6 +60,41 @@ function cands(S,p,tp,ti){
   const out=[];
   for(let n=0;n<12;n++){const id=col(t.id)*12+n;if(kn.has(id))continue;const k=key(id);if(k>lo&&k<hi)out.push(n)}
   return out;
+}
+// ── 연출 ──
+function fxAfter(S,a,me,names,T){
+  if(!window.FX)return;
+  const L=S.last;if(!L)return;
+  const tileAt=(p,i)=>{const r=T.querySelector(`.row[data-p="${p}"]`);return r&&r.children[i]};
+  if(a.t==="stop"){FX.sfx("tap");return}
+  if(a.t!=="guess")return;
+  const el=tileAt(L.tp,L.ti);if(!el)return;
+  const fg=getComputedStyle(el).color;
+  // 1) 두근두근: 흔들리며 숫자 가리기
+  FX.sfx("drum",{n:5});
+  el.animate([{transform:"none",color:"transparent"},{transform:"translateY(-10px) rotate(-6deg) scale(1.15)",color:"transparent",offset:.15},{transform:"translateY(-10px) rotate(6deg) scale(1.15)",color:"transparent",offset:.3},{transform:"translateY(-10px) rotate(-6deg) scale(1.15)",color:"transparent",offset:.45},{transform:"translateY(-10px) rotateY(90deg) scale(1.2)",color:"transparent",offset:.62},{transform:"translateY(-6px) rotateY(0) scale(1.25)",color:fg,offset:.8},{transform:"none",color:fg}],{duration:1050,easing:"ease-in-out"});
+  const sh=document.createElement("div");
+  setTimeout(()=>{
+    const c=FX.center(el);
+    if(L.t==="ok"){
+      FX.sfx("ok",{combo:L.chain});FX.sfx("flip");
+      FX.burst(c.x,c.y,{n:28+L.chain*8,color:["#ffd24d","#fff","#5ee08a"],speed:6+L.chain,g:.1,size:5,life:50,shape:"star"});FX.ring(c.x,c.y,"#ffd24d",{r0:20,grow:3});
+      FX.float(c.x,c.y-30,"정답! "+L.n,"#5ee08a");
+      if(L.chain>=2)FX.banner(`🔥 연속 x${L.chain}`,"#ff9f1c",L.chain>=3?"멈출 수 없다!":"한 번 더?");
+      if(!S.rows[L.tp].some(t=>!t.up))setTimeout(()=>{FX.sfx("boom");FX.flash("#ff5d73");FX.banner("💀 탈락!","#ff5d73",names[L.tp]+"의 코드가 모두 풀렸어요");FX.shake(T,10)},700);
+    }else{
+      FX.sfx("no");FX.flash("#ff3040");FX.shake(T,9);FX.vib([60,40,60]);
+      FX.float(c.x,c.y-30,`✗ ${L.n} 아님`,"#ff5d73");
+      FX.burst(c.x,c.y,{n:18,color:["#ff5d73","#600"],speed:5,g:.3,size:4,life:35,shape:"rect"});
+      // 2) 벌칙: 내 타일 공개
+      if(L.rid!=null){const row=S.rows[L.p],ri=row.findIndex(t=>t.id===L.rid),re=tileAt(L.p,ri);
+        if(re){const fg2=getComputedStyle(re).color;
+          re.animate([{transform:"none",color:"transparent"},{transform:"rotateY(90deg) scale(1.2)",color:"transparent",offset:.45},{transform:"rotateY(0) scale(1.25)",color:fg2,offset:.7,boxShadow:"0 0 0 4px #ff5d73,0 0 30px #ff5d73"},{transform:"none",color:fg2}],{duration:900,delay:450,fill:"backwards"});
+          setTimeout(()=>{const q=FX.center(re);FX.sfx("flip");FX.float(q.x,q.y-30,L.p===me?"내 타일 공개…":"약점 노출!","#ffb3b3");
+            if(!row.some(t=>!t.up)){FX.sfx("boom");FX.banner("💀 탈락!","#ff5d73",names[L.p]+"의 코드가 모두 풀렸어요")}},850)}}
+    }
+  },640);
+  if(S.cur===me&&!S.over&&L.t==="no")setTimeout(()=>FX.sfx("turn"),1800);
 }
 CK.run({
  id:"codebreak",title:"코드 추리",icon:"🔐",color:"#5ab0ff",np:[2,3,4],levels:true,
@@ -65,20 +120,20 @@ CK.run({
   if(a.t==="stop"){S.last={p,t:"stop"};endTurn(S);return}
   const T=S.rows[a.tp][a.ti];
   if(num(T.id)===a.n){
-    T.up=true;S.chain++;S.last={p,t:"ok",tp:a.tp,n:a.n};
+    T.up=true;S.chain++;S.last={p,t:"ok",tp:a.tp,ti:a.ti,n:a.n,chain:S.chain};
     if(checkWin(S))return;
     if(!alive(S,a.tp)&&S.np>2){}
   }else{
-    S.last={p,t:"no",tp:a.tp,n:a.n};
+    S.last={p,t:"no",tp:a.tp,ti:a.ti,n:a.n};
     let d=S.rows[p].find(t=>t.id===S.drawn&&!t.up);
     if(!d)d=S.rows[p].find(t=>!t.up);
-    if(d)d.up=true;
+    if(d){d.up=true;S.last.rid=d.id}
     if(checkWin(S))return;
     endTurn(S);
   }
  },
  click(S,me,d,ui){
-  if(d.k==="t"){const [tp,ti]=d.v.split(":").map(Number);ui.sel={tp,ti};return"ui"}
+  if(d.k==="t"){const [tp,ti]=d.v.split(":").map(Number);ui.sel={tp,ti};if(window.FX)FX.sfx("pop");return"ui"}
   if(d.k==="n"&&ui.sel){const a={t:"guess",p:me,tp:ui.sel.tp,ti:ui.sel.ti,n:+d.v};ui.sel=null;return a}
   if(d.k==="stop"){ui.sel=null;return{t:"stop",p:me}}
  },
@@ -107,20 +162,21 @@ CK.run({
   const my=S.cur===me&&!S.over;
   const tile=(t,p,i)=>{
     const c=col(t.id)?"w":"k",mine=p===me;
-    if(t.up)return`<div class="tl ${c} up">${num(t.id)}</div>`;
-    if(mine)return`<div class="tl ${c} mine h${t.nw?" nw":""}">${num(t.id)}</div>`;
+    if(t.up)return`<div class="tl ${c} up" data-cid="${cid(t.id)}">${num(t.id)}</div>`;
+    if(mine)return`<div class="tl ${c} mine h${t.nw?" nw":""}" data-cid="${cid(t.id)}">${num(t.id)}</div>`;
     const tg=my&&alive(S,p);
-    return`<div class="tl ${c} h${tg?" tg":""}${ui.sel&&ui.sel.tp===p&&ui.sel.ti===i?" pick":""}" ${tg?`data-k="t" data-v="${p}:${i}"`:""}>?</div>`;
+    return`<div class="tl ${c} h${tg?" tg":""}${ui.sel&&ui.sel.tp===p&&ui.sel.ti===i?" pick":""}" data-cid="${cid(t.id)}" ${tg?`data-k="t" data-v="${p}:${i}"`:""}>?</div>`;
   };
   let h=`<div class="felt" style="justify-content:flex-start;gap:12px">`;
   for(let k=0;k<S.np;k++){const p=(me+k)%S.np;if(p===me)continue;
-   h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}" style="max-width:100%">${names[p]}${alive(S,p)?"":" · 탈락 💀"}<small>숨은 타일 ${S.rows[p].filter(t=>!t.up).length}개</small><div class="row" style="margin-top:6px">${S.rows[p].map((t,i)=>tile(t,p,i)).join("")}</div></div>`}
+   h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}" style="max-width:100%">${names[p]}${alive(S,p)?"":" · 탈락 💀"}<small>숨은 타일 ${S.rows[p].filter(t=>!t.up).length}개</small><div class="row" data-p="${p}" style="margin-top:6px">${S.rows[p].map((t,i)=>tile(t,p,i)).join("")}</div></div>`}
   h+=`<small style="opacity:.8">더미 ${S.pool.length}장</small></div>`;
-  h+=`<div class="seat${my?" cur":""}" style="align-self:center;max-width:100%">${names[me]} (나)${alive(S,me)?"":" · 탈락 💀"}<small>점선 = 아직 숨은 내 타일 · 노란 테두리 = 공개됨</small><div class="row" style="margin-top:6px">${S.rows[me].map((t,i)=>tile(t,me,i)).join("")}</div></div>`;
+  h+=`<div class="seat${my?" cur":""}" style="align-self:center;max-width:100%">${names[me]} (나)${alive(S,me)?"":" · 탈락 💀"}<small>점선 = 아직 숨은 내 타일 · 노란 테두리 = 공개됨</small><div class="row" data-p="${me}" style="margin-top:6px">${S.rows[me].map((t,i)=>tile(t,me,i)).join("")}</div></div>`;
   if(my&&ui.sel){
     const t=S.rows[ui.sel.tp][ui.sel.ti],kn=known(S,me),c=cands(S,me,ui.sel.tp,ui.sel.ti);
-    h+=`<div class="nums">${Array.from({length:12},(_,n)=>`<button data-k="n" data-v="${n}" ${c.includes(n)?"":"disabled"}>${n}</button>`).join("")}</div>`;
+    h+=`<div class="nums ${col(t.id)?"w":"k"}">${Array.from({length:12},(_,n)=>`<button data-k="n" data-v="${n}" ${c.includes(n)?"":"disabled"}>${n}</button>`).join("")}</div>`;
   }
+  if(S.chain>0&&!S.over)h+=`<div class="combo">🔥 연속 정답 x${S.chain}</div>`;
   if(my&&S.chain>0)h+=`<div class="row"><button data-k="stop" class="sec">✋ 그만하고 차례 넘기기</button></div>`;
   return h;
  },
@@ -131,6 +187,9 @@ CK.run({
   if(S.cur===me)return[(t?t+"\n":"")+(S.chain>0?"정답! 계속 맞히거나 그만두세요":"상대 타일을 골라 숫자를 맞혀 보세요"),"warn"];
   return[(t?t+" · ":"")+names[S.cur]+" 차례",""];
  },
+ after(S,a,me,names,T){fxAfter(S,a,me,names,T)},
+ end(S,me,names){setTimeout(()=>{if(!window.FX)return;if(S.win===me){FX.sfx("win");FX.confetti();FX.banner("승리!","#5ab0ff","모든 코드를 지켜냈어요")}else{FX.sfx("lose");FX.banner("패배…","#666",names[S.win]+" 승리")}},1300)},
+ endDelay:3000,aiDelay:2100,
  result:(S,me,names)=>[S.win===me?"🎉 승리했어요!":"😵 "+names[S.win]+" 승리","마지막까지 숨은 타일이 남은 사람이 이겨요"]
 });
 </script></body></html>

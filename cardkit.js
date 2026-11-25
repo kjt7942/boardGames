@@ -146,15 +146,15 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
     function next() {
       if (!S) return;
       const p = def.turn(S);
-      if (p < 0) { const [t, d] = def.result(S, me, names); $("#wt").textContent = t; $("#wd").innerHTML = d; setTimeout(() => $("#win").classList.remove("hide"), 900); if (ctx) ctx.finish(); return; }
+      if (p < 0) { if (def.end && !S._ended) { S._ended = 1; try { def.end(S, me, names); } catch (e) { } } const [t, d] = def.result(S, me, names); $("#wt").textContent = t; $("#wd").innerHTML = d; setTimeout(() => $("#win").classList.remove("hide"), def.endDelay || 900); if (ctx) ctx.finish(); return; }
       if (!ctx && p !== me) {
         const g = gen;
-        setTimeout(() => { if (g !== gen || !S || def.turn(S) !== p) return; act(def.ai(S, p, sel.lv)); }, 1250 + ((Math.random() * 500) | 0));
+        setTimeout(() => { if (g !== gen || !S || def.turn(S) !== p) return; act(def.ai(S, p, sel.lv)); }, (def.aiDelay || 1250) + ((Math.random() * 500) | 0));
       }
     }
     function act(a, remote) {
       if (!a) return;
-      def.apply(S, a); if (ctx && !remote) ctx.send({ t: "a", a }); draw({ p: a.p === undefined ? def.turn(S) : a.p }); next();
+      def.apply(S, a); if (ctx && !remote) ctx.send({ t: "a", a }); draw({ p: a.p === undefined ? def.turn(S) : a.p }); if (def.after) try { def.after(S, a, me, names, $("#table")); } catch (e) { } next();
     }
     $("#table").addEventListener("click", e => {
       const el = e.target.closest("[data-k]"); if (!el || !S || def.turn(S) !== me) return;
