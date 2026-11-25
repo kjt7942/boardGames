@@ -90,6 +90,7 @@
 .bgg button{flex:0 0 auto;padding:9px 12px;font-size:14px;background:#ffffff1a}
 .bgg button.on{background:#4d7cff}
 .bgpick{font-size:15px;text-align:center;margin:6px 0 2px}
+#bgBack{position:fixed;left:6px;top:6px;z-index:200;border:0;border-radius:18px;padding:7px 12px;font:700 13px system-ui,sans-serif;background:#000a;color:#fff;border:1px solid #ffffff55;cursor:pointer}
 #bgFrame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:150;background:#090d1a}
 `;
   let root = null, bodyEl = null, titleEl = null;
@@ -237,6 +238,7 @@
     for (const u in pl) { const h = pl[u].hb; if (!R.seen[u] || R.seen[u].hb !== h) R.seen[u] = { hb: h, at: NOW() }; }
     for (const u in R.seen) if (!pl[u]) delete R.seen[u];
 
+    if (O.hub && R.started && room.play && (room.play.round || 1) > R.lastRound) { startGame(room); return; }
     if (R.started) {            // 대국 중: 이벤트 전달 + 나감 감지
       const ev = room[R.round ? "ev" + R.round : "ev"] || {};
       for (;;) {
@@ -330,13 +332,16 @@
     return `<div class="bgpick">🎮 방장이 고른 게임: <b>${g ? (g.icon || "") + " " + esc(g.name) : "-"}</b></div>`;
   }
   function launchHub(ctx, key) {
-    const old = document.getElementById("bgFrame"); if (old) old.remove();
+    rmFrame();
     window.__BGHUB = { ctx, back: hubReturn };
     const f = document.createElement("iframe"); f.id = "bgFrame"; f.setAttribute("allow", "fullscreen");
     f.src = `${key}/index.html?hub=1`; document.body.appendChild(f);
+    // 어떤 게임 화면이든 항상 보이는 '대기실로' 버튼 (게임이 끝났을 때 갇히지 않도록)
+    const b = document.createElement("button"); b.id = "bgBack"; b.textContent = "🚪 대기실로"; b.onclick = hubReturn; document.body.appendChild(b);
   }
+  function rmFrame() { ["bgFrame", "bgBack"].forEach(i => { const e = document.getElementById(i); if (e) e.remove(); }); }
   function hubReturn() {
-    const f = document.getElementById("bgFrame"); if (f) f.remove();
+    rmFrame();
     window.__BGHUB = null;
     if (!R) return;
     R.started = false; R.ctx = null; R.next = 0; R.left = {};
@@ -348,6 +353,7 @@
 
   // ----- 나가기 -----
   function leaveRoom(keep) {
+    rmFrame(); window.__BGHUB = null;
     const r = R; if (!r) return; R = null;
     clearInterval(r.hb); clearInterval(r.chk); if (r.cd) clearInterval(r.cd);
     window.removeEventListener("pagehide", onHide);
