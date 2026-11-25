@@ -58,6 +58,13 @@ button.sec{background:#ffffff22}
   .panel{padding:5px 8px;gap:3px}.caps{min-height:22px;font-size:17px}.info{display:none}
   .pbtns button{padding:8px 4px}
 }
+/* ── 연출 ── */
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 20% 30%,#e2b96f33 0,transparent 38%),radial-gradient(circle at 80% 70%,#5ee08a22 0,transparent 38%);animation:aur 18s ease-in-out infinite alternate}
+@keyframes aur{to{transform:translate(4%,-3%) rotate(8deg) scale(1.08)}}
+#boardwrap{animation:bwglow 1.6s ease-in-out infinite alternate}
+@keyframes bwglow{from{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 16px var(--cc,#4d7cff),0 8px 30px #000a}to{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 44px var(--cc,#4d7cff),0 8px 30px #000a}}
+.panel.cur{animation:pglow 1.2s ease-in-out infinite alternate}
+@keyframes pglow{from{box-shadow:0 0 10px var(--pc),inset 0 0 12px #ffffff12}to{box-shadow:0 0 32px var(--pc),inset 0 0 22px #ffffff22}}
 </style>
 </head>
 <body>
@@ -105,6 +112,7 @@ button.sec{background:#ffffff22}
 <h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div>
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
+<script src="../fx.js"></script>
 <script src="engine.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../net.js"></script>
@@ -113,10 +121,11 @@ const J=Janggi,$=s=>document.querySelector(s);
 const S=100,M=70,W=940,H=1040;
 const SIDE={1:{n:"초",c:"#2fbf71",hz:{1:"楚",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"卒"}},2:{n:"한",c:"#ff5d73",hz:{1:"漢",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"兵"}}};
 const RAD={1:50,2:43,3:43,4:43,5:43,6:36,7:32},FS={1:62,2:52,3:52,4:52,5:52,6:44,7:42};
-let sel={lv:"normal",me:1,mode:"solo"},G=null,soundOn=true,ac=null,gen=0;
+let sel={lv:"normal",me:1,mode:"solo"},G=null,soundOn=window.FX?FX.on:true,ac=null,gen=0;
 
+const sfx=(n,o)=>{if(window.FX&&soundOn)FX.sfx(n,o)};
 function beep(f,d,type="sine",v=.07,delay=0){
-  if(!soundOn)return;
+  if(!soundOn||window.FX)return;
   try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
     const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
     o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -157,7 +166,7 @@ function boardSVG(){
     const v=G.B[i];if(!v)continue;
     const s=v>>3,t=v&7,[x,y]=px((i/9)|0,i%9),col=SIDE[s].c;
     const inChk=G.check&&t===1&&s===G.turn;
-    h+=`<g${inChk?' class="pulse"':""}><circle cx="${x}" cy="${y+4}" r="${RAD[t]}" fill="#0003"/><circle cx="${x}" cy="${y}" r="${RAD[t]}" fill="${inChk?"#ffd0d0":"#f8ebc8"}" stroke="${col}" stroke-width="${t===1?8:6}"/>`
+    h+=`<g id="pc${i}"${inChk?' class="pulse"':""}><circle cx="${x}" cy="${y+4}" r="${RAD[t]}" fill="#0003"/><circle cx="${x}" cy="${y}" r="${RAD[t]}" fill="${inChk?"#ffd0d0":"#f8ebc8"}" stroke="${col}" stroke-width="${t===1?8:6}"/>`
       +`<text x="${x}" y="${y+FS[t]*.36}" text-anchor="middle" font-size="${FS[t]}" font-weight="900" fill="${col}" font-family="'Noto Serif CJK KR','Noto Serif KR','Nanum Myeongjo',serif">${SIDE[s].hz[t]}</text></g>`;
   }
   // 갈 수 있는 곳
@@ -183,13 +192,31 @@ function render(){
       +(isMe?`<div class="pbtns">${G.online?"":`<button class="sec" data-act="undo"${canUndo?"":" disabled"}>↩ 무르기</button>`}${G.online&&!G.over?`<button class="sec" data-act="resign">🏳️ 기권</button>`:""}</div>`:"");
   };
   panel($("#pTL"),ai,false);panel($("#pBR"),G.me,true);
+  try{postFx()}catch(e){}
+}
+// ── 연출 ──
+function postFx(){
+  if(!window.FX||!G.fx)return;
+  const F=G.fx;G.fx=null;const sv=$("#svg");
+  const el=$("#pc"+F.t),[x0,y0]=px((F.f/9)|0,F.f%9),[x1,y1]=px((F.t/9)|0,F.t%9);
+  if(el)FX.slide(el,x0-x1,y0-y1,{dur:320,s:1.15,hop:14});
+  setTimeout(()=>{
+    const p=FX.svgXY(sv,x1,y1);
+    if(F.cap){const c=SIDE[F.cap>>3].c;sfx("hit");FX.burst(p.x,p.y,{n:28,color:[c,"#f8ebc8","#fff"],speed:8,g:.3,size:5,life:45,shape:"rect"});FX.ring(p.x,p.y,c,{r0:12,grow:2.4});FX.shake($("#boardwrap"),7);FX.vib(30);
+      const t=F.cap&7,nm=SIDE[F.cap>>3].hz[t];FX.float(p.x,p.y-34,`${nm} 잡았다!`,c)}
+    else sfx("wood");
+    const chk=G.check&&!G.over,col=SIDE[F.mover].c;
+    if(chk&&F.meong){sfx("check");FX.flash(col);FX.banner("멍군 장군!",col,"막으면서 역으로 장군")}
+    else if(chk){sfx("check");FX.flash("#ff3b3b");FX.banner("장군!","#ff3b3b");FX.shake($("#boardwrap"),6)}
+    else if(F.meong){sfx("alert");FX.banner("멍군!",col,"장군을 막았어요")}
+  },300);
 }
 
 function doMove(m,remote){
   const B=G.B,f=m>>7,t=m&127,mover=G.turn;if(G.online&&!remote)G.online.send({t:"mv",m});
   G.hist.push({B:Int8Array.from(B),turn:mover,last:G.last,cap:{1:G.cap[1].slice(),2:G.cap[2].slice()},ply:G.ply,check:G.check});
   const cap=B[t];if(cap)G.cap[mover].push(cap);
-  J.make(B,m);G.last=[f,t];G.ply++;
+  J.make(B,m);G.last=[f,t];G.ply++;G.fx={f,t,cap,mover,meong:!!G.check};
   beep(cap?220:420,cap?.18:.07,cap?"square":"triangle",cap?.1:.07);
   if(cap&&(cap&7)===1){endGame(mover,"왕을 잡았어요");return}
   afterMove(mover);
@@ -229,7 +256,8 @@ function endGame(winner,why){
   $("#wt").textContent=win?"🎉 승리했어요!":G.online?"😢 졌어요":"🤖 컴퓨터 승리";
   $("#wd").textContent=why;
   beep(win?784:196,.3,"triangle",.1);if(win){beep(1047,.4,"triangle",.1,.25)}
-  setTimeout(()=>$("#win").classList.remove("hide"),900);
+  if(window.FX)setTimeout(()=>{if(win){FX.sfx("win");FX.confetti();FX.banner(why.includes("외통")?"외통!":"승리!","#ffd24d",why)}else{FX.sfx("lose");FX.banner("패배…","#666",why)}},600);
+  setTimeout(()=>$("#win").classList.remove("hide"),window.FX?3000:900);
 }
 function endScore(){
   const sc=J.score(G.B),w=sc[1]>sc[2]?1:2;
@@ -246,7 +274,7 @@ $("#svg").addEventListener("click",e=>{
   if(v&&(v>>3)===G.me){
     G.sel=i;G.moves=G.legal.filter(m=>(m>>7)===i).map(m=>m&127);
     if(!G.moves.length){G.msg="이 말은 움직일 수 없어요";G.kind="bad";render();return}
-    setTurnMsg();beep(500,.05);render();return;
+    setTurnMsg();beep(500,.05);sfx("pop");render();return;
   }
   if(G.sel>=0&&G.moves.includes(i)){doMove(G.sel<<7|i);return}
   G.sel=-1;G.moves=[];setTurnMsg();render();
@@ -273,7 +301,8 @@ $("#stage").addEventListener("click",e=>{
 });
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
-$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+$("#sndBtn").textContent=soundOn?"🔊":"🔇";
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;if(window.FX)FX.on=soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇";sfx("tap")};
 const again=()=>{gen++;if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
 function bindOpt(id,key,num){

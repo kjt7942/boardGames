@@ -57,6 +57,13 @@ button.sec{background:#ffffff22}
   .panel{padding:5px 8px;gap:3px}.info{display:none}
   .pbtns button{padding:8px 4px}
 }
+/* ── 연출 ── */
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 20% 30%,#e8c27a33 0,transparent 38%),radial-gradient(circle at 80% 70%,#4d7cff22 0,transparent 38%);animation:aur 18s ease-in-out infinite alternate}
+@keyframes aur{to{transform:translate(4%,-3%) rotate(8deg) scale(1.08)}}
+#boardwrap{animation:bwglow 1.6s ease-in-out infinite alternate}
+@keyframes bwglow{from{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 16px var(--cc,#4d7cff),0 8px 30px #000a}to{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 44px var(--cc,#4d7cff),0 8px 30px #000a}}
+.panel.cur{animation:pglow 1.2s ease-in-out infinite alternate}
+@keyframes pglow{from{box-shadow:0 0 10px var(--pc),inset 0 0 12px #ffffff12}to{box-shadow:0 0 32px var(--pc),inset 0 0 22px #ffffff22}}
 </style>
 </head>
 <body>
@@ -104,6 +111,7 @@ button.sec{background:#ffffff22}
 <h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div>
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
+<script src="../fx.js"></script>
 <script src="engine.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../net.js"></script>
@@ -111,10 +119,11 @@ button.sec{background:#ffffff22}
 const O=Omok,$=s=>document.querySelector(s);
 const CELL=100,MAR=70;
 const COL={1:{n:"흑",c:"#8aa4ff"},2:{n:"백",c:"#ffd24d"}};
-let sel={n:15,me:1,lv:"normal",mode:"solo"},G=null,soundOn=true,ac=null,gen=0;
+let sel={n:15,me:1,lv:"normal",mode:"solo"},G=null,soundOn=window.FX?FX.on:true,ac=null,gen=0;
 
+const sfx=(n,o)=>{if(window.FX&&soundOn)FX.sfx(n,o)};
 function beep(f,d,type="sine",v=.07,delay=0){
-  if(!soundOn)return;
+  if(!soundOn||window.FX)return;
   try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
     const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
     o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -148,7 +157,7 @@ function render(){
   const R=CELL*.46;
   for(let i=0;i<n*n;i++){
     const v=b[i];if(!v)continue;const x=MAR+(i%n)*CELL,y=MAR+((i/n)|0)*CELL;
-    h+=`<circle cx="${x+3}" cy="${y+5}" r="${R}" fill="#0006"/><circle cx="${x}" cy="${y}" r="${R}" fill="url(#${v===1?"gb":"gw"})"/>`;
+    h+=`<g id="st${i}"><circle cx="${x+3}" cy="${y+5}" r="${R}" fill="#0006"/><circle cx="${x}" cy="${y}" r="${R}" fill="url(#${v===1?"gb":"gw"})"/></g>`;
   }
   if(G.line)for(const i of G.line){const x=MAR+(i%n)*CELL,y=MAR+((i/n)|0)*CELL;h+=`<circle cx="${x}" cy="${y}" r="${CELL*.2}" fill="#ff3b3b" stroke="#fff" stroke-width="4"/>`}
   else if(G.last>=0){const x=MAR+(G.last%n)*CELL,y=MAR+((G.last/n)|0)*CELL;h+=`<circle cx="${x}" cy="${y}" r="${CELL*.17}" fill="none" stroke="${b[G.last]===1?"#fff":"#c00"}" stroke-width="7"/>`}
@@ -163,10 +172,43 @@ function render(){
   $("#pTL").innerHTML=pn(opp,false);$("#pBR").innerHTML=pn(G.me,true);
   for(const [id,side] of [["#pTL",opp],["#pBR",G.me]]){const e=$(id);e.style.setProperty("--pc",COL[side].c);e.classList.toggle("cur",!G.over&&G.turn===side)}
   const m=$("#bigmsg");m.textContent=G.msg;m.className=G.kind;m.classList.toggle("pulse",G.busy&&!G.over);
+  try{postFx()}catch(e){}
+}
+// ── 연출 ──
+const XY=i=>FX.svgXY($("#svg"),MAR+(i%G.n)*CELL,MAR+((i/G.n)|0)*CELL);
+function lineInfo(b,n,i){ // 방금 둔 돌로 만든 가장 긴 줄(길이, 열린 끝 수)
+  const c=b[i],r0=(i/n)|0,c0=i%n;let best={len:1,open:0};
+  for(const [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){
+    let len=1,open=0;
+    for(const s of [1,-1]){let r=r0+dr*s,cc=c0+dc*s;while(r>=0&&r<n&&cc>=0&&cc<n&&b[r*n+cc]===c){len++;r+=dr*s;cc+=dc*s}
+      if(r>=0&&r<n&&cc>=0&&cc<n&&!b[r*n+cc])open++}
+    if(len>best.len||(len===best.len&&open>best.open))best={len,open};
+  }
+  return best;
+}
+function postFx(){
+  if(!window.FX||G.fxNew==null)return;
+  const i=G.fxNew;G.fxNew=null;const el=$("#st"+i);if(!el)return;
+  FX.drop(el,{dy:-30,s:1.35,dur:260});
+  setTimeout(()=>{const p=XY(i);sfx("stone");FX.ring(p.x,p.y,G.b[i]===1?"#333":"#fff",{r0:6,grow:1.6,life:18});FX.vib(10);
+    if(G.over)return;
+    const L=lineInfo(G.b,G.n,i);
+    if(L.len===4&&L.open>0){sfx("alert");FX.float(p.x,p.y-20,L.open===2?"열린 4목!!":"4목!","#ff9f1c");FX.flash("#ff9f1c")}
+    else if(L.len===3&&L.open===2){FX.float(p.x,p.y-20,"3목","#ffd24d")}
+  },200);
+}
+function winFx(winner,line){
+  if(!window.FX)return;
+  const win=winner===G.me;
+  if(line)line.forEach((i,k)=>setTimeout(()=>{const p=XY(i);FX.burst(p.x,p.y,{n:14,color:["#ff3b3b","#ffd24d","#fff"],speed:4,g:.05,size:4,life:35,shape:"star"});FX.sfx("step",{k})},400+k*150));
+  setTimeout(()=>{
+    if(winner===0){FX.sfx("turn");FX.banner("무승부","#888");return}
+    if(win){FX.sfx("win");FX.confetti();FX.banner("오목 완성!","#ff3b3b","승리!")}else{FX.sfx("lose");FX.banner("패배…","#666",(G.online?"상대":"컴퓨터")+"가 오목 완성")}
+  },1250);
 }
 function place(i,remote){
   const color=G.turn;if(G.online&&!remote)G.online.send({t:"mv",i});G.hist.push({b:Int8Array.from(G.b),turn:color,last:G.last});
-  G.b[i]=color;G.last=i;G.turn=3-color;beep(color===1?420:520,.07,"triangle");
+  G.b[i]=color;G.last=i;G.fxNew=i;G.turn=3-color;beep(color===1?420:520,.07,"triangle");
   const line=O.winLine(G.b,G.n,i);
   if(line)return finish(color,line);
   if(!G.b.includes(0))return finish(0,null);
@@ -187,8 +229,8 @@ function finish(winner,line){
   G.msg=winner===0?"무승부!":win?"🎉 5목 완성 — 승리!":(G.online?"상대가 5목을 완성했어요":"🤖 컴퓨터가 5목을 완성했어요");G.kind=win?"good":"bad";render();
   $("#wt").textContent=winner===0?"🤝 무승부":win?"🎉 승리했어요!":G.online?"😢 졌어요":"🤖 컴퓨터 승리";
   $("#wd").textContent=winner===0?"판이 가득 찼어요":`${COL[winner].n}이 5목을 완성했어요`;
-  beep(win?784:196,.3,"triangle",.1);if(win)beep(1047,.4,"triangle",.1,.25);
-  setTimeout(()=>$("#win").classList.remove("hide"),1100);
+  beep(win?784:196,.3,"triangle",.1);if(win)beep(1047,.4,"triangle",.1,.25);winFx(winner,line);
+  setTimeout(()=>$("#win").classList.remove("hide"),window.FX?3000:1100);
 }
 $("#svg").addEventListener("click",e=>{
   if(!G||G.over||G.busy||G.turn!==G.me)return;
@@ -196,7 +238,7 @@ $("#svg").addEventListener("click",e=>{
   const x=(e.clientX-r0.left)*Z/r0.width,y=(e.clientY-r0.top)*Z/r0.height;
   const c=Math.round((x-MAR)/CELL),r=Math.round((y-MAR)/CELL),n=G.n;
   if(r<0||r>=n||c<0||c>=n)return;
-  if(G.b[r*n+c]){G.msg="이미 돌이 있어요";G.kind="bad";render();return}
+  if(G.b[r*n+c]){G.msg="이미 돌이 있어요";G.kind="bad";sfx("bad");render();return}
   place(r*n+c);
 });
 function resignWin(side,why){ // side가 이김
@@ -219,7 +261,8 @@ $("#stage").addEventListener("click",e=>{
 });
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
-$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+$("#sndBtn").textContent=soundOn?"🔊":"🔇";
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;if(window.FX)FX.on=soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇";sfx("tap")};
 const again=()=>{gen++;if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
 function bindOpt(id,key,num){

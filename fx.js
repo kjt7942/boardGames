@@ -61,6 +61,16 @@
     boom: () => { tone(70, .9, { type: "sine", to: 30, v: .7 }); noise(.8, { f: 200, ft: "lowpass", v: .5 }); },
     win: () => { [[72, 0], [76, .12], [79, .24], [84, .36], [79, .52], [84, .64]].forEach(([n, t]) => tone(NOTE(n), .3, { type: "triangle", v: .18, at: t })); [72, 76, 79, 84].forEach(n => tone(NOTE(n), 1.2, { type: "triangle", v: .08, at: .8 })); for (let i = 0; i < 8; i++) noise(.08, { f: 6000, q: .5, v: .05, at: .8 + i * .07 }); },
     lose: () => { [[67, 0], [66, .3], [65, .6]].forEach(([n, t]) => tone(NOTE(n), .35, { type: "sawtooth", v: .09, at: t })); tone(NOTE(64), 1, { type: "sawtooth", v: .09, at: .9, to: NOTE(60) }); },
+    stone: () => { tone(2200, .05, { type: "sine", to: 900, v: .35 }); noise(.05, { f: 4500, q: 1.5, v: .35 }); tone(420, .12, { type: "triangle", to: 300, v: .18, at: .005 }); },
+    wood: () => { tone(260, .12, { type: "triangle", to: 160, v: .35 }); noise(.05, { f: 1800, q: 1, v: .3 }); },
+    capture: o => { const n = Math.min(6, (o && o.n) || 1); for (let i = 0; i < n + 1; i++) { tone(1800 + Math.random() * 900, .05, { to: 800, v: .18, at: i * .06 }); noise(.04, { f: 4000, q: 1.5, v: .2, at: i * .06 }); } tone(160, .25, { to: 70, v: .35 }); },
+    hit: () => { tone(150, .25, { type: "triangle", to: 60, v: .5 }); noise(.18, { f: 900, f2: 200, q: .8, v: .45 }); tone(900, .06, { type: "square", v: .06 }); },
+    check: () => { [0, .14].forEach(t => { tone(NOTE(81), .12, { type: "square", v: .1, at: t }); tone(NOTE(86), .12, { type: "square", v: .07, at: t + .06 }); }); tone(90, .4, { type: "sawtooth", v: .12, to: 60 }); },
+    alert: () => { tone(NOTE(76), .1, { type: "square", v: .08 }); tone(NOTE(83), .16, { type: "square", v: .08, at: .1 }); },
+    dice: () => { noise(.04, { f: 2500, q: 2, v: .2 }); tone(500 + Math.random() * 400, .03, { type: "square", v: .04 }); },
+    step: o => { const k = (o && o.k) || 0; tone(NOTE(76 + [0, 2, 4, 7, 9, 12][k % 6]), .14, { type: "sine", v: .14 }); tone(NOTE(88 + [0, 2, 4, 7, 9, 12][k % 6]), .1, { v: .05, at: .02 }); },
+    magic: () => { for (let i = 0; i < 9; i++) tone(NOTE(84 + [0, 4, 7, 11, 12, 16, 19, 23, 24][i]), .3, { v: .07, at: i * .04 }); },
+    poof: () => { noise(.4, { f: 3000, f2: 400, q: .7, v: .3 }); tone(600, .3, { to: 150, v: .1 }); },
     pop: () => { tone(500, .08, { to: 1200, v: .15 }); },
   };
   FX.sfx = (n, o) => { if (!FX.on || !ac() || !S[n]) return; try { S[n](o); } catch (e) { } };
@@ -119,6 +129,10 @@
     for (let k = 0; k < 2; k++) FX.burst(k ? innerWidth * .85 : innerWidth * .15, innerHeight * .9, { n: 70, color: cols, speed: 16, dir: k ? -Math.PI * .62 : -Math.PI * .38, spread: .35, g: .25, drag: .985, life: 140, size: 7, shape: "rect" });
     setTimeout(() => FX.burst(innerWidth / 2, innerHeight * .25, { n: 50, color: cols, speed: 9, g: .15, drag: .98, life: 130, size: 6, shape: "star" }), 350);
   };
+  FX.svgXY = (svg, x, y) => { const m = svg.getScreenCTM(); if (!m) return { x: 0, y: 0, k: 1 }; return { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f, k: m.a }; };
+  // 요소 하나를 '쿵' 내려놓기 / 이전 위치에서 미끄러지기 (SVG 요소면 사용자 좌표 단위)
+  FX.drop = (el, o) => { if (!el || !el.animate) return; o = o || {}; el.style.transformBox = "fill-box"; el.style.transformOrigin = "center"; el.animate([{ transform: `translateY(${o.dy || -40}px) scale(${o.s || 1.5})`, opacity: 0 }, { transform: "scale(.9)", opacity: 1, offset: .7 }, { transform: "none" }], { duration: o.dur || 300, easing: "cubic-bezier(.5,0,.6,1.3)" }); };
+  FX.slide = (el, dx, dy, o) => { if (!el || !el.animate) return; o = o || {}; el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: `translate(${dx * .45}px,${dy * .45 - (o.hop || 0)}px) scale(${o.s || 1.12})`, offset: .5 }, { transform: "none" }], { duration: o.dur || 300, easing: "cubic-bezier(.3,.1,.3,1)" }); };
   FX.center = el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; };
   FX.float = (x, y, text, color) => {
     const e = document.createElement("div"); e.className = "fxFloat"; e.textContent = text; e.style.left = x + "px"; e.style.top = y + "px"; e.style.setProperty("--c", color || "#fff");

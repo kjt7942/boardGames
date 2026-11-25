@@ -4,7 +4,7 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="../icons/icon-192.png"><title>원카드</title></head>
 <body>
-<script src="../cardart.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script src="../cardart.js"></script><script src="../fx.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
 <script>
 const {rnd,shuf,card,suit,rank,SU,RK}=CK;
 const DMG=c=>c===52?5:c===53?7:c===0?5:c%13===0?3:c%13===1?2:0;
@@ -27,7 +27,27 @@ function draw1(S,p){
 const BANK=15;
 function fewest(S){let b=0;S.hands.forEach((h,i)=>{if(h.length<S.hands[b].length)b=i});return b}
 const nx=(S,p,k)=>((p+S.dir*k)%S.np+S.np*8)%S.np;
+// ── 연출 ──
+const fxAt=(T,c)=>{const e=T.querySelector(`[data-cid="${c}"]`);return FX.center(e||T)};
+function fxAfter(S,a,me,names,T){
+  if(!window.FX||!S.last)return;
+  const [ps,t,v]=S.last.split("|"),P=+ps;
+  if(t==="draw"){const n=+v;if(n>=2)setTimeout(()=>{FX.sfx("bad");FX.shake(T,6);const q=FX.center(T);FX.float(q.x,q.y,`${names[P]} +${n}장 😱`,"#ff5d73")},350);return}
+  if(t!=="play"||a.t==="draw"||a.t==="pass")return;
+  const c=+v,d=DMG(c),r=c<52?rank(c):0;
+  setTimeout(()=>{
+    const q=fxAt(T,c);
+    if(c>=52){FX.sfx("boom");FX.flash("#c77dff");FX.banner("🃏 조커!","#c77dff",`공격 ${S.pend}장`);FX.shake(T,10);FX.burst(q.x,q.y,{n:40,color:["#c77dff","#ff5d73","#fff"],speed:9,g:.15,size:5,life:50,shape:"star"})}
+    else if(d){FX.sfx("hit");FX.flash("#ff3b3b");FX.burst(q.x,q.y,{n:24,color:["#ff5d73","#fff"],speed:7,g:.2,size:4,life:40,shape:"rect"});FX.float(q.x,q.y-40,`⚔️ 공격 ${S.pend}장!`,"#ff5d73");FX.shake(T,5)}
+    else if(r===11){FX.sfx("whoosh");FX.float(q.x,q.y-40,"⏭ 점프!","#4dabff")}
+    else if(r===12){FX.sfx("magic");FX.float(q.x,q.y-40,"🔄 방향 전환","#5ee08a")}
+    else if(r===13){FX.sfx("pop");FX.float(q.x,q.y-40,"👑 한 번 더!","#ffd24d")}
+    if(r===7&&a.suit!=null){FX.sfx("magic");FX.banner(["♠","♥","♦","♣"][S.suit]+" 로 변경!","#ffd24d")}
+    if(!S.over&&S.hands[P].length===1){FX.sfx("alert");FX.banner("원카드!",P===me?"#5ee08a":"#ff9f1c",names[P]+" 한 장 남았어요")}
+  },280);
+}
 CK.run({
+ after(S,a,me,names,T){try{fxAfter(S,a,me,names,T)}catch(e){}},
  id:"onecard",title:"원카드",icon:"🃏",color:"#e0453a",np:[2,3,4],levels:true,
  tagline:"손패를 먼저 모두 내는 사람이 승리! (2~4명)",
  rules:[

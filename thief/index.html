@@ -4,7 +4,7 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="../icons/icon-192.png"><title>도둑잡기</title></head>
 <body>
-<script src="../cardart.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script src="../cardart.js"></script><script src="../fx.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
 <script>
 const {rnd,shuf,card,rank,suit,SU,RK}=CK;
 const JK=52;
@@ -16,7 +16,23 @@ function dropPairs(S,p){ // 같은 숫자 2장씩 버리기
 const alive=S=>S.hands.map((h,i)=>h.length?i:-1).filter(i=>i>=0);
 function nextAlive(S,p){for(let k=1;k<=S.np;k++){const q=(p+k)%S.np;if(S.hands[q].length)return q}return -1}
 function check(S){const a=alive(S);if(a.length<=1){S.over=true;S.loser=a.length?a[0]:S.last_p;}}
+// ── 연출 ──
+function fxAfter(S,a,me,names,T){
+  if(!window.FX||!S.last)return;
+  const [P,Tt,c,m]=S.last.split("|").map(Number);
+  setTimeout(()=>{
+    const q=FX.center(T);
+    if(m){FX.sfx("pop");FX.burst(q.x,q.y,{n:18,color:["#ffd24d","#fff","#5ee08a"],speed:5,g:.1,size:4,life:35,shape:"star"});FX.float(q.x,q.y,P===me?"짝 맞춤! 🗑":names[P]+" 짝!","#5ee08a")}
+    if(c===JK){
+      if(P===me){FX.sfx("alert");FX.flash("#c77dff");FX.banner("🃏 조커가 왔다!","#c77dff","들키지 않게 넘겨요")}
+      else if(Tt===me){FX.sfx("magic");FX.banner("조커를 넘겼다! 😆","#5ee08a")}
+      else FX.sfx("whoosh");
+    }
+    if(!S.over)[P,Tt].forEach(x=>{if(!S.hands[x].length)FX.float(q.x,q.y+50,names[x]+" 탈출! 🏃","#4dabff")});
+  },300);
+}
 CK.run({
+ after(S,a,me,names,T){try{fxAfter(S,a,me,names,T)}catch(e){}},
  id:"thief",title:"도둑잡기",icon:"🦹",color:"#8e5cf0",np:[2,3,4],levels:false,
  tagline:"조커를 끝까지 들고 있으면 도둑! 짝을 모두 버리세요 (2~4명)",
  rules:[

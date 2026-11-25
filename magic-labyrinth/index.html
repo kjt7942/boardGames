@@ -110,6 +110,13 @@ button.sec{background:#ffffff22}
   .gem span{font-size:40px}.got{display:none}.pmsg{font-size:11px;min-height:26px}
   .pbtns button{font-size:13px;padding:9px 2px}
 }
+/* ── 연출 ── */
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 20% 30%,#7c5cff44 0,transparent 38%),radial-gradient(circle at 80% 70%,#ff7ce022 0,transparent 38%);animation:aur 18s ease-in-out infinite alternate}
+@keyframes aur{to{transform:translate(4%,-3%) rotate(8deg) scale(1.08)}}
+#boardwrap{animation:bwglow 1.6s ease-in-out infinite alternate}
+@keyframes bwglow{from{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 16px var(--cc,#4d7cff),0 8px 30px #000a}to{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 44px var(--cc,#4d7cff),0 8px 30px #000a}}
+.panel.cur{animation:pglow 1.2s ease-in-out infinite alternate}
+@keyframes pglow{from{box-shadow:0 0 10px var(--pc),inset 0 0 12px #ffffff12}to{box-shadow:0 0 32px var(--pc),inset 0 0 22px #ffffff22}}
 </style>
 </head>
 <body>
@@ -166,6 +173,7 @@ button.sec{background:#ffffff22}
 <h2 class="wt"></h2><div class="wd" style="margin:6px 0 14px"></div>
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
+<script src="../fx.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../net.js"></script>
 <script>
@@ -183,10 +191,11 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[
 function edge(r,c,dr,dc){return dr===1?`h${r},${c}`:dr===-1?`h${r-1},${c}`:dc===1?`v${r},${c}`:`v${r},${c-1}`}
 const inB=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
 
-let sel={p:2,d:24,m:0,mode:"solo",lv:"normal"}, G=null, aiTimer=null, soundOn=true, ac=null, diceTimer=null;
+let sel={p:2,d:24,m:0,mode:"solo",lv:"normal"}, G=null, aiTimer=null, soundOn=window.FX?FX.on:true, ac=null, diceTimer=null;
 
+const sfx=(n,o)=>{if(window.FX&&soundOn)FX.sfx(n,o)};
 function beep(f,d,type="sine",v=.07,delay=0){
-  if(!soundOn)return;
+  if(!soundOn||window.FX)return;
   try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
     const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
     o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -272,7 +281,7 @@ function render(){
     h+=`<div class="cell${(r+c)%2?" alt":""}${adj?" adj":""}${st?" startc":""}${sym&&G.collected.has(sym)?" done":""}" data-r="${r}" data-c="${c}"${st?` style="--pc:${st.c}"`:""}>`
       +(sym?`<span class="sym">${sym}</span>`:"")
       +(st?`<span class="start" style="--pc:${st.c}"></span>`:"")
-      +here(r,c).map((p,i)=>`<div class="tok${p===cur&&!G.over?" cur":""}" style="--pc:${p.c};--i:${i}">🧙</div>`).join("")
+      +here(r,c).map((p,i)=>`<div class="tok${p===cur&&!G.over?" cur":""}" data-pid="${G.players.indexOf(p)}" style="--pc:${p.c};--i:${i}">🧙</div>`).join("")
       +`</div>`;
   }
   $("#board").innerHTML=h;
@@ -305,6 +314,33 @@ function render(){
       +(p.cpu||(G.online&&i!==G.me)?"":`<div class="pbtns"><button class="roll" data-act="roll" data-p="${i}"${mine&&G.phase==="roll"?"":" disabled"}>🎲 굴리기</button>`
       +`<button class="sec" data-act="stop" data-p="${i}"${mine&&G.phase==="move"&&!shared?"":" disabled"}>✋ 멈추기</button></div>`);
   });
+  try{postFx()}catch(e){}
+}
+// ── 연출 ──
+const tokEl=pid=>$(`#board .tok[data-pid="${pid}"]`);
+function cellXY(r,c){const b=$("#board").getBoundingClientRect(),u=b.width/N;return {x:b.left+(c+.5)*u,y:b.top+(r+.5)*u,u}}
+function wallXY(k){const b=$("#board").getBoundingClientRect(),u=b.width/N,t=k[0],[r,c]=k.slice(1).split(",").map(Number);
+  return t==="h"?{x:b.left+(c+.5)*u,y:b.top+(r+1)*u,w:u,h:4}:{x:b.left+(c+1)*u,y:b.top+(r+.5)*u,w:4,h:u}}
+function postFx(){
+  if(!window.FX||!G.fx)return;
+  const F=G.fx;G.fx=null;const p=G.players[F.pid];if(!p)return;
+  if(F.t==="step"||F.t==="got"){
+    const el=tokEl(F.pid),u=cellXY(0,0).u;
+    if(el)FX.slide(el,(F.fr[1]-p.pos[1])*u,(F.fr[0]-p.pos[0])*u,{dur:230,s:1.2,hop:u*.25});
+    sfx("step",{k:F.k||0});
+    setTimeout(()=>{const q=cellXY(p.pos[0],p.pos[1]);FX.burst(q.x,q.y+q.u*.2,{n:8,color:[p.c,"#fff","#ffe58a"],speed:2.5,g:-.03,size:3,life:28,glow:1})},200);
+    if(F.t==="got")setTimeout(()=>{const q=cellXY(p.pos[0],p.pos[1]);sfx("magic");FX.burst(q.x,q.y,{n:60,color:["#ffe58a","#fff",p.c,"#c77dff"],speed:8,g:.06,size:6,life:60,shape:"star"});FX.ring(q.x,q.y,"#ffe58a",{r0:10,grow:3.5,life:35});FX.flash("#ffe58a");
+      if(!G.over)FX.banner(`${F.sym} 획득!`,p.c,`${p.n} ${p.got.length}/5`)},230);
+  }
+  if(F.t==="bump"){
+    const w=wallXY(F.k);sfx("crash");FX.flash("#ff3b3b");FX.burst(w.x,w.y,{n:36,color:["#ff5d73","#fff","#c77dff"],speed:8,g:.3,size:4,life:45,shape:"rect",w:w.w,h:w.h});FX.banner("쿵! 벽!","#ff5d73","출발점으로 돌아가요");
+  }
+  if(F.t==="home"){
+    const a=cellXY(F.fr[0],F.fr[1]),b=cellXY(p.pos[0],p.pos[1]);sfx("poof");
+    FX.burst(a.x,a.y,{n:30,color:["#c77dff","#fff","#7c5cff"],speed:4,g:-.05,size:6,life:40,glow:1});
+    setTimeout(()=>{FX.burst(b.x,b.y,{n:24,color:[p.c,"#fff"],speed:4,g:-.05,size:5,life:40,glow:1});FX.ring(b.x,b.y,p.c,{r0:6,grow:2})},250);
+    const el=tokEl(F.pid);if(el)FX.drop(el,{dy:-20,s:1.6,dur:400});
+  }
 }
 
 function nextTurn(){
@@ -330,11 +366,12 @@ function roll(fixed){
   d.classList.remove("pop");d.classList.add("show","tumble");
   let n=0;
   const t=setInterval(()=>{
-    showFace(FACES[rnd(6)]);beep(300+rnd(200),.04,"square",.03);
+    showFace(FACES[rnd(6)]);beep(300+rnd(200),.04,"square",.03);sfx("dice");
     if(++n>9){
       clearInterval(t);
       const v=v0;showFace(v);
       d.classList.remove("tumble");void d.offsetWidth;d.classList.add("pop");
+      if(window.FX){sfx("pop");setTimeout(()=>{const q=FX.center(d);FX.burst(q.x,q.y,{n:20,color:[G.players[G.cur].c,"#fff","#ffe58a"],speed:6,g:.1,size:4,life:35,shape:"star"});FX.float(q.x,q.y-q.h*.7,v+"칸!",G.players[G.cur].c)},60)}
       G.steps=v;G.phase="move";setMsg(`${v}칸 이동! 벽 조심!`);render();
       diceTimer=setTimeout(()=>d.classList.remove("show"),1400);drain();
     }
@@ -349,9 +386,9 @@ function tryMove(dr,dc,remote){
   if(G.online&&!remote)G.online.send({t:"mv",dr,dc});
   const k=edge(r,c,dr,dc);
   if(G.walls.has(k)){bump(k);return}
-  p.pos=[nr,nc];G.steps--;beep(520,.06,"sine",.06);learn("safe",k);
+  const fr=p.pos.slice();p.pos=[nr,nc];G.steps--;beep(520,.06,"sine",.06);learn("safe",k);G.fx={t:"step",pid:G.cur,fr,k:G.steps};
   if(`${nr},${nc}`===G.symCell[G.target]){
-    const sym=G.target;award(p);
+    const sym=G.target;award(p);G.fx={t:"got",pid:G.cur,fr,sym,k:G.steps};
     if(G.over){render();return}
     resolveOccupied();
     if(!G.over){setMsg(`${p.n} 마법사가 ${sym} 획득! 🎉`,"good");G.cur=(G.cur+1)%G.players.length;G.phase="roll";G.steps=0;}
@@ -363,12 +400,13 @@ function tryMove(dr,dc,remote){
 
 function bump(k){
   G.phase="bump";G.known.add(k);G.lastBump={k,t:Date.now()};
-  learn("walls",k);beep(110,.35,"sawtooth",.12);try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
+  learn("walls",k);beep(110,.35,"sawtooth",.12);if(!window.FX){try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}else FX.vib(120);
+  G.fx={t:"bump",pid:G.cur,k};
   const bw=$("#boardwrap");bw.classList.add("shake");setTimeout(()=>bw.classList.remove("shake"),400);
   const p=G.players[G.cur];
   setMsg(`🧱 쿵! ${p.n} 벽에 부딪혔어요`,"bad");
   render();
-  setTimeout(()=>{p.pos=p.start.slice();G.steps=0;nextTurn();drain();setTimeout(()=>{if(G&&!G.over)render()},2300)},900);
+  setTimeout(()=>{const fr=p.pos.slice();p.pos=p.start.slice();G.steps=0;G.fx={t:"home",pid:G.players.indexOf(p),fr};nextTurn();drain();setTimeout(()=>{if(G&&!G.over)render()},2300)},900);
 }
 
 function stop(remote){ if(G.phase==="move"){if(G.online&&!remote)G.online.send({t:"stop"});nextTurn()} }
@@ -378,7 +416,8 @@ function showWin(p){
   document.querySelectorAll(".wt").forEach(e=>e.textContent=G.online?(p.id===G.me?"🎉 승리했어요!":`😢 ${p.n} 승리`):G.solo?(p.cpu?"🤖 컴퓨터 승리":"🎉 승리했어요!"):`🏆 ${p.n} 마법사 승리!`);
   document.querySelectorAll(".wd").forEach(e=>e.textContent=`마법 심볼 5개를 모았어요 ${p.got.join(" ")}`);
   beep(523,.15,"triangle",.1);beep(659,.15,"triangle",.1,.15);beep(784,.15,"triangle",.1,.3);beep(1047,.4,"triangle",.1,.45);
-  $("#win").classList.remove("hide");
+  if(window.FX){const iWin=G.online?p.id===G.me:G.solo?!p.cpu:true;setTimeout(()=>{if(iWin){FX.sfx("win");FX.confetti({colors:[p.c,"#ffe58a","#c77dff","#fff"]});FX.banner("마법 완성!",p.c,`${p.n} 승리`)}else{FX.sfx("lose");FX.banner("패배…","#666",`${p.n} 승리`)}},400);setTimeout(()=>$("#win").classList.remove("hide"),2800)}
+  else $("#win").classList.remove("hide");
 }
 
 // ===== 컴퓨터 상대 =====
@@ -463,7 +502,8 @@ document.addEventListener("keydown",e=>{
 });
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
-$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+$("#sndBtn").textContent=soundOn?"🔊":"🔇";
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;if(window.FX)FX.on=soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇";sfx("tap")};
 const backSetup=()=>{clearInterval(aiTimer);clearInterval(qTimer);if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=backSetup;$("#againBtn").onclick=backSetup;
 // ----- 온라인 이벤트 (애니메이션 중에는 대기열에 쌓았다가 처리) -----

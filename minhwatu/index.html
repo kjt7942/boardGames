@@ -23,7 +23,7 @@
 .hw.s{width:32px;height:46px}.hw.s .m,.hw.s .t{display:none}
 .cap{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;max-width:300px}
 </style>
-<script src="../cardart.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script src="../cardart.js"></script><script src="../fx.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
 <script>
 const {rnd,shuf}=CK;
 const EM=["🌲","🌺","🌸","🌿","💐","🌷","🍀","🌕","🏵️","🍁","🌳","☔"];
@@ -61,7 +61,27 @@ function mFlip(S,p){
   mFinish(S,p);
 }
 function mFinish(S,p){S.last={p,c:S.pc.c,cap1:S.pc.cap1,f:S.pc.f,cap2:S.pc.cap2};S.pc=null;afterTurn(S,p)}
+// ── 연출 ──
+let FXS=null,FXL=null,FXD={};
+function fxAfter(S,a,me,names,T){
+  if(!window.FX)return;
+  if(FXS!==S){FXS=S;FXL=null;FXD={}}
+  if(!S.last||S.last===FXL)return;FXL=S.last;
+  const L=S.last,p=L.p,caps=[].concat(L.cap||[],L.cap1||[],L.cap2||[]);
+  const q=FX.center(T);let delay=500;
+  (L.ev||[]).forEach(ev=>{
+    const m={"쪽":["쪽!","#5ee08a","ok"],"따닥":["따닥!","#5ee08a","ok"],"쓸":["싹쓸이!","#4dabff","ok"],"뻑":["뻑!","#ff5d73","no"],"뻑 먹기":["뻑 먹기!","#ffd24d","ok"],"고!":["고!","#ff3b3b","check"]}[ev];
+    if(!m)return;setTimeout(()=>{FX.sfx(m[2]);FX.banner(m[0],m[1],names[p]);if(m[2]!=="no")FX.burst(q.x,q.y,{n:30,color:[m[1],"#fff"],speed:7,g:.1,size:5,life:45,shape:"star"});else FX.shake(T,6);if(ev==="고!")FX.flash("#ff3b3b")},delay);delay+=900;
+  });
+  if(caps.some(c=>ty(c)==="G"))setTimeout(()=>{FX.sfx("magic");FX.float(q.x,q.y-40,"✨ 광!","#ffd24d");FX.burst(q.x,q.y,{n:24,color:["#ffd24d","#fff"],speed:6,g:.05,size:5,life:45,shape:"star"})},450);
+  if(caps.length>=4)setTimeout(()=>{FX.sfx("capture",{n:caps.length});FX.float(q.x,q.y+40,`${caps.length}장 먹음!`,"#5ee08a")},500);
+  // 새 족보
+  const det=score(S.cap[p]).det.map(x=>x.replace(/ \d+$/,"").replace(/ \+\d+$/,"")),prev=FXD[p]||[];FXD[p]=det;
+  const nw=det.filter(x=>!prev.includes(x)&&!/^(열끗|띠|피)$/.test(x));
+  nw.forEach(x=>{setTimeout(()=>{FX.sfx("win");FX.banner(x+"!",p===me?"#ffd24d":"#ff9f1c",names[p]+" 족보 완성");if(p===me)FX.confetti({colors:["#ffd24d","#ff5d73","#fff"]})},delay);delay+=1200});
+}
 CK.run({
+ after(S,a,me,names,T){try{fxAfter(S,a,me,names,T)}catch(e){}},
  id:"minhwatu",title:"민화투",icon:"🎴",color:"#d8283b",np:[2,3],levels:true,
  tagline:"같은 달의 화투를 맞춰 먹고 점수를 겨뤄요 (2~3명)",
  rules:[

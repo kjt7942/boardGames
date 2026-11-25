@@ -4,7 +4,7 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="../icons/icon-192.png"><title>블랙잭</title></head>
 <body>
-<script src="../cardart.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script src="../cardart.js"></script><script src="../fx.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
 <script>
 const {rnd,shuf,card,rank,suit,SU,RK}=CK;
 const ROUNDS=8,BETS=[50,100,200,500];
@@ -37,7 +37,26 @@ function dealerPlay(S){
   S.phase="round";
 }
 function afterAct(S){const n=nextPlayer(S);if(n<0)dealerPlay(S);else S.cur=n}
+// ── 연출 ──
+function fxAfter(S,a,me,names,T){
+  if(!window.FX)return;
+  const p=a.p,q=FX.center(T);
+  if(a.t==="bet"){[0,70,140].forEach(t=>setTimeout(()=>FX.sfx("dice"),t));if(p===me)FX.float(q.x,q.y+60,`🪙 ${S.bet[p]} 베팅`,"#ffd24d")}
+  if(a.t==="dbl")FX.float(q.x,q.y-40,"✖️2 더블!","#ff9f1c");
+  if(a.t==="hit"||a.t==="dbl"){const t=tot(S.hands[p]).t;setTimeout(()=>{
+    if(t>21){FX.sfx("no");if(p===me){FX.flash("#ff3b3b");FX.shake(T,8)}FX.banner("버스트!","#ff3b3b",`${names[p]} ${t}`)}
+    else if(t===21){FX.sfx("ok");FX.float(q.x,q.y,`${names[p]} 21!`,"#ffd24d")}},380)}
+  if(a.t==="bet"&&S.phase!=="bet")setTimeout(()=>{for(let i=0;i<S.np;i++)if(S.bet[i]>0&&isBJ(S.hands[i])){FX.sfx("win");FX.banner("블랙잭!","#ffd24d",names[i]);break}},800);
+  if(S.phase==="round"&&a.t!=="next")setTimeout(()=>{
+    const r=S.res[me]||"",d=+((r.match(/[+-]\d+/)||[0])[0]);
+    if(/딜러 버스트/.test(r))FX.float(q.x,q.y-60,"딜러 버스트!","#5ee08a");
+    if(d>0){FX.sfx("ok");FX.burst(q.x,q.y,{n:44,color:["#ffd24d","#ffef9a","#fff"],speed:9,g:.28,size:6,life:60});FX.float(q.x,q.y,`💰 +${d}`,"#ffd24d")}
+    else if(d<0){FX.sfx("no");FX.float(q.x,q.y,`💸 ${d}`,"#ff5d73")}
+    else if(r)FX.float(q.x,q.y,"무승부","#ddd");
+  },1000);
+}
 CK.run({
+ after(S,a,me,names,T){try{fxAfter(S,a,me,names,T)}catch(e){}},
  id:"blackjack",title:"블랙잭",icon:"♠️",color:"#2fbf71",np:[1,2,3,4],onp:[2,3,4],levels:true,
  tagline:"21에 가깝게! 딜러를 이겨 칩을 모으세요 (8판 승부)",
  rules:[

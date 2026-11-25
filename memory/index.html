@@ -12,12 +12,33 @@
 .mc.cl{cursor:pointer}.mc.cl:active{transform:scale(.94)}
 @media (max-width:700px){.mc{--s:48px}}
 </style>
-<script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
+<script src="../fx.js"></script><script src="../cardkit.js"></script><script src="../firebase-config.js"></script><script src="../net.js"></script>
 <script>
 const {rnd,shuf}=CK;
 const EM=["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔"];
 const PC=["#6cf","#ff8a5c","#8dffb4","#ffd24d"];
+// ── 연출 ──
+let MS={p:-1,n:0};
+function fxAfter(S,a,me,names,T){
+  if(!window.FX)return;
+  const g=T.querySelector(".mg");if(!g)return;
+  FX.sfx("flip");
+  const e0=g.children[a.i];if(e0)e0.animate([{transform:"rotateY(90deg)"},{transform:"none"}],{duration:220});
+  if(S.f1>=0)return;
+  const j=S.log[S.log.length-2];
+  setTimeout(()=>{
+    const e1=g.children[a.i],e2=g.children[j];
+    if(S.st[a.i]===2){
+      MS=MS.p===a.p?{p:a.p,n:MS.n+1}:{p:a.p,n:1};
+      FX.sfx("ok",{combo:MS.n});
+      [e1,e2].forEach(e=>{if(!e)return;const q=FX.center(e);FX.burst(q.x,q.y,{n:18,color:[PC[a.p],"#fff","#ffd24d"],speed:5,g:.08,size:5,life:40,shape:"star"});e.animate([{transform:"scale(1)"},{transform:"scale(1.3)"},{transform:"scale(1)"}],{duration:420,easing:"cubic-bezier(.2,1.6,.4,1)"})});
+      const q=FX.center(e1);FX.float(q.x,q.y-30,"짝!","#5ee08a");
+      if(MS.n>=2&&!S.over)FX.banner(`🔥 연속 ${MS.n}쌍!`,PC[a.p],names[a.p]);
+    }else{MS={p:-1,n:0};FX.sfx("bad");[e1,e2].forEach(e=>e&&FX.shake(e,6))}
+  },350);
+}
 CK.run({
+ after(S,a,me,names,T){try{fxAfter(S,a,me,names,T)}catch(e){}},
  id:"memory",title:"짝 맞추기",icon:"🐾",color:"#ff8a5c",np:[1,2,3,4],onp:[2,3,4],levels:true,
  tagline:"같은 그림 두 장을 찾아라! 기억력 대결 (1~4명)",
  rules:[

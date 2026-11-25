@@ -57,6 +57,13 @@ button.sec{background:#ffffff22}
   .panel{padding:5px 8px;gap:3px}.info{display:none}
   .pbtns button{padding:8px 4px}
 }
+/* ── 연출 ── */
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 20% 30%,#e8c27a33 0,transparent 38%),radial-gradient(circle at 80% 70%,#9aa8ff22 0,transparent 38%);animation:aur 18s ease-in-out infinite alternate}
+@keyframes aur{to{transform:translate(4%,-3%) rotate(8deg) scale(1.08)}}
+#boardwrap{animation:bwglow 1.6s ease-in-out infinite alternate}
+@keyframes bwglow{from{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 16px var(--cc,#4d7cff),0 8px 30px #000a}to{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 44px var(--cc,#4d7cff),0 8px 30px #000a}}
+.panel.cur{animation:pglow 1.2s ease-in-out infinite alternate}
+@keyframes pglow{from{box-shadow:0 0 10px var(--pc),inset 0 0 12px #ffffff12}to{box-shadow:0 0 32px var(--pc),inset 0 0 22px #ffffff22}}
 </style>
 </head>
 <body>
@@ -106,6 +113,7 @@ button.sec{background:#ffffff22}
 <h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div>
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
+<script src="../fx.js"></script>
 <script src="engine.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../net.js"></script>
@@ -113,10 +121,11 @@ button.sec{background:#ffffff22}
 const B=Baduk,$=s=>document.querySelector(s);
 const CELL=100,MAR=70;
 const COL={1:{n:"흑",c:"#8aa4ff"},2:{n:"백",c:"#ffd24d"}};
-let sel={n:9,me:1,lv:"normal",mode:"solo"},G=null,soundOn=true,ac=null,gen=0;
+let sel={n:9,me:1,lv:"normal",mode:"solo"},G=null,soundOn=window.FX?FX.on:true,ac=null,gen=0;
 
+const sfx=(n,o)=>{if(window.FX&&soundOn)FX.sfx(n,o)};
 function beep(f,d,type="sine",v=.07,delay=0){
-  if(!soundOn)return;
+  if(!soundOn||window.FX)return;
   try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
     const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
     o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -164,7 +173,7 @@ function render(){
     const r=(i/n)|0,c=i%n,x=MAR+c*CELL,y=MAR+r*CELL,v=b[i];
     if(v){
       const dead=G.dead.has(i);
-      h+=`<g opacity="${dead?.4:1}"><circle cx="${x+3}" cy="${y+5}" r="${R}" fill="#0006"/><circle cx="${x}" cy="${y}" r="${R}" fill="url(#${v===1?"gb":"gw"})"/></g>`;
+      h+=`<g id="st${i}" opacity="${dead?.4:1}"><circle cx="${x+3}" cy="${y+5}" r="${R}" fill="#0006"/><circle cx="${x}" cy="${y}" r="${R}" fill="url(#${v===1?"gb":"gw"})"/></g>`;
       if(dead)h+=`<text x="${x}" y="${y+14}" font-size="44" text-anchor="middle" fill="${v===1?"#fff":"#222"}" font-weight="900">×</text>`;
     }
     if(terr&&terr[i]&&(!v||G.dead.has(i)))h+=`<rect x="${x-17}" y="${y-17}" width="34" height="34" rx="4" fill="${terr[i]===1?"#000":"#fff"}" opacity=".85" stroke="${terr[i]===1?"#fff":"#000"}" stroke-width="3"/>`;
@@ -191,9 +200,29 @@ function render(){
   $("#pTL").innerHTML=pn(opp,false);$("#pBR").innerHTML=pn(G.me,true);
   for(const [id,side] of [["#pTL",opp],["#pBR",G.me]]){const e=$(id);e.style.setProperty("--pc",COL[side].c);e.classList.toggle("cur",!G.over&&G.phase==="play"&&G.turn===side)}
   const m=$("#bigmsg");m.textContent=G.msg;m.className=G.kind;m.classList.toggle("pulse",G.busy&&!G.over);
+  try{postFx()}catch(e){}
 }
 function scoreNow(){const r=B.scoreKorean(G.S,[...G.dead],komi());return {black:r.black.toFixed(r.black%1?1:0),white:r.white.toFixed(r.white%1?1:0),r}}
 
+// ── 연출 ──
+const XY=i=>FX.svgXY($("#svg"),MAR+(i%G.S.n)*CELL,MAR+((i/G.S.n)|0)*CELL);
+function postFx(){
+  if(!window.FX||!G.fx)return;
+  const F=G.fx;G.fx=null;
+  if(F.t==="pass"){sfx("whoosh");FX.banner("패스",F.me?"#4d7cff":"#888",F.me?"한 수 쉬었어요":(G.online?"상대가":"컴퓨터가")+" 한 수 쉬었어요");return}
+  if(F.t==="score"){sfx("turn");FX.banner("계가 시작","#ffd24d","죽은 돌을 확인해요");return}
+  const el=$("#st"+F.i);if(el)FX.drop(el,{dy:-30,s:1.35,dur:260});
+  setTimeout(()=>{
+    const p=XY(F.i);sfx("stone");FX.ring(p.x,p.y,F.c===1?"#333":"#fff",{r0:6,grow:1.6,life:18});FX.vib(10);
+    if(F.cap.length){
+      const col=F.c===1?["#fff","#ddd","#bbb"]:["#111","#333","#555"];let sx=0,sy=0;
+      F.cap.forEach(j=>{const q=XY(j);sx+=q.x;sy+=q.y;FX.burst(q.x,q.y,{n:12,color:col,speed:5,g:.25,size:5,life:40})});
+      setTimeout(()=>sfx("capture",{n:F.cap.length}),40);
+      FX.float(sx/F.cap.length,sy/F.cap.length-20,`+${F.cap.length} 따냄!`,F.c===1?"#8aa4ff":"#ffd24d");
+      if(F.cap.length>=4){FX.banner("대마 잡기!",F.c===1?"#8aa4ff":"#ffd24d",`${F.cap.length}점을 따냈어요`);FX.shake($("#boardwrap"),8)}
+    }
+  },200);
+}
 function snapshot(){return {S:B.clone(G.S),turn:G.turn,last:G.last}}
 function place(idx,remote){
   const color=G.turn,T=B.clone(G.S);
@@ -201,13 +230,13 @@ function place(idx,remote){
   if(cap===null)return false;
   if(G.online&&!remote)G.online.send({t:"mv",i:idx});
   G.hist.push(snapshot());
-  G.S=T;G.last=idx;G.turn=3-color;G.passMsg="";
+  G.S=T;G.last=idx;G.turn=3-color;G.passMsg="";G.fx={t:"mv",i:idx,c:color,cap:cap||[]};
   beep(cap.length?330:520,.08,"triangle");if(cap.length)beep(250,.12,"square",.05,.07);
   afterMove(color);return true;
 }
 function doPass(remote){
   const color=G.turn;if(G.online&&!remote)G.online.send({t:"pass"});G.hist.push(snapshot());
-  B.play(G.S,-1,color);G.last=-1;G.turn=3-color;
+  B.play(G.S,-1,color);G.last=-1;G.turn=3-color;G.fx={t:"pass",me:color===G.me};
   G.passMsg=color!==G.me?(G.online?"상대가 한 수 쉬었어요":"🤖 컴퓨터가 한 수 쉬었어요"):"";
   beep(300,.1);afterMove(color,true);
 }
@@ -229,7 +258,7 @@ function aiTurn(){
   },150);
 }
 function startScore(){
-  G.phase="score";G.busy=false;G.passMsg="";G.ok={1:false,2:false};G.dead=new Set();
+  G.phase="score";G.busy=false;G.passMsg="";G.fx={t:"score"};G.ok={1:false,2:false};G.dead=new Set();
   if(G.online&&G.me!==1){G.waitDead=true;setTurnMsg();render();return}    // 흑 쪽이 계산해서 보내줌
   setDead(B.suggestDead(G.S,150));
   if(G.online)G.online.send({t:"dead",list:[...G.dead]});
@@ -248,7 +277,8 @@ function finish(){
   const d=Math.abs(r.black-r.white);
   $("#wd").innerHTML=`흑 <b>${r.black}</b> : 백 <b>${r.white}</b><br><span style="font-size:13px;opacity:.75">흑 집 ${r.tb}+사석 ${r.capB} · 백 집 ${r.tw}+사석 ${r.capW}+덤 ${r.komi}</span><br>${blackWins?"흑":"백"} ${d}집 승`;
   beep(win?784:196,.3,"triangle",.1);if(win)beep(1047,.4,"triangle",.1,.25);
-  setTimeout(()=>$("#win").classList.remove("hide"),700);
+  if(window.FX)setTimeout(()=>{if(win){FX.sfx("win");FX.confetti();FX.banner("승리!","#ffd24d",`${blackWins?"흑":"백"} ${d}집 승`)}else{FX.sfx("lose");FX.banner("패배…","#666",`${blackWins?"흑":"백"} ${d}집 승`)}},300);
+  setTimeout(()=>$("#win").classList.remove("hide"),window.FX?2600:700);
 }
 function resign(){
   if(G.online)G.online.send({t:"resign"});
@@ -292,7 +322,7 @@ $("#svg").addEventListener("click",e=>{
   if(G.turn!==G.me)return;
   if(G.S.b[i]){G.msg="이미 돌이 있어요";G.kind="bad";render();return}
   if(!place(i)){
-    G.msg=i===G.S.ko?"패! 바로 되따낼 수 없어요. 다른 곳에 먼저 두세요":"자충수예요 — 활로가 없는 곳엔 둘 수 없어요";G.kind="bad";beep(150,.15,"square",.05);render();
+    G.msg=i===G.S.ko?"패! 바로 되따낼 수 없어요. 다른 곳에 먼저 두세요":"자충수예요 — 활로가 없는 곳엔 둘 수 없어요";G.kind="bad";beep(150,.15,"square",.05);sfx("bad");if(window.FX)FX.shake($("#boardwrap"),4);render();
   }
 });
 $("#stage").addEventListener("click",e=>{
@@ -321,7 +351,8 @@ $("#stage").addEventListener("click",e=>{
 });
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
-$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+$("#sndBtn").textContent=soundOn?"🔊":"🔇";
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;if(window.FX)FX.on=soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇";sfx("tap")};
 const again=()=>{gen++;if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
 function bindOpt(id,key,num){

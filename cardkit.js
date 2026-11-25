@@ -146,7 +146,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
     function next() {
       if (!S) return;
       const p = def.turn(S);
-      if (p < 0) { if (def.end && !S._ended) { S._ended = 1; try { def.end(S, me, names); } catch (e) { } } const [t, d] = def.result(S, me, names); $("#wt").textContent = t; $("#wd").innerHTML = d; setTimeout(() => $("#win").classList.remove("hide"), def.endDelay || 900); if (ctx) ctx.finish(); return; }
+      if (p < 0) { if (!S._ended) { S._ended = 1; try { if (def.end) def.end(S, me, names); else if (window.FX) { const [t0] = def.result(S, me, names), win = /🎉/.test(t0), dr = /무승부|🤝/.test(t0); setTimeout(() => { if (win) { FX.sfx("win"); FX.confetti(); FX.banner("승리!", def.color, t0.replace(/[🎉😵🤖🦹]/gu, "").trim()); } else if (dr) { FX.sfx("turn"); FX.banner("무승부", "#888"); } else { FX.sfx("lose"); FX.banner("패배…", "#666", t0.replace(/[🎉😵🤖🦹]/gu, "").trim()); } }, 700); } } catch (e) { } } const [t, d] = def.result(S, me, names); $("#wt").textContent = t; $("#wd").innerHTML = d; setTimeout(() => $("#win").classList.remove("hide"), def.endDelay || (window.FX ? 2800 : 900)); if (ctx) ctx.finish(); return; }
       if (!ctx && p !== me) {
         const g = gen;
         setTimeout(() => { if (g !== gen || !S || def.turn(S) !== p) return; act(def.ai(S, p, sel.lv)); }, (def.aiDelay || 1250) + ((Math.random() * 500) | 0));
@@ -154,7 +154,7 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
     }
     function act(a, remote) {
       if (!a) return;
-      def.apply(S, a); if (ctx && !remote) ctx.send({ t: "a", a }); draw({ p: a.p === undefined ? def.turn(S) : a.p }); if (def.after) try { def.after(S, a, me, names, $("#table")); } catch (e) { } next();
+      const pt0 = def.turn(S); def.apply(S, a); if (ctx && !remote) ctx.send({ t: "a", a }); draw({ p: a.p === undefined ? def.turn(S) : a.p }); if (window.FX && pt0 !== me && def.turn(S) === me && S.np > 1) setTimeout(() => FX.sfx("turn"), 450); if (def.after) try { def.after(S, a, me, names, $("#table")); } catch (e) { } next();
     }
     $("#table").addEventListener("click", e => {
       const el = e.target.closest("[data-k]"); if (!el || !S || def.turn(S) !== me) return;

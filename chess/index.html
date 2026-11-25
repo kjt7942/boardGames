@@ -57,6 +57,13 @@ button.sec{background:#ffffff22}
   .panel{padding:5px 8px;gap:3px}.info{display:none}
   .pbtns button{padding:8px 4px}
 }
+/* ── 연출 ── */
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 20% 30%,#f0d9b533 0,transparent 38%),radial-gradient(circle at 80% 70%,#ff5d7322 0,transparent 38%);animation:aur 18s ease-in-out infinite alternate}
+@keyframes aur{to{transform:translate(4%,-3%) rotate(8deg) scale(1.08)}}
+#boardwrap{animation:bwglow 1.6s ease-in-out infinite alternate}
+@keyframes bwglow{from{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 16px var(--cc,#4d7cff),0 8px 30px #000a}to{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 44px var(--cc,#4d7cff),0 8px 30px #000a}}
+.panel.cur{animation:pglow 1.2s ease-in-out infinite alternate}
+@keyframes pglow{from{box-shadow:0 0 10px var(--pc),inset 0 0 12px #ffffff12}to{box-shadow:0 0 32px var(--pc),inset 0 0 22px #ffffff22}}
 </style>
 </head>
 <body>
@@ -106,6 +113,7 @@ button.sec{background:#ffffff22}
 <h2 id="wt"></h2><div id="wd" style="margin:6px 0 14px;line-height:1.6"></div>
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
+<script src="../fx.js"></script>
 <script src="engine.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../net.js"></script>
@@ -113,9 +121,10 @@ button.sec{background:#ffffff22}
 const C=Chess,$=s=>document.querySelector(s);
 const CELL=100,MAR=90,SIDE={1:{n:"백",c:"#ffd24d"},"-1":{n:"흑",c:"#8aa4ff"}};
 const GL={1:"♟\uFE0E",2:"♞",3:"♝",4:"♜",5:"♛",6:"♚"};
-let sel={me:1,lv:"normal",mode:"solo"},G=null,soundOn=true,ac=null,gen=0;
+let sel={me:1,lv:"normal",mode:"solo"},G=null,soundOn=window.FX?FX.on:true,ac=null,gen=0;
+const sfx=(n,o)=>{if(window.FX&&soundOn)FX.sfx(n,o)};
 function beep(f,d,type="sine",v=.07,delay=0){
-  if(!soundOn)return;
+  if(!soundOn||window.FX)return;
   try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
     const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
     o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -146,7 +155,7 @@ function render(){
     h+=`<text x="${fx}" y="868" font-size="26" fill="#5a3a10" text-anchor="middle" font-weight="700">${"abcdefgh"[f]}</text><text x="20" y="${MAR+k*CELL+9}" font-size="26" fill="#5a3a10" text-anchor="middle" font-weight="700">${rk}</text>`;
   }
   for(let i=0;i<64;i++){const v=b[i];if(!v)continue;const [x,y]=pos(i),w=v>0;
-    h+=`<text x="${x}" y="${y+27}" font-size="84" text-anchor="middle" font-family="'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',serif" fill="${w?"#fff":"#1a1a1a"}" stroke="${w?"#222":"#ddd"}" stroke-width="${w?3:2}" paint-order="stroke">${GL[Math.abs(v)]}</text>`}
+    h+=`<text id="pc${i}" x="${x}" y="${y+27}" font-size="84" text-anchor="middle" font-family="'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',serif" fill="${w?"#fff":"#1a1a1a"}" stroke="${w?"#222":"#ddd"}" stroke-width="${w?3:2}" paint-order="stroke">${GL[Math.abs(v)]}</text>`}
   const dests=new Set(G.moves.map(m=>(m>>6)&63));
   for(const t of dests){const [x,y]=pos(t);h+=b[t]||(Math.abs(b[G.sel])===1&&(t&7)!==(G.sel&7))?`<circle cx="${x}" cy="${y}" r="46" fill="none" stroke="#2a8f4f" stroke-width="9" opacity=".9"/>`:`<circle cx="${x}" cy="${y}" r="15" fill="#2a8f4f" opacity=".85"/>`}
   $("#svg").innerHTML=`<rect width="880" height="880" fill="#8a5a24"/>`+h;
@@ -160,6 +169,24 @@ function render(){
   $("#pTL").innerHTML=pn(opp,false);$("#pBR").innerHTML=pn(G.me,true);
   for(const [id,side] of [["#pTL",opp],["#pBR",G.me]]){const e=$(id);e.style.setProperty("--pc",SIDE[side].c);e.classList.toggle("cur",!G.over&&G.S.side===side)}
   const m=$("#bigmsg");m.textContent=G.msg;m.className=G.kind;m.classList.toggle("pulse",G.busy&&!G.over);
+  try{postFx()}catch(e){}
+}
+// ── 연출 ──
+function postFx(){
+  if(!window.FX||!G.fx)return;
+  const F=G.fx;G.fx=null;const sv=$("#svg");
+  const mv=(f,t,dur)=>{const el=$("#pc"+t);if(!el)return;const [x0,y0]=pos(f),[x1,y1]=pos(t);FX.slide(el,x0-x1,y0-y1,{dur,s:1.18,hop:12})};
+  mv(F.from,F.to,300);
+  if(F.castle)mv(F.castle[0],F.castle[1],360);
+  setTimeout(()=>{
+    const [x,y]=pos(F.to),p=FX.svgXY(sv,x,y);
+    if(F.cap){sfx("hit");const c=F.cap>0?["#fff","#ddd","#ffd24d"]:["#222","#555","#8aa4ff"];FX.burst(p.x,p.y,{n:30,color:c,speed:8,g:.3,size:5,life:45,shape:"rect"});FX.ring(p.x,p.y,"#ff5d73",{r0:10,grow:2.4});FX.shake($("#boardwrap"),6);FX.vib(30);
+      if(Math.abs(F.cap)===5)FX.float(p.x,p.y-30,"퀸 잡았다!","#ff5d73");else if(Math.abs(F.cap)>=3)FX.float(p.x,p.y-30,"잡았다!","#ffb3b3")}
+    else sfx("wood");
+    if(F.castle){FX.float(p.x,p.y-30,"캐슬링!","#5ee08a");sfx("magic")}
+    if(F.promo){FX.burst(p.x,p.y,{n:40,color:["#ffd24d","#fff"],speed:6,g:.05,size:6,life:55,shape:"star"});FX.banner("프로모션!","#ffd24d","폰이 "+({2:"나이트",3:"비숍",4:"룩",5:"퀸"}[F.promo])+"(으)로");sfx("magic")}
+    if(F.check&&!G.over){sfx("check");FX.flash("#ff3b3b");FX.banner("체크!","#ff3b3b");const k=C.kingSq(G.S.b,G.S.side),[kx,ky]=pos(k),q=FX.svgXY(sv,kx,ky);FX.ring(q.x,q.y,"#ff3b3b",{r0:20,grow:3,life:35})}
+  },280);
 }
 function doMove(m,remote){
   const side=G.S.side;if(G.online&&!remote)G.online.send({t:"mv",m});
@@ -168,6 +195,7 @@ function doMove(m,remote){
   if(u.cap)G.cap[side].push(Math.abs(u.cap));
   G.last={from:m&63,to:(m>>6)&63};G.sel=-1;G.moves=[];
   G.check=C.inCheck(G.S);
+  {const from=m&63,to=(m>>6)&63,pt=Math.abs(G.S.b[to]);G.fx={from,to,cap:u.cap,promo:m>>12,check:G.check,castle:pt===6&&Math.abs((to&7)-(from&7))===2?((to&7)>(from&7)?[from+3,from+1]:[from-4,from-1]):null}}
   beep(u.cap?300:480,.08,"triangle");if(G.check)beep(700,.1,"square",.05,.08);
   const st=C.status(G.S);
   if(st)return end(st);
@@ -190,7 +218,8 @@ function end(st){
   $("#wt").textContent=t.replace(" — 승리!","").replace("체크메이트","").trim()||"끝";
   $("#wt").textContent=st==="mate"?(win?"🎉 승리했어요!":G.online?"😢 졌어요":"🤖 컴퓨터 승리"):"🤝 무승부";$("#wd").textContent=st==="mate"?"체크메이트! "+d:d;
   beep(win?784:196,.3,"triangle",.1);if(win)beep(1047,.4,"triangle",.1,.25);
-  setTimeout(()=>$("#win").classList.remove("hide"),1100);
+  if(window.FX)setTimeout(()=>{if(st!=="mate"){FX.sfx("turn");FX.banner("무승부","#888",$("#wd").textContent)}else if(win){FX.sfx("win");FX.confetti();FX.banner("체크메이트!","#ffd24d","승리!")}else{FX.sfx("check");FX.flash("#ff3b3b");setTimeout(()=>FX.sfx("lose"),500);FX.banner("체크메이트","#ff3b3b","패배…")}},600);
+  setTimeout(()=>$("#win").classList.remove("hide"),window.FX?3200:1100);
 }
 $("#svg").addEventListener("click",e=>{
   if(!G||G.over||G.busy||G.S.side!==G.me)return;
@@ -203,7 +232,7 @@ $("#svg").addEventListener("click",e=>{
   if(v&&(v>0)===(G.me>0)){
     G.sel=i;G.moves=C.legal(G.S).filter(m=>(m&63)===i);
     if(!G.moves.length){G.sel=-1;G.msg="이 기물은 움직일 수 없어요";G.kind="bad";render();return}
-    setTurnMsg();beep(500,.05);render();return;
+    setTurnMsg();beep(500,.05);sfx("pop");render();return;
   }
   if(G.sel>=0){
     const ms=G.moves.filter(m=>((m>>6)&63)===i);
@@ -236,7 +265,8 @@ $("#stage").addEventListener("click",e=>{
 });
 $("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
 $("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
-$("#sndBtn").onclick=()=>{soundOn=!soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇"};
+$("#sndBtn").textContent=soundOn?"🔊":"🔇";
+$("#sndBtn").onclick=()=>{soundOn=!soundOn;if(window.FX)FX.on=soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇";sfx("tap")};
 const again=()=>{gen++;if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
 function bindOpt(id,key,num){
