@@ -44,9 +44,16 @@ function score(cards){
   cards.forEach(c=>cnt[ty(c)]++);
   s=cnt.G*20+cnt.Y*10+cnt.T*5;
   const byM={};cards.forEach(c=>byM[mo(c)]=(byM[mo(c)]||0)+1);
-  [[4,20],[9,20],[11,20],[10,40]].forEach(([m,v])=>{if(byM[m]===4){s+=v;det.push(MN[m]+"약 +"+v)}});
-  [["홍",30],["청",30],["초",30]].forEach(([d,v])=>{if(cards.filter(c=>ty(c)==="T"&&DAN(mo(c))===d).length===3){s+=v;det.push(d+"단 +"+v)}});
-  return{s,det,cnt};
+  let b=0;// 약·단은 상대 각자에게 받는 점수(b)
+  [[4,"초약"],[9,"풍약"],[11,"비약"]].forEach(([m,n])=>{if(byM[m]===4){b+=20;det.push(n+" 각 +20")}});
+  [["홍",30],["청",30],["초",30]].forEach(([d,v])=>{if(cards.filter(c=>ty(c)==="T"&&DAN(mo(c))===d).length===3){b+=v;det.push(d+"단 각 +"+v)}});
+  return{s,b,det,cnt};
+}
+// 받는 점수 = 먹은 패 점수 + 약·단(상대 수만큼), 내는 점수 = 상대의 약·단. 합계는 항상 240점 → 본 = 240÷인원
+const BON=np=>240/np;
+function totals(S){
+  const sc=S.cap.map(score),pay=sc.reduce((a,x)=>a+x.b,0);
+  return sc.map(x=>({...x,t:x.s+x.b*(S.np-1)-(pay-x.b)}));
 }
 const val=c=>({G:20,Y:10,T:5,P:0})[ty(c)];
 function afterTurn(S,p){
@@ -82,24 +89,30 @@ function fxAfter(S,a,me,names,T){
   const nw=det.filter(x=>!prev.includes(x)&&!/^(열끗|띠|피)$/.test(x));
   nw.forEach(x=>{setTimeout(()=>{FX.sfx("win");FX.banner(x+"!",p===me?"#ffd24d":"#ff9f1c",names[p]+" 족보 완성");if(p===me)FX.confetti({colors:["#ffd24d","#ff5d73","#fff"]})},delay);delay+=1200});
 }
+// 선: 첫 판은 첫 번째 플레이어, 다음 판부터는 전 판 최고점 플레이어. 선 번호는 seed 아래 2비트에 실어 모든 기기가 똑같이 정해요
+let LASTW=0;
 CK.run({
+ pickSeed:seed=>(seed&~3)|LASTW,
  after(S,a,me,names,T){try{fxAfter(S,a,me,names,T)}catch(e){}},
- id:"minhwatu",title:"민화투",icon:"🎴",color:"#d8283b",np:[2,3],levels:true,
- tagline:"같은 달의 화투를 맞춰 먹고 점수를 겨뤄요 (2~3명)",
+ id:"minhwatu",title:"민화투",icon:"🎴",color:"#d8283b",np:[2,3,4],levels:true,
+ tagline:"같은 달의 화투를 맞춰 먹고 점수를 겨뤄요 (2~4명)",
  rules:[
-  "화투 48장은 12달 × 4장이에요. 2명이면 <b>10장씩</b>, 3명이면 <b>7장씩</b> 나눠 갖고 바닥에 깔려요.",
+  "화투 48장은 12달 × 4장이에요. 처음에 나눠요: <b>2명</b> 바닥 8장·손 10장씩 / <b>3명</b> 바닥 6장·손 7장씩 / <b>4명</b> 바닥 8장·손 5장씩. 남은 패는 더미예요.",
   "내 차례에 손패 한 장을 내요. 바닥에 <b>같은 달</b>이 1장이면 가져와요(먹기). <b>2장이면 그중 1장을 골라서</b> 먹고, 3장이면 전부 먹어요. 없으면 바닥에 내려놓아요.",
-  "이어서 더미에서 한 장을 뒤집어 같은 달이 바닥에 있으면 먹고, 없으면 바닥에 놓여요.",
-  "손패가 모두 떨어지면 끝! 먹은 패 점수: <b>광 20 · 열(동물·꽃) 10 · 띠 5 · 피 0</b>",
-  "<b>약</b>: 난초(5월)·단풍(10월)·비(12월) 4장 모두 먹으면 +20, 오동(11월) 4장은 +40",
-  "<b>단</b>: 홍단(1·2·3월 띠)·청단(6·9·10월 띠)·초단(4·5·7월 띠)을 3장 모으면 각 +30",
-  "점수가 가장 높은 사람이 승리! (전통 규칙 요약판이에요)"],
+  "이어서 더미에서 한 장을 뒤집어 같은 달이 바닥에 있으면 먹고, 없으면 바닥에 놓여요. 뻑은 없어요. 내가 낸 패와 같은 달이 뒤집혀도 그냥 먹어요.",
+  "손패가 모두 떨어지면 끝! 먹은 패 점수: <b>광 20 · 열끗(동물·꽃) 10 · 오끗(띠) 5 · 껍데기(피) 0</b>",
+  "<b>약</b>: 초약(난초 4장)·풍약(단풍 4장)·비약(비 4장)을 모으면 <b>상대 한 명마다 20점</b>을 받아요. (3명이면 40점)",
+  "<b>단</b>: 홍단(송학·매조·벚꽃)·청단(모란·국화·단풍)·초단(흑싸리·난초·홍싸리) 띠 3장을 모으면 <b>상대 한 명마다 30점</b>을 받아요.",
+  "모든 패 점수의 합은 240점이에요. <b>본</b> = 240 ÷ 인원 (2명 120 · 3명 80 · 4명 60). 본을 넘으면 승리, 같으면 무승부, 못 채우면 패배. 여럿이면 점수가 가장 높은 사람이 이겨요.",
+  "<b>선</b>: 첫 판은 첫 번째 플레이어, 다음 판부터는 전 판에서 가장 높은 점수를 얻은 사람이 해요. 선부터 패를 나누고 <b>반시계 방향</b>(내 오른쪽 사람)으로 차례가 돌아가요.",
+  "출처: 민화투 규칙 설명 글(동네마다 조금씩 달라요)"],
  init(seed,np){
-  const S={rs:seed,np,cur:0,over:false,last:null,hands:[],cap:[],floor:[],stock:[],phase:"play",pk:null,pc:null};
+  const S={rs:seed,np,cur:0,dealer:0,over:false,last:null,hands:[],cap:[],floor:[],stock:[],phase:"play",pk:null,pc:null};
   S.stock=shuf(S,Array.from({length:48},(_,i)=>i));
   for(let p=0;p<np;p++){S.hands.push([]);S.cap.push([])}
-  const [fl,per]=np===2?[4,5]:[3,4];
-  for(let r=0;r<2;r++){for(let i=0;i<fl;i++)S.floor.push(S.stock.pop());for(let p=0;p<np;p++)for(let i=0;i<per;i++)S.hands[p].push(S.stock.pop())}
+  S.dealer=S.cur=(seed&3)<np?seed&3:0;
+  // 2명: 바닥 8·손 10 / 3명: 바닥 6·손 7 / 4명: 바닥 8·손 5 (남는 패는 더미)
+  for(const [fl,per] of {2:[[4,5],[4,5]],3:[[3,4],[3,3]],4:[[4,3],[4,2]]}[np]){for(let i=0;i<fl;i++)S.floor.push(S.stock.pop());for(let k=0;k<np;k++)for(let i=0;i<per;i++)S.hands[(S.dealer+k)%np].push(S.stock.pop())}
   return S;
  },
  turn:S=>S.over?-1:S.cur,
@@ -133,7 +146,7 @@ CK.run({
     let s=0;
     if(g.length){
       const add=[c,...g];s=add.reduce((a,x)=>a+val(x),0)+4;
-      if(lv==="hard")s+=score([...mine,...add]).s-score(mine).s-add.reduce((a,x)=>a+val(x),0);
+      if(lv==="hard"){const g=c=>{const r=score(c);return r.s+r.b*(S.np-1)};s+=g([...mine,...add])-g(mine)-add.reduce((a,x)=>a+val(x),0)}
       if(g.length===3)s+=15;
     }else{
       s=-val(c)*(lv==="hard"?1.4:.6);
@@ -148,15 +161,17 @@ CK.run({
   return{t:"play",p,c:h.reduce((a,b)=>sc(b)>sc(a)?b:a)};
  },
  render(S,me,ui,names){
-  const capHtml=p=>{const sc=score(S.cap[p]);const order=["G","Y","T","P"];
+  const T=totals(S);
+  const capHtml=p=>{const order=["G","Y","T","P"];
    return `<div class="cap">${S.cap[p].slice().sort((a,b)=>order.indexOf(ty(a))-order.indexOf(ty(b))||a-b).map(c=>hw(c,"s")).join("")}</div>`};
   let h=`<div class="row" style="align-items:flex-start">`;
-  for(let k=1;k<S.np;k++){const p=(me+k)%S.np,sc=score(S.cap[p]);
-   h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}">${names[p]} · 손패 ${S.hands[p].length}장<small>점수 ${sc.s}${sc.det.length?" ("+sc.det.join(", ")+")":""}</small>${capHtml(p)}</div>`}
+  // 진행은 선 기준 반시계: 내 다음 사람이 내 오른쪽에 오도록 상대를 오른쪽부터 놓아요
+  for(let k=S.np-1;k>=1;k--){const p=(me+k)%S.np,sc=T[p];
+   h+=`<div class="seat${S.cur===p&&!S.over?" cur":""}">${names[p]}${S.dealer===p?" 👑선":""} · 손패 ${S.hands[p].length}장<small>점수 ${sc.t}${sc.det.length?" ("+sc.det.join(", ")+")":""}</small>${capHtml(p)}</div>`}
   h+=`</div><div class="felt"><div class="row" style="gap:6px;max-width:560px">${S.floor.map(c=>{const pk=S.phase==="pick"&&S.cur===me&&S.pk.opts.includes(c);return pk?hw(c,"ok",`data-k="pk" data-v="${c}"`):hw(c,S.last&&(S.last.f===c||S.last.c===c)?"fl":"")}).join("")||"<span style='opacity:.6'>바닥이 비었어요</span>"}</div>
    <small style="opacity:.8">더미 ${S.stock.length}장</small></div>`;
-  const sc=score(S.cap[me]);
-  h+=`<div class="seat${S.cur===me&&!S.over?" cur":""}" style="align-self:center;max-width:100%">${names[me]} · 점수 <b>${sc.s}</b>${sc.det.length?" ("+sc.det.join(", ")+")":""}${capHtml(me)}</div>
+  const sc=T[me];
+  h+=`<div class="seat${S.cur===me&&!S.over?" cur":""}" style="align-self:center;max-width:100%">${names[me]}${S.dealer===me?" 👑선":""} · 점수 <b>${sc.t}</b> <small>(본 ${BON(S.np)})</small>${sc.det.length?" ("+sc.det.join(", ")+")":""}${capHtml(me)}</div>
    <div class="hand">${S.hands[me].slice().sort((a,b)=>a-b).map(c=>{const ok=S.floor.some(x=>mo(x)===mo(c));return hw(c,S.cur===me&&!S.over?(ok&&S.phase==="play"?"ok":""):"",`data-k="h" data-v="${c}"`)}).join("")}</div>`;
   return h;
  },
@@ -169,11 +184,12 @@ CK.run({
   return[(t?t+" · ":"")+names[S.cur]+" 차례",""];
  },
  result(S,me,names){
-  const sc=S.cap.map(score),best=Math.max(...sc.map(x=>x.s));
-  const w=sc.map((x,i)=>x.s===best?i:-1).filter(i=>i>=0);
+  const sc=totals(S),best=Math.max(...sc.map(x=>x.t)),bon=BON(S.np);
+  const w=sc.map((x,i)=>x.t===best?i:-1).filter(i=>i>=0);
+  LASTW=w[0];
   const won=w.includes(me);
   return[won?(w.length>1?"🤝 공동 1등!":"🎉 승리했어요!"):"😵 "+names[w[0]]+" 승리",
-   "<div style='text-align:left'>"+sc.map((x,i)=>`${names[i]}: <b>${x.s}점</b> ${x.det.join(", ")}`).join("<br>")+"</div>"];
+   "<div style='text-align:left'>본 "+bon+"점<br>"+sc.map((x,i)=>`${names[i]}: <b>${x.t}점</b> (${x.t>bon?"본 +"+(x.t-bon):x.t<bon?"본 "+(x.t-bon):"본과 같음"}) ${x.det.join(", ")}`).join("<br>")+"</div>"];
  }
 });
 </script><script src="../theme.js"></script>

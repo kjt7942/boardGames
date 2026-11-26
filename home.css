@@ -308,3 +308,100 @@ body.bg-home {
   html { scroll-behavior: auto; }
   .game-card { transition: none; }
 }
+
+/* ===== 밝은 앱 테마 ===== */
+body.bg-home {
+  --bg-surface: #ffffff;
+  --bg-raised: #f1f6ff;
+  --bg-control: #e3ebff;
+  --bg-line: #c8d6f7;
+  --bg-ink: #16296b;
+  --bg-muted: #4d5d92;
+  --bg-lilac: #5b3fd0;
+  background: linear-gradient(#ffffff00 55%, #ffffff55), url(img/bg_sky.webp) center top / cover fixed #8fd0ff;
+  padding-bottom: 20px;
+}
+
+.app-header { background: transparent; border: 0; }
+.app-bar { padding-right: 252px; }
+.brand { color: #fff; font-size: 1.35rem; text-shadow: 0 2px 0 #1b4fb8, 0 0 10px #1b4fb8; }
+.app-nav a, .app-nav button { color: #fff; text-shadow: 0 1px 4px #1b4fb8cc; font-weight: 750; }
+.app-nav :is(a, button):hover { background: #ffffff33; color: #fff; }
+
+.hero { background: #5ab4ff; border: 3px solid #fff; border-radius: 26px; box-shadow: 0 6px 0 #1f64d6, 0 14px 34px #1f64d655; }
+.hero { min-height: clamp(340px, 38vw, 470px); }
+.hero-art { inset: 0; width: 100%; object-position: right 35%; }
+.hero::before { background: linear-gradient(90deg, #1f78ff55 0%, transparent 52%); }
+.hero h1 {
+  color: #fff;
+  font-size: clamp(1.9rem, 4.2vw, 3.2rem);
+  letter-spacing: -.05em;
+  text-shadow: 0 3px 0 #1b4fb8, 3px 0 0 #1b4fb8, -3px 0 0 #1b4fb8, 0 -3px 0 #1b4fb8, 0 8px 18px #0b2f8a88;
+}
+.hero h1 em { color: #ffd43b; font-style: normal; }
+.hero p { color: #fff; font-weight: 700; text-shadow: 0 2px 6px #1b4fb8; }
+
+.bg-home .home-button {
+  min-height: 52px; padding: 0 22px; border-radius: 16px; border: 2px solid #fff;
+  background: linear-gradient(180deg, #4fa3ff, #1f64e6); color: #fff; font-size: 1.02rem; font-weight: 800;
+  box-shadow: 0 5px 0 #123f9e; text-shadow: 0 2px 0 #123f9e;
+}
+.bg-home .home-button:hover { background: linear-gradient(180deg, #6fb5ff, #2f74f2); }
+.bg-home .home-button:active { transform: translateY(3px); box-shadow: 0 2px 0 #123f9e; }
+.bg-home .home-button.primary, #inst .ok {
+  background: linear-gradient(180deg, #ffd35c, #ff9d1c); border-color: #fff; color: #5a2d00;
+  box-shadow: 0 5px 0 #c96a00; text-shadow: 0 1px 0 #ffe9a8;
+}
+.bg-home .home-button.primary:hover { background: linear-gradient(180deg, #ffe17f, #ffae3d); }
+
+.home-section h2 {
+  color: #fff; font-size: clamp(1.5rem, 2.8vw, 1.95rem);
+  text-shadow: 0 2px 0 #1b4fb8, 2px 0 0 #1b4fb8, -2px 0 0 #1b4fb8, 0 -2px 0 #1b4fb8, 0 5px 12px #0b2f8a66;
+}
+.section-heading span { color: #fff; font-weight: 700; text-shadow: 0 1px 4px #1b4fb8; }
+
+.game-card {
+  background: #fff; border: 3px solid #fff; border-radius: 20px;
+  box-shadow: 0 5px 0 #b6c8f2, 0 12px 26px #1b4fb833;
+}
+.game-card:hover, .game-card:focus-visible { background: #f4f8ff; border-color: #ffd35c; }
+.game-art { border-radius: 14px 14px 0 0; }
+.game-card-copy { padding: 12px 14px 15px; }
+.game-card h3 { color: #16296b; }
+
+.bg-home .filters button {
+  background: #fff; color: #4d5d92; border: 2px solid #fff; border-radius: 999px; box-shadow: 0 3px 0 #b6c8f2;
+}
+.bg-home .filters button:hover { color: #16296b; border-color: #ffd35c; }
+.bg-home .filters button[aria-pressed="true"] {
+  background: linear-gradient(180deg, #8b6cff, #5a37d6); color: #fff; border-color: #fff; box-shadow: 0 3px 0 #3a1fa0;
+}
+
+.home-footer { color: #fff; border-top: 1px solid #ffffff66; text-shadow: 0 1px 4px #1b4fb8; }
+
+#inst { background: #fff; border: 3px solid #fff; color: #16296b; box-shadow: 0 6px 0 #b6c8f2, 0 14px 34px #1b4fb866; }
+#inst p { color: #4d5d92; }
+#inst .no { background: #e3ebff; color: #4d5d92; }
+
+.home-dialog { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: #0c1c5a99; }
+.home-dialog[hidden] { display: none; }
+.home-dialog-card {
+  width: min(100%, 480px); padding: 22px; color: #fff; border: 3px solid #a592ff; border-radius: 28px;
+  background: linear-gradient(180deg, #6a4ee0, #3b2490 55%, #2c1a78); box-shadow: 0 0 0 3px #2a1a6b, 0 18px 60px #0b0640aa;
+}
+.home-dialog-card h2 { margin: 0 0 10px; text-shadow: 0 2px 0 #2a1a6b, 0 0 14px #9b86ff; }
+.home-dialog-card ol { margin: 0 0 16px; padding-left: 1.3em; color: #e4dcff; line-height: 1.65; }
+.home-dialog-card li + li { margin-top: 6px; }
+.home-dialog-card li b { color: #fff; }
+.home-dialog-card .home-button { width: 100%; }
+
+@media (max-width: 600px) {
+  .app-bar { padding-right: 0; min-height: 64px; }
+  .brand { margin-top: 0; }
+  .hero { min-height: 340px; }
+  .hero-art { width: 100%; object-position: 72% center; }
+  .hero::before { background: linear-gradient(180deg, #1f78ff55, transparent 60%); }
+  .hero { align-items: start; }
+  .hero-copy { padding: 18px; }
+  .featured .game-card :is(p, .game-meta) { display: none; }
+}

@@ -22,18 +22,34 @@
       <a href="#library">전체 게임</a>
       <button id="navOnline" type="button">온라인 대기실</button>
     </nav>
-    <div class="app-tools">
-      <button class="icon-button" id="sndT" type="button" aria-label="효과음" title="효과음">🔊</button>
-      <button class="icon-button" id="fsT" type="button" aria-label="전체화면" title="전체화면">⛶</button>
-    </div>
   </div>
 </header>
+<!-- 모든 화면 공통 버튼(홈 · 전체화면 · 소리 · 규칙 · 새 게임): 게임 화면과 같은 자리 -->
+<div class="bg-toolbar" id="appTools" role="toolbar" aria-label="앱 메뉴">
+  <button id="homeT" type="button" aria-label="홈" title="홈">🏠</button>
+  <button id="fsT" type="button" aria-label="전체화면" title="전체화면">⛶</button>
+  <button id="sndT" type="button" aria-label="효과음" title="효과음">🔊</button>
+  <button id="ruleT" type="button" aria-label="이용 방법" title="이용 방법">❓</button>
+  <button id="newT" type="button" aria-label="새 게임 고르기" title="새 게임 고르기">↻</button>
+</div>
+<div class="home-dialog" id="homeRules" hidden role="dialog" aria-modal="true" aria-labelledby="homeRulesT">
+  <div class="home-dialog-card">
+    <h2 id="homeRulesT">이용 방법</h2>
+    <ol>
+      <li><b>게임 탐색</b>에서 하고 싶은 게임을 골라요.</li>
+      <li>게임 시작 화면에서 <b>혼자</b>(컴퓨터와) · <b>여럿이서</b> · <b>온라인</b> 중에 골라요.</li>
+      <li><b>온라인 대기실</b>에서는 방을 만들어 친구와 여러 게임을 돌려 가며 해요.</li>
+      <li>위쪽 버튼: 🏠 홈 · ⛶ 전체화면 · 🔊 소리 켜기/끄기 · ❓ 규칙 · ↻ 새 게임. <b>어느 화면에서나 같은 자리</b>에 있어요.</li>
+    </ol>
+    <button class="home-button primary" id="homeRulesClose" type="button">알겠어요</button>
+  </div>
+</div>
 <main class="home-wrap">
   <section class="hero" aria-labelledby="home-title">
-    <img class="hero-art" src="img/mascot.webp" alt="" fetchpriority="high">
+    <img class="hero-art" src="img/hero_home.webp" alt="" fetchpriority="high">
     <div class="hero-copy">
-      <h1 id="home-title">보드게임 한 판?</h1>
-      <p>혼자 가볍게, 친구와 함께.<br>오늘의 게임을 골라보세요.</p>
+      <h1 id="home-title">다양한 보드게임을<br><em>지금 바로</em> 즐겨보세요!</h1>
+      <p>혼자 가볍게, 친구와 함께.</p>
       <div class="hero-actions">
         <a class="home-button primary" href="#library">게임 탐색</a>
         <button class="home-button" id="hubOnline" type="button">온라인 대기실</button>
@@ -117,6 +133,13 @@ filters.addEventListener("click", event => {
 });
 
 const sound = byId("sndT");
+byId("homeT").onclick = () => { tap(); scrollTo({ top: 0, behavior: "smooth" }); };
+byId("newT").onclick = () => { tap(); byId("library").scrollIntoView({ behavior: "smooth" }); };
+const homeRules = byId("homeRules");
+byId("ruleT").onclick = () => { tap(); homeRules.hidden = false; byId("homeRulesClose").focus(); };
+byId("homeRulesClose").onclick = () => { homeRules.hidden = true; };
+homeRules.addEventListener("click", e => { if (e.target === homeRules) homeRules.hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") homeRules.hidden = true; });
 function showSound() {
   const enabled = Boolean(window.FX?.on);
   sound.textContent = enabled ? "🔊" : "🔇";

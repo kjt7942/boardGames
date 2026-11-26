@@ -12,7 +12,7 @@
     { id: "onecard", name: "원카드", category: "카드", thumb: "th_onecard", banner: "ban_onecard", players: "2–4명", minutes: 10, online: [2, 3, 4], icon: "🃏", description: "같은 무늬나 숫자의 카드를 내며 손패를 가장 먼저 비우세요." },
     { id: "thief", name: "도둑잡기", category: "카드", thumb: "th_thief", banner: "ban_thief", players: "2–4명", minutes: 5, online: [2, 3, 4], icon: "🦹", description: "상대 카드를 뽑아 짝을 버리세요. 마지막까지 조커를 들고 있으면 도둑이에요." },
     { id: "blackjack", name: "블랙잭", category: "카드", thumb: "th_blackjack", banner: "ban_blackjack", players: "1–4명", minutes: 15, online: [2, 3, 4], icon: "♠️", description: "카드 합을 21에 가깝게 맞춰 딜러를 이기세요. 여덟 판 동안 칩을 모아요." },
-    { id: "minhwatu", name: "민화투", category: "화투", thumb: "th_minhwatu", banner: "ban_minhwatu", players: "2–3명", minutes: 10, online: [2, 3], icon: "🎴", description: "같은 달의 패를 맞춰 먹고 광·열·띠·약 점수로 겨뤄요." },
+    { id: "minhwatu", name: "민화투", category: "화투", thumb: "th_minhwatu", banner: "ban_minhwatu", players: "2–4명", minutes: 10, online: [2, 3, 4], icon: "🎴", description: "같은 달의 패를 맞춰 먹고 광·열·띠·약 점수로 겨뤄요." },
     { id: "matgo", name: "맞고", category: "화투", thumb: "th_matgo", banner: "ban_matgo", players: "2명", minutes: 10, online: [2], icon: "🌸", description: "같은 달의 패를 맞춰 점수를 모으세요. 7점부터 고 또는 스톱을 선택해요." },
     { id: "codebreak", name: "코드 추리", category: "추리", thumb: "th_codebreak", banner: "ban_codebreak", players: "2–4명", minutes: 15, online: [2, 3, 4], icon: "🔐", description: "상대의 숨은 숫자 타일을 추리해 모두 공개시키세요." },
     { id: "memory", name: "짝 맞추기", category: "추리", thumb: "th_memory", banner: "ban_memory", players: "1–4명", minutes: 10, online: [2, 3, 4], icon: "🐾", description: "같은 그림 두 장을 찾아요. 짝을 맞히면 한 번 더 뒤집을 수 있어요." }
@@ -47,6 +47,14 @@
     stageTitle.textContent = game.name;
     menu.prepend(stageTitle);
   }
+  menu.classList.add("bg-toolbar");
+  // 창(설정·규칙·결과) 위에도 항상 보이도록 stage 밖으로 옮기되, 원래 자리는 비워 둬서 게임 배치가 그대로 유지돼요
+  const spacer = element("div", "bg-menu-spacer");
+  const area = getComputedStyle(menu).gridArea;
+  spacer.style.gridArea = area;
+  if (area.startsWith("auto")) spacer.style.minHeight = "46px"; // 카드 게임: 맨 위 줄이 공통 버튼 자리
+  menu.before(spacer);
+  document.body.append(menu);
   const menuNames = { homeBtn: "게임 목록", fsBtn: "전체화면", sndBtn: "효과음", ruleBtn: "게임 규칙", newBtn: "새 게임" };
   for (const button of menu.querySelectorAll("button")) {
     button.setAttribute("aria-label", menuNames[button.id]);

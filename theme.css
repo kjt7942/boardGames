@@ -156,7 +156,10 @@ body.bg-game {
 .bg-game #setup .bg-setup-card {
   display: flex;
   flex-direction: column;
-  width: min(100%, 840px);
+  width: min(100%, 880px);
+  background: var(--bg-page);
+  border: 1px solid #51476c;
+  border-radius: 24px;
   max-width: none;
   overflow: hidden;
   padding: 0;
@@ -170,6 +173,7 @@ body.bg-game {
   align-items: center;
   gap: 12px;
   padding: 13px 18px;
+  background: #151625;
   border-bottom: 1px solid var(--bg-line);
 }
 
@@ -204,6 +208,7 @@ body.bg-game {
   overscroll-behavior: contain;
 }
 
+/* 게임 소개 이미지: 원래 그림 그대로(자르거나 덧씌우지 않음) */
 .bg-game-overview {
   align-self: start;
   overflow: hidden;
@@ -248,14 +253,16 @@ body.bg-game {
 
 .bg-game #setup .opt {
   gap: 6px;
-  margin: 0 0 13px;
+  margin: 0 0 14px;
 }
+
+.bg-game #setup .lbl { margin-top: 2px; }
 
 .bg-game #setup .opt button {
   min-width: 0;
-  min-height: 44px;
+  min-height: 46px;
   padding: 7px 4px;
-  background: var(--bg-control);
+  background: var(--bg-surface);
   color: var(--bg-ink);
   border: 1px solid var(--bg-line);
   border-radius: 9px;
@@ -265,6 +272,7 @@ body.bg-game {
 
 .bg-game #setup .opt button.on {
   background: #393153;
+  font-weight: 800;
   color: #fff;
   border-color: var(--bg-lilac);
   box-shadow: inset 0 -2px var(--bg-lilac);
@@ -277,6 +285,7 @@ body.bg-game {
   display: flex;
   justify-content: flex-end;
   padding: 12px 22px;
+  background: #151625;
   border-top: 1px solid var(--bg-line);
 }
 
@@ -356,3 +365,113 @@ body.bg-game {
 @media (prefers-reduced-motion: reduce) {
   .bg-game *, .bg-game *::before, .bg-game *::after { animation-duration: .01ms !important; }
 }
+
+/* ===== 밝은 앱 테마(하늘 배경 · 반짝이는 보라 창 · 공통 상단 버튼) ===== */
+body.bg-game {
+  --bg-surface: #1d2c6aee;
+  --bg-raised: #2b3d8e;
+  --bg-control: #2d3f94;
+  --bg-line: #5a76d8;
+  --bg-lilac: #d3c8ff;
+  background: linear-gradient(#10286a40, #0a1a4c80), url(img/bg_sky.webp) center / cover fixed #1b3f9a;
+}
+
+/* 어디서나 같은 자리(오른쪽 위)에 보이는 공통 버튼: 홈 · 전체화면 · 소리 · 규칙 · 새 게임 */
+.bg-toolbar,
+.bg-game #menu.bg-toolbar {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  left: auto;
+  bottom: auto;
+  z-index: 95;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: #1b3a9bd9;
+  border: 2px solid #ffffff80;
+  box-shadow: 0 4px 0 #0f2468, 0 8px 22px #07124a66;
+}
+
+.bg-toolbar button,
+.bg-game #menu.bg-toolbar button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 20%, #6db7ff, #2468ee 70%);
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 3px 0 #123a9a;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bg-toolbar button:active { transform: translateY(2px); box-shadow: 0 1px 0 #123a9a; }
+.bg-toolbar button[aria-pressed="false"]#sndBtn, .bg-toolbar button[aria-pressed="false"]#sndT { filter: grayscale(.6) brightness(.85); }
+.bg-toolbar button[hidden] { display: none; }
+.bg-game #menu.bg-toolbar .bg-stage-title { display: none; }
+
+/* 보라색 반짝이는 창(설정·규칙·결과) */
+.bg-game .ov > :is(.card, .cd) {
+  background: linear-gradient(180deg, #6a4ee0 0%, #3b2490 55%, #2c1a78 100%);
+  border: 3px solid #a592ff;
+  border-radius: 28px;
+  box-shadow: 0 0 0 3px #2a1a6b, 0 18px 60px #0b0640aa, inset 0 2px 0 #ffffff55;
+}
+
+.bg-game .ov h2 {
+  color: #fff;
+  text-shadow: 0 2px 0 #2a1a6b, 0 0 14px #9b86ff;
+}
+
+.bg-game #setup .bg-setup-card {
+  background: linear-gradient(180deg, #6a4ee0 0%, #3b2490 40%, #2c1a78 100%);
+  border: 3px solid #a592ff;
+  border-radius: 28px;
+}
+
+.bg-dialog-header { background: #2a1a7099; border-bottom: 1px solid #ffffff30; }
+.bg-dialog-footer { background: #2a1a7099; border-top: 1px solid #ffffff30; }
+
+.bg-game #setup .opt button {
+  background: #20105f99;
+  border: 1px solid #8f7cf0;
+}
+
+.bg-game #setup .opt button.on {
+  background: linear-gradient(180deg, #8b6cff, #5a37d6);
+  border-color: #ffe08a;
+  box-shadow: inset 0 -3px #ffe08a;
+}
+
+.bg-game #setup .lbl { color: #e4dcff; }
+
+.bg-game #startBtn {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #b79bff, #6a3df0);
+  color: #fff;
+  border: 2px solid #e0d4ff;
+  border-bottom: 5px solid #3a1fa0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-shadow: 0 2px 0 #3a1fa0;
+}
+
+.bg-game #rules ol { color: #e4dcff; }
+.bg-game #win > :is(.card, .cd) { border-top: 3px solid #ffe08a; }
+
+.bg-game .ov, .bgn#bgnet { background: #0c1c5a88; }

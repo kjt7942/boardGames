@@ -199,14 +199,14 @@ button:disabled{opacity:.3;cursor:default}button.sec{background:#ffffff22}
               $("#wt").textContent = "🚪 " + nm + " 님이 나갔어요"; $("#wd").textContent = "게임이 끝났어요";
               $("#win").classList.remove("hide"); gen++; ctx.finish();
             };
-            if (c.isHost) { const seed = (Math.random() * 2 ** 31) | 0; c.send({ t: "cfg", seed }); start(seed, c.np, c.names); }
+            if (c.isHost) { let seed = (Math.random() * 2 ** 31) | 0; if (def.pickSeed) seed = def.pickSeed(seed); c.send({ t: "cfg", seed }); start(seed, c.np, c.names); }
           },
           onClose: () => { $("#setup").classList.remove("hide"); }
         });
         return;
       }
       $("#setup").classList.add("hide"); ctx = null; me = 0;
-      const n = sel.np; start((Math.random() * 2 ** 31) | 0, n, ["나", ...Array.from({ length: n - 1 }, (_, i) => "컴퓨터" + (i + 1))]);
+      const n = sel.np; start(def.pickSeed ? def.pickSeed((Math.random() * 2 ** 31) | 0) : (Math.random() * 2 ** 31) | 0, n, ["나", ...Array.from({ length: n - 1 }, (_, i) => "컴퓨터" + (i + 1))]);
     };
     (function () {
       const d = document, btn = $("#fsBtn"), isFs = () => !!(d.fullscreenElement || d.webkitFullscreenElement);
