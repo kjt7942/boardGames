@@ -475,3 +475,158 @@ body.bg-game {
 .bg-game #win > :is(.card, .cd) { border-top: 3px solid #ffe08a; }
 
 .bg-game .ov, .bgn#bgnet { background: #0c1c5a88; }
+
+/* ===== 게임 입장 화면: 파란 프레임 + 크림색 카드 ===== */
+.bg-game #setup .bg-setup-card {
+  width: min(100%, 560px);
+  max-height: 100%;
+  background: linear-gradient(180deg, #fff8ea, #fff1d6);
+  color: #1d2550;
+  border: 4px solid #fff;
+  border-radius: 30px;
+  box-shadow: 0 0 0 4px #2f7bf0, 0 20px 60px #07124aaa;
+}
+
+.bg-dialog-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 64px 12px;
+  background: linear-gradient(180deg, #55baff, #2a73f0);
+  border-bottom: 0;
+}
+
+.bg-game #setup .bg-dialog-header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.6rem, 6vw, 2.1rem);
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: -.04em;
+  text-shadow: 0 3px 0 #1747b3, 2px 0 0 #1747b3, -2px 0 0 #1747b3, 0 -2px 0 #1747b3;
+}
+
+.bg-dialog-header h2 em { color: #ffd43b; font-style: normal; }
+.bg-title-badge { font-size: 1.8rem; filter: drop-shadow(0 3px 0 #1747b3); }
+
+.bg-game .bg-back {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+  background: radial-gradient(circle at 50% 20%, #5aa9ff, #1f5fe0 75%);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 0 #123a9a;
+}
+
+.bg-setup-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 14px 12px;
+  overflow-y: auto;
+}
+
+.bg-game-overview {
+  margin: 0 -14px;
+  background: none;
+  border: 0;
+  border-radius: 0 0 28px 28px;
+  align-self: stretch;
+}
+
+.bg-game-cover { aspect-ratio: 2 / 1; object-position: center; }
+
+.bg-info {
+  background: #fff;
+  border-radius: 20px;
+  padding: 12px 16px 14px;
+  box-shadow: inset 0 0 0 2px #e6e0f6, 0 3px 0 #e2dbf2;
+}
+
+.bg-info h3 { margin: 0 0 6px; font-size: 1.12rem; font-weight: 900; color: #2a3a8a; }
+
+.bg-game .bg-game-description {
+  margin: 0;
+  color: #3a4470;
+  font-size: .95rem;
+  line-height: 1.6;
+}
+
+.bg-game .bg-game-description b { color: #1d2550; }
+.bg-game .bg-rules-button { margin-top: 10px; min-height: 40px; }
+
+.bg-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: #eaf0ff;
+  border-radius: 20px;
+  padding: 10px 4px;
+  box-shadow: inset 0 0 0 2px #d6e0fb;
+}
+
+.bg-stat { display: grid; gap: 4px; justify-items: center; padding: 0 6px; text-align: center; }
+.bg-stat + .bg-stat { border-left: 2px solid #d2dcf7; }
+.bg-stat span { color: #5a6ba0; font-size: .8125rem; font-weight: 700; }
+.bg-stat b { color: #1d2a7a; font-size: 1.05rem; font-weight: 900; }
+
+.bg-settings {
+  background: #fff;
+  border-radius: 20px;
+  padding: 12px 14px 2px;
+  box-shadow: inset 0 0 0 2px #e6e0f6, 0 3px 0 #e2dbf2;
+}
+
+.bg-game #setup .lbl { color: #2a3a8a; font-weight: 800; }
+
+.bg-game #setup .opt button {
+  background: #fff;
+  color: #1d2550;
+  border: 2px solid #c9d6f6;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.bg-game #setup .opt button.on {
+  background: linear-gradient(180deg, #55baff, #1f6bf0);
+  color: #fff;
+  border-color: #fff;
+  box-shadow: 0 3px 0 #1747b3;
+  text-shadow: 0 1px 0 #1747b3;
+}
+
+.bg-game #setup #olNote { color: #d23a3a !important; }
+
+.bg-dialog-footer { background: none; border-top: 0; padding: 2px 14px 16px; }
+.bg-game #startBtn { width: 100%; min-height: 56px; font-size: 1.3rem; }
+
+/* 규칙 · 결과 창도 같은 크림색 카드 */
+.bg-game .ov:is(#rules, #win, #promo) > :is(.card, .cd) {
+  background: linear-gradient(180deg, #fff8ea, #fff1d6);
+  color: #1d2550;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 4px #2f7bf0, 0 20px 60px #07124aaa;
+}
+
+.bg-game .ov:is(#rules, #win, #promo) h2 { color: #1d2550; text-shadow: none; }
+.bg-game #rules ol { color: #3a4470; }
+.bg-game #rules li b { color: #1d2550; }
+
+@media (max-width: 620px) {
+  .bg-dialog-header { padding: 12px 56px 10px; }
+  .bg-setup-layout { padding: 0 10px 10px; }
+  .bg-game-overview { margin: 0 -10px; }
+  .bg-dialog-footer { padding: 2px 10px 12px; }
+}
+
+.bg-setup-layout > * { flex: none; }
+.bg-game-cover { width: 100%; height: auto; }

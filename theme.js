@@ -75,34 +75,64 @@
   const settings = element("div", "bg-settings");
   settings.append(...Array.from(setupCard.children).filter(node => node !== title && node !== intro && node !== start));
 
+  // 게임 입장 화면: 파란 제목 띠 + 큰 그림 + 소개·방식·정보 카드 + 설정 + 시작 버튼
   const header = element("div", "bg-dialog-header");
-  title.textContent = game.name;
+  const words = game.name.split(" ");
+  const last = words.pop();
+  title.innerHTML = (words.length ? words.join(" ") + " " : "") + "<em>" + last + "</em>";
   title.id = "setup-title";
-  const back = element("button", "bg-back sec");
+  const badge = element("span", "bg-title-badge");
+  badge.textContent = game.icon;
+  badge.setAttribute("aria-hidden", "true");
+  const back = element("button", "bg-back");
   back.type = "button";
-  back.textContent = "‹";
+  back.textContent = "✕";
   back.title = "게임 목록";
   back.setAttribute("aria-label", back.title);
   back.onclick = goHome;
-  const rulesButton = element("button", "sec bg-rules-button");
-  rulesButton.type = "button";
-  rulesButton.textContent = "규칙 보기";
-  rulesButton.onclick = () => byId("ruleBtn").click();
-  header.append(back, title, rulesButton);
+  header.append(badge, title, back);
 
   const layout = element("div", "bg-setup-layout");
   const overview = element("div", "bg-game-overview");
   const cover = element("img", "bg-game-cover");
   cover.src = image(game.id === "magic-labyrinth" ? game.thumb : game.banner);
   cover.alt = "";
-  const details = element("div", "bg-game-details");
-  const meta = element("p", "bg-game-meta");
-  meta.textContent = game.category + " · " + game.players + " · 약 " + game.minutes + "분";
+  overview.append(cover);
+
+  const infoCard = (icon, heading) => {
+    const card = element("section", "bg-info");
+    const h = element("h3");
+    h.textContent = icon + " " + heading;
+    card.append(h);
+    return card;
+  };
+  const about = infoCard("📘", "게임 소개");
   const description = element("p", "bg-game-description");
   description.textContent = game.description;
-  details.append(meta, description);
-  overview.append(cover, details);
-  layout.append(overview, settings);
+  about.append(description);
+
+  const how = infoCard("🎮", "게임 방식");
+  const firstRule = byId("rules")?.querySelector("li");
+  const howText = element("p", "bg-game-description");
+  if (firstRule) howText.innerHTML = firstRule.innerHTML;
+  else howText.textContent = game.description;
+  const rulesButton = element("button", "sec bg-rules-button");
+  rulesButton.type = "button";
+  rulesButton.textContent = "📖 규칙 자세히 보기";
+  rulesButton.onclick = () => byId("ruleBtn").click();
+  how.append(howText, rulesButton);
+
+  const stats = element("div", "bg-stats");
+  for (const [icon, label, value] of [["👥", "플레이어 수", game.players], ["🏷️", "종류", game.category], ["⏱️", "예상 시간", "약 " + game.minutes + "분"]]) {
+    const cell = element("div", "bg-stat");
+    const l = element("span");
+    l.textContent = icon + " " + label;
+    const v = element("b");
+    v.textContent = value;
+    cell.append(l, v);
+    stats.append(cell);
+  }
+  layout.append(overview, about, how, stats, settings);
 
   const footer = element("div", "bg-dialog-footer");
   start.removeAttribute("style");
