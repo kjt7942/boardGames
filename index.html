@@ -97,7 +97,7 @@ const card = (game, featured = false) => `
       <p>${game.description}</p>
     </div>
   </a>`;
-const featuredIds = ["baduk", "chess", "magic-labyrinth"];
+const featuredIds = ["magic-labyrinth", "wall-go", "codebreak"];
 byId("featured").innerHTML = featuredIds.map(id => card(games.find(game => game.id === id), true)).join("");
 
 const filters = byId("filters");
