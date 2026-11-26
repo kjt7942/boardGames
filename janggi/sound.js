@@ -1,11 +1,12 @@
-/* 장기 전용 효과음. 마른 나무가 맞닿을 때의 짧은 공명을 합성합니다. */
+/* 장기 전용 효과음. 기물 착수는 실제 나무 타격 녹음을 사용합니다. */
 (() => {
   const sampleRate = 32000;
 
   function render(cue) {
+    if (cue === "contact") return window.janggiWoodContact?.();
     const duration = {
       menu: .07, back: .075, invalid: .16, undo: .22,
-      move: .065, heavy: .072, capture: .079, start: .235, win: .43, lose: .28
+      start: .235, win: .43, lose: .28
     }[cue];
     if (!duration) return null;
     const samples = new Float32Array(Math.ceil(duration * sampleRate));
@@ -55,9 +56,6 @@
       case "back": wood(0, 475, .13); break;
       case "invalid": wood(0, 340, .2); wood(.08, 285, .12); break;
       case "undo": wood(0, 390, .21); wood(.12, 490, .15); break;
-      case "move": wood(0, 423, .57); break;
-      case "heavy": wood(0, 329, .65); break;
-      case "capture": wood(0, 370, .76); break;
       case "start": wood(0, 335, .34); wood(.14, 460, .4); break;
       case "win": wood(0, 355, .39); wood(.125, 445, .43); wood(.29, 535, .5); break;
       case "lose": wood(0, 430, .34); wood(.17, 305, .32); break;

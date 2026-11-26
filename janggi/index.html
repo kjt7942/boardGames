@@ -126,6 +126,7 @@ body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
 <script src="../fx.js"></script>
+<script src="wood-sample.js"></script>
 <script src="sound.js"></script>
 <script src="engine.js"></script>
 <script src="../firebase-config.js"></script>
@@ -251,12 +252,11 @@ function postFx(){
   if(!G.fx)return;
   const F=G.fx;G.fx=null;
   const check=G.check&&!G.over,game=gen;
-  const contact=F.cap?"capture":F.piece<=3?"heavy":"move";
   const sv=$("#svg"),el=$("#pc"+F.t);
   const [x0,y0]=px((F.f/9)|0,F.f%9),[x1,y1]=px((F.t/9)|0,F.t%9);
   const travel=window.FX&&el?.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches?110:0;
   if(travel)FX.slide(el,x0-x1,y0-y1,{dur:travel,s:1.05,hop:4});
-  sfx(contact,{delay:travel/1000,rate:1+(((F.f*11+F.t)%7)-3)*.009});
+  sfx("contact",{delay:travel/1000});
 
   setTimeout(()=>{
     if(game!==gen)return;
@@ -274,8 +274,8 @@ function postFx(){
 function doMove(m,remote){
   const B=G.B,f=m>>7,t=m&127,mover=G.turn;if(G.online&&!remote)G.online.send({t:"mv",m});
   G.hist.push({B:Int8Array.from(B),turn:mover,last:G.last,cap:{1:G.cap[1].slice(),2:G.cap[2].slice()},ply:G.ply,check:G.check});
-  const cap=B[t],piece=B[f]&7;if(cap)G.cap[mover].push(cap);
-  J.make(B,m);G.last=[f,t];G.ply++;G.fx={f,t,cap,piece,mover,meong:!!G.check};
+  const cap=B[t];if(cap)G.cap[mover].push(cap);
+  J.make(B,m);G.last=[f,t];G.ply++;G.fx={f,t,cap,mover,meong:!!G.check};
   if(cap&&(cap&7)===1){endGame(mover,"왕을 잡았어요");return}
   afterMove(mover);
 }
