@@ -89,7 +89,8 @@ html body .tmCard #olNote,html body .tmCard #onNote{margin:6px 14px 0;text-align
 html body #startBtn.tmStart{position:sticky;bottom:10px;z-index:4;display:block;width:calc(100% - 40px)!important;margin:14px auto 4px!important;padding:16px!important;border-radius:999px;font-family:"Jua",system-ui,sans-serif;font-weight:400;font-size:26px;background:linear-gradient(180deg,#c08bff,#8b4dff 45%,#6a2bd9);box-shadow:inset 0 3px 0 #ffffff66,0 6px 0 #4c1d95,0 10px 24px #8b5cf688;animation:tmPulse 1.8s ease-in-out infinite}
 html body #startBtn.tmStart::before{content:"▶ "}
 @keyframes tmPulse{50%{box-shadow:inset 0 3px 0 #ffffff66,0 6px 0 #4c1d95,0 10px 34px #b27bffcc}}
-.tmWinM{display:block;width:min(64%,220px);margin:-6px auto 4px;filter:drop-shadow(0 8px 14px #0008);animation:tmPop .6s cubic-bezier(.2,1.6,.4,1)}
+.tmWinM[data-k=lose]{box-shadow:0 0 0 4px #7fb0ff,0 0 26px #7fb0ff88,0 10px 20px #0008}
+.tmWinM{display:block;width:min(50%,180px);aspect-ratio:1;margin:2px auto 8px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 4px #ffd84d,0 0 30px #ffd84d99,0 10px 20px #0008;animation:tmPop .6s cubic-bezier(.2,1.6,.4,1)}
 @keyframes tmPop{from{transform:scale(.3) rotate(-10deg);opacity:0}}
 .tmLeaf{position:absolute;bottom:-6px;font-size:40px;pointer-events:none;filter:drop-shadow(0 3px 4px #0006)}
 `;
@@ -142,9 +143,18 @@ html body #startBtn.tmStart::before{content:"▶ "}
     if (!m) { m = document.createElement("img"); m.className = "tmWinM"; card.prepend(m); }
     if (m.dataset.k !== kind) { m.dataset.k = kind; m.src = IMG(kind + "_mascot"); }
   }
+  // 보드게임 결과 창에도 '게임 선택으로' 버튼
+  function winHomeBtn() {
+    const w = document.getElementById("win"); if (!w || document.getElementById("winHome")) return;
+    const card = w.querySelector(".card,.cd"), again = document.getElementById("againBtn"); if (!card) return;
+    const b = document.createElement("button"); b.id = "winHome"; b.className = "sec"; b.type = "button";
+    b.style.cssText = "width:100%;padding:14px;margin-top:8px"; b.textContent = "🏠 게임 선택으로";
+    b.onclick = () => { const hb = document.getElementById("homeBtn"); if (hb && (window.parent !== window || hb.offsetParent !== null)) hb.click(); else location.href = BASE; };
+    (again || card.lastElementChild).after(b);
+  }
   new MutationObserver(winMascot).observe(document.documentElement, { attributes: true, attributeFilter: ["class"], subtree: true, childList: true, characterData: true });
   // cardkit 게임은 화면을 나중에 만들기 때문에 지켜보다가 적용
-  const tryAll = () => { enhance(); if (st.parentNode !== document.head || document.head.lastElementChild !== st) put(); };
+  const tryAll = () => { enhance(); winHomeBtn(); if (st.parentNode !== document.head || document.head.lastElementChild !== st) put(); };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tryAll); else tryAll();
-  new MutationObserver(() => { if (!document.querySelector("#setup[data-tm]")) enhance(); }).observe(document.documentElement, { childList: true, subtree: true });
+  new MutationObserver(() => { if (!document.querySelector("#setup[data-tm]")) enhance(); winHomeBtn(); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
