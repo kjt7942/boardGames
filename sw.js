@@ -1,9 +1,9 @@
 // 보드게임즈 서비스 워커: 네트워크 우선(항상 최신), 오프라인이면 저장본 사용
-const CACHE = "boardgames-v16";
+const CACHE = "boardgames-v17";
 const FILES = ["./", "index.html", "manifest.json", "net.js", "firebase-config.js",
   "magic-labyrinth/", "magic-labyrinth/index.html", "wall-go/", "wall-go/index.html",
   "janggi/", "janggi/index.html", "janggi/engine.js", "baduk/", "baduk/index.html", "baduk/engine.js", "omok/", "omok/index.html", "omok/engine.js", "chess/", "chess/index.html", "chess/engine.js", "onecard/", "onecard/index.html", "thief/", "thief/index.html", "blackjack/", "blackjack/index.html", "minhwatu/", "minhwatu/index.html", "codebreak/", "codebreak/index.html", "memory/", "memory/index.html", "matgo/", "matgo/index.html", "cardkit.js", "cardart.js", "fx.js", "hwatu.webp", "trump.webp", "img/hero.webp", "img/baduk.webp", "img/maze.webp", "img/janggi.webp", "img/chess.webp",
-  "icons/icon-192.png", "icons/icon-512.png"];
+  "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-192.png", "icons/maskable-512.png", "icons/apple-touch-icon.png", "icons/favicon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => c.add(f).catch(() => {})))).then(() => self.skipWaiting()));
 });
