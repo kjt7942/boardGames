@@ -11,6 +11,8 @@
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png"><link rel="icon" type="image/png" href="../icons/favicon.png">
 <title>마법의 미로</title>
 <style>
+html body.bg-game{background:linear-gradient(#0d0a2a55,#0d0a2a99),url(../img/maze/bg_wide.webp) center/cover fixed #1a1450}
+@media (orientation:portrait){html body.bg-game{background:linear-gradient(#0d0a2a55,#0d0a2a99),url(../img/maze/bg_tall.webp) center/cover fixed #1a1450}}
 /* ===== 레이아웃 변수 ===== */
 :root{
   --bs:max(220px,min(calc(100dvh - 16px),calc(100vw - 460px)));
@@ -57,14 +59,19 @@ button.sec{background:#ffffff22}
 /* ===== 보드 ===== */
 #boardwrap{width:var(--bs);height:var(--bs);position:relative;border-radius:14px;background:#2a1a5c;box-shadow:0 0 0 4px var(--cc,#7c5cff),0 0 30px var(--cc,#7c5cff),0 8px 30px #000a}
 #board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);border-radius:12px;overflow:hidden}
-.cell{position:relative;background:#35227a;display:flex;align-items:center;justify-content:center;border:1px solid #ffffff10}
-.cell.alt{background:#2c1c68}
-.cell.startc{background:linear-gradient(135deg,color-mix(in srgb,var(--pc) 45%,#2c1c68),#2c1c68)}
-.cell.adj{background:#5a3fc0;cursor:pointer}
-.cell .sym{font-size:calc(var(--cs)*.5);filter:drop-shadow(0 0 4px #ffe58a88)}
-.cell.done .sym{opacity:.25;filter:grayscale(1)}
-.cell .start{position:absolute;inset:5px;border:3px dashed var(--pc);border-radius:50%;opacity:.85}
-.tok{position:absolute;width:calc(var(--cs)*.58);height:calc(var(--cs)*.58);border-radius:50%;background:var(--pc);display:flex;align-items:center;justify-content:center;font-size:calc(var(--cs)*.34);box-shadow:0 2px 6px #000b;border:2px solid #fff;transform:translate(calc(var(--i)*7px),calc(var(--i)*-5px));transition:all .15s}
+.cell{position:relative;background:#c9954a url(../img/maze/tile_a.webp) center/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;border:0}
+.cell.alt{background-image:url(../img/maze/tile_b.webp)}
+.cell.startc{background-image:url(../img/maze/tile_start.webp)}
+.cell.startc::after{content:"";position:absolute;inset:0;background:var(--pc);mix-blend-mode:soft-light;opacity:.55;pointer-events:none}
+.cell.adj{cursor:pointer;box-shadow:inset 0 0 0 3px #ffe58a,inset 0 0 18px #ffe58acc;filter:brightness(1.12)}
+.cell .sym{display:grid;place-items:center;width:calc(var(--cs)*.8);height:calc(var(--cs)*.8);filter:drop-shadow(0 2px 3px #0008) drop-shadow(0 0 5px #ffe58a99)}
+.symi{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.got .symi{display:inline-block;width:20px;height:20px;vertical-align:middle;margin:0 1px}
+.gem .symi{width:56px;height:56px}
+.cell.done .sym{opacity:.3;filter:grayscale(1) drop-shadow(0 2px 3px #0008)}
+.cell .start{position:absolute;inset:4px;border:3px solid var(--pc);border-radius:50%;opacity:.9;box-shadow:0 0 10px var(--pc),inset 0 0 8px var(--pc)}
+.tok{position:absolute;width:calc(var(--cs)*.56);height:calc(var(--cs)*.76);display:flex;align-items:flex-end;justify-content:center;filter:drop-shadow(0 4px 3px #000a);transform:translate(calc(var(--i)*7px),calc(var(--i)*-5px));transition:all .15s}
+.tok img{width:100%;height:100%;object-fit:contain;pointer-events:none}
 .tok.cur{animation:bob .8s infinite alternate;z-index:3}
 @keyframes bob{to{margin-top:-4px}}
 #walls{position:absolute;inset:0;pointer-events:none}
@@ -180,6 +187,8 @@ body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none
 <script>
 const N=6, FACES=[1,2,2,3,3,4];
 const SYMS=["🔮","🗝️","📜","🧪","💎","🕯️","🦉","🐸","🌙","⭐","🍄","🪄","🐉","🦄","🧿","📖","⚗️","🪶","🔥","❄️","🍀","🕸️","🦇","🌿"];
+const symImg=s=>{const i=SYMS.indexOf(s);return i<0?s:`<img class="symi" src="../img/maze/sym_${i}.webp" alt="${s}" draggable="false">`};
+const PAWN=[0,1,3,2]; // 빨강·파랑·노랑·초록 → 말 그림 번호
 const COLORS=[{n:"빨강",c:"#ff5d73"},{n:"파랑",c:"#4dabff"},{n:"노랑",c:"#ffd24d"},{n:"초록",c:"#4ddf8a"}];
 const CORNERS={2:[[0,0],[5,5]],3:[[0,0],[5,5],[0,5]],4:[[0,0],[5,5],[0,5],[5,0]]};
 const SOLO_CORNERS=[[5,5],[0,0],[0,5],[5,0]];
@@ -280,9 +289,9 @@ function render(){
     if(G.phase==="move"&&G.steps>0&&Math.abs(cur.pos[0]-r)+Math.abs(cur.pos[1]-c)===1)adj=true;
     const st=G.players.find(p=>p.start[0]===r&&p.start[1]===c);
     h+=`<div class="cell${(r+c)%2?" alt":""}${adj?" adj":""}${st?" startc":""}${sym&&G.collected.has(sym)?" done":""}" data-r="${r}" data-c="${c}"${st?` style="--pc:${st.c}"`:""}>`
-      +(sym?`<span class="sym">${sym}</span>`:"")
+      +(sym?`<span class="sym">${symImg(sym)}</span>`:"")
       +(st?`<span class="start" style="--pc:${st.c}"></span>`:"")
-      +here(r,c).map((p,i)=>`<div class="tok${p===cur&&!G.over?" cur":""}" data-pid="${G.players.indexOf(p)}" style="--pc:${p.c};--i:${i}">🧙</div>`).join("")
+      +here(r,c).map((p,i)=>`<div class="tok${p===cur&&!G.over?" cur":""}" data-pid="${G.players.indexOf(p)}" style="--pc:${p.c};--i:${i}"><img src="../img/maze/pawn_${PAWN[G.players.indexOf(p)]}.webp" alt="" draggable="false"></div>`).join("")
       +`</div>`;
   }
   $("#board").innerHTML=h;
@@ -309,8 +318,8 @@ function render(){
     el.classList.remove("empty");el.classList.toggle("cur",mine);
     el.style.setProperty("--pc",p.c);
     el.innerHTML=`<div class="ph"><span class="dot"></span><b>${p.n}</b><span class="cnt">${p.got.length}/5</span></div>`
-      +`<div class="got">${p.got.join(" ")||"&nbsp;"}</div>`
-      +`<div class="gem"><small>찾아라</small><span>${G.target}</span></div>`
+      +`<div class="got">${p.got.map(symImg).join(" ")||"&nbsp;"}</div>`
+      +`<div class="gem"><small>찾아라</small><span>${symImg(G.target)}</span></div>`
       +`<div class="pmsg ${G.kind}">${mine&&G.phase==="move"?`남은 이동 ${G.steps}칸 · `:""}${G.msg}</div>`
       +(p.cpu||(G.online&&i!==G.me)?"":`<div class="pbtns"><button class="roll" data-act="roll" data-p="${i}"${mine&&G.phase==="roll"?"":" disabled"}>🎲 굴리기</button>`
       +`<button class="sec" data-act="stop" data-p="${i}"${mine&&G.phase==="move"&&!shared?"":" disabled"}>✋ 멈추기</button></div>`);

@@ -80,6 +80,13 @@
       new: () => running() ? "진행 중인 게임이 끝나요. 새 게임을 할까요?" : null
     }
   });
+  // 설정 창 버튼 효과음
+  setup.addEventListener("click", event => {
+    if (!window.FX) return;
+    if (event.target.closest("#startBtn")) FX.sfx("start");
+    else if (event.target.closest(".opt button")) FX.sfx("select");
+    else if (event.target.closest("button")) FX.sfx("tap");
+  });
   const sound = byId("sndBtn");
   const syncSound = () => sound.setAttribute("aria-pressed", String(sound.textContent.trim() === "🔊"));
   syncSound();

@@ -8,6 +8,7 @@
 (function () {
   if (window.FX) return;
   const FX = {};
+  const BASE = document.currentScript ? new URL("./", document.currentScript.src).href : "";
   // ── 소리 ──
   let AC = null, NB = null, master = null;
   Object.defineProperty(FX, "on", {
@@ -73,7 +74,30 @@
     poof: () => { noise(.4, { f: 3000, f2: 400, q: .7, v: .3 }); tone(600, .3, { to: 150, v: .1 }); },
     pop: () => { tone(500, .08, { to: 1200, v: .15 }); },
   };
-  FX.sfx = (n, o) => { if (!FX.on || !ac() || !S[n]) return; try { S[n](o); } catch (e) { } };
+  // 버튼·메뉴 효과음은 sfx/ 폴더의 녹음 파일을 써요(불러오는 동안은 합성음으로 대신)
+  const UI = { tap: "ui_tap", hover: "ui_hover", menuOpen: "ui_open", menuClose: "ui_close", uiOk: "ui_ok", uiNo: "ui_no", toggleOn: "ui_toggle_on", toggleOff: "ui_toggle_off", select: "ui_select", start: "ui_start", card: "ui_card" };
+  const UIBUF = {};
+  let uiLoading = false;
+  function loadUI() {
+    if (uiLoading || !AC || !BASE) return;
+    uiLoading = true;
+    for (const [name, file] of Object.entries(UI)) {
+      fetch(BASE + "sfx/" + file + ".wav").then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+        .then(data => new Promise((ok, no) => AC.decodeAudioData(data, ok, no)))
+        .then(buffer => { UIBUF[name] = buffer; }).catch(() => { });
+    }
+  }
+  FX.sfx = (n, o) => {
+    if (!FX.on || !ac()) return;
+    loadUI();
+    try {
+      if (UIBUF[n]) {
+        const source = AC.createBufferSource(), gain = AC.createGain();
+        source.buffer = UIBUF[n]; gain.gain.value = .9;
+        source.connect(gain); gain.connect(master); source.start();
+      } else if (S[n]) S[n](o);
+    } catch (e) { }
+  };
   FX.createSamplePlayer = (render, sampleRate) => {
     const buffers = new Map();
     const playing = new Set();

@@ -19,10 +19,7 @@ body{min-height:100dvh;font-family:"Jua","Apple SD Gothic Neo","Noto Sans KR",sy
  background:linear-gradient(180deg,#bfe3ff 0%,#eaf4ff 35%,#f6f9ff 70%,#e3f5dc 100%) fixed;padding-bottom:96px}
 .wrap{max-width:760px;margin:0 auto;position:relative}
 /* 히어로 */
-.hero{position:relative;border-radius:0 0 28px 28px;overflow:hidden;box-shadow:0 10px 30px #3d7bd655}
-.hero img{display:block;width:100%;aspect-ratio:941/528;object-fit:cover;animation:heroIn .9s cubic-bezier(.2,1.2,.4,1)}
 @keyframes heroIn{from{transform:scale(1.08);opacity:.3}}
-.hero .tb{position:absolute;right:12px;top:12px;display:flex;gap:8px}
 .cbtn{width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:linear-gradient(160deg,#4fa3ff,#1f5fd6);color:#fff;font-size:22px;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 #173f99,0 8px 16px #0004;text-decoration:none}
 .cbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #173f99}
 /* 큰 버튼 */
@@ -99,14 +96,35 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 @media (min-width:700px){.car{overflow:visible;scroll-snap-type:none;cursor:auto}.feat{flex:1 1 0;min-width:0;border-width:3px}.feat .info{display:none}.feat .lbl{font-size:15px;padding:4px 12px 4px 5px;left:8px;bottom:8px}.feat .lbl i{width:22px;height:22px;font-size:10px}.dots{display:none}.tile{flex-basis:30%}}
 .car{cursor:grab}.car.drag{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
 /* 메인 이미지를 배경으로 깔고 그 위에 큰 버튼 2개를 걸쳐 놓음 */
-.acts{position:relative;z-index:2;margin-top:-44px}
+/* ===== 반응형 히어로: 스마트폰(세로 그림) / 태블릿·PC(가로 그림) — 그림은 자르지 않고 비율 그대로, 제목은 글자라서 잘리지 않음 ===== */
+.hero{position:relative;overflow:hidden;border-radius:0 0 28px 28px;background:#7cc4ff}
+.hero picture,.hero-art{display:block;width:100%}
+.hero-art{height:auto;aspect-ratio:1080/1350;animation:heroIn .9s cubic-bezier(.2,1.2,.4,1)}
+.hero-copy{position:absolute;left:5%;top:4%;width:62%;z-index:1}
+.hero .logo{margin:0}
+.hero .logo img{display:block;width:100%;max-width:320px;height:auto;filter:drop-shadow(0 4px 6px #1b4fb866)}
+.hero .tag{margin:8px 0 0;color:#fff;font-size:clamp(15px,4.6vw,22px);line-height:1.3;font-weight:900;text-shadow:0 2px 0 #1747b3,2px 0 0 #1747b3,-2px 0 0 #1747b3,0 -2px 0 #1747b3,0 4px 10px #0b2f8a88;word-break:keep-all}
+.hero .tag b{color:#ffd43b}
+.acts{position:relative;z-index:2;margin-top:-38px}
+@media (min-width:700px){
+ .wrap{max-width:900px}
+ .hero{border-radius:28px;margin:14px 14px 0}
+ .hero-art{aspect-ratio:2400/1000}
+ .hero-copy{left:4%;top:7%;width:44%}
+ .hero .logo img{max-width:380px}
+ .hero .tag{font-size:clamp(16px,2.6vw,26px)}
+ .acts{margin-top:16px;padding:0 14px;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (min-width:1024px){
+ .hero{margin:0}
+ .hero .logo img{max-width:480px}
+ .hero .tag{font-size:clamp(22px,2.4vw,34px);margin-top:14px}
+ .acts{margin-top:20px;padding:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+}
 /* PC 화면(넓은 화면)용 배치: 왼쪽 큰 히어로 + 오른쪽 큰 버튼 2개, 아래로 추천 3개·전체 게임 3열 */
 @media (min-width:1024px){
  body{padding-bottom:110px}
  .wrap{max-width:1200px;padding:18px 28px 0}
- .hero{border-radius:30px;box-shadow:none}
- .hero img{aspect-ratio:auto;height:500px;object-position:50% 30%}
- .acts{grid-template-columns:repeat(2,minmax(0,330px));gap:18px;padding:0 28px;margin-top:-150px}
  .big{min-height:124px;padding:18px 24px;gap:16px;border-radius:28px}
  .big .bi{font-size:64px}
  .big b{font-size:clamp(28px,2.8vw,40px)}
@@ -159,7 +177,11 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 </div>
 <div class="wrap">
  <header class="hero" id="top">
-  <img src="img/hero.webp" alt="보드게임즈 — 다양한 보드게임을 지금 바로 즐겨보세요!">
+  <picture><source media="(min-width:700px)" srcset="img/hero_wide.webp"><img class="hero-art" src="img/hero_phone.webp" alt="" width="1080" height="1350" fetchpriority="high"></picture>
+  <div class="hero-copy">
+   <h1 class="logo"><img src="img/logo.webp" alt="보드게임즈" width="1000" height="350"></h1>
+   <p class="tag">다양한 보드게임을<br><b>지금 바로</b> 즐겨보세요!</p>
+  </div>
  </header>
  <div class="acts">
   <button class="big on" id="hubOnline"><span class="bi">💻</span><span><b>온라인<br>대기실</b><small>함께하는 즐거움!</small></span><span class="ar">›</span></button>
@@ -282,7 +304,7 @@ addEventListener("scroll",()=>{const y=scrollY+innerHeight*.4;let k=0;if(y>$("#a
 // 하단 메뉴 시트(옵션 탭)
 BGMenu.set({home:()=>go("top"),snd:()=>{if(window.FX){FX.on=!FX.on;tap()}},sndOn:()=>!!FXon(),rules:showRules,newGame:()=>go("all")});
 $("#optBtn").onclick=()=>{tap();BGMenu.open()};
-document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.card");if(a&&window.FX){FX.sfx("pop");const r=a.getBoundingClientRect();FX.burst(r.left+r.width/2,r.top+r.height/2,{n:16,color:["#ffd24d","#fff","#46b4ff"],speed:5,g:.1,size:4,life:30,shape:"star"})}});
+document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.card");if(a&&window.FX){FX.sfx("card");const r=a.getBoundingClientRect();FX.burst(r.left+r.width/2,r.top+r.height/2,{n:16,color:["#ffd24d","#fff","#46b4ff"],speed:5,g:.1,size:4,life:30,shape:"star"})}});
 // 반짝이
 [["8%","62%","✨"],["88%","48%","⭐"],["6%","88%","✨"],["92%","80%","⭐"]].forEach(([x,y,t],i)=>{const e=document.createElement("div");e.className="sparkle";e.textContent=t;e.style.left=x;e.style.top=y;e.style.animationDelay=i*.7+"s";document.body.appendChild(e)});
 </script>

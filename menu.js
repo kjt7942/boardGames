@@ -14,6 +14,7 @@
     return node;
   };
   const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const sfx = name => { try { window.FX && FX.sfx(name); } catch (e) { } };
   const toggleFull = async () => {
     try {
       if (isFull()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
@@ -100,7 +101,7 @@
     grid = root.querySelector(".bgm-grid");
     confirmBox = root.querySelector(".bgm-confirm");
     root.querySelector(".bgm-dim").onclick = close;
-    root.querySelector(".bgm-no").onclick = render;
+    root.querySelector(".bgm-no").onclick = () => { sfx("uiNo"); render(); };
     document.addEventListener("keydown", e => { if (e.key === "Escape" && !root.hidden) close(); });
     document.addEventListener("fullscreenchange", () => { if (!root.hidden) render(); });
   }
@@ -119,13 +120,14 @@
   }
 
   function choose(item) {
+    sfx(item.key === "snd" ? (cfg.sndOn && cfg.sndOn() ? "toggleOff" : "toggleOn") : "tap");
     const ask = cfg.confirm && cfg.confirm[item.key];
     const message = ask && ask();
     if (message) {
       grid.hidden = true;
       confirmBox.hidden = false;
       confirmBox.querySelector("p").textContent = message;
-      confirmBox.querySelector(".bgm-ok").onclick = () => { close(); item.run(); };
+      confirmBox.querySelector(".bgm-ok").onclick = () => { sfx("uiOk"); close(true); item.run(); };
       confirmBox.querySelector(".bgm-ok").focus();
       return;
     }
@@ -137,13 +139,15 @@
   function open() {
     if (!root) build();
     lastFocus = document.activeElement;
+    sfx("menuOpen");
     render();
     root.hidden = false;
     grid.querySelector("button")?.focus({ preventScroll: true });
   }
 
-  function close() {
+  function close(silent) {
     if (!root) return;
+    if (silent !== true && !root.hidden) sfx("menuClose");
     root.hidden = true;
     if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
   }
