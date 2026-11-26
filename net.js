@@ -65,7 +65,7 @@
 
   // ---------- UI ----------
   const NB = ((document.currentScript && document.currentScript.src) || location.href).replace(/net\.js.*$/, "");
-  const TH = { "magic-labyrinth": "th_maze", baduk: "th_baduk", chess: "th_chess", janggi: "janggi", onecard: "th_cards", thief: "th_cards", blackjack: "th_cards" };
+  const TH = { "magic-labyrinth": "th_maze", "wall-go": "th_wallgo", baduk: "th_baduk", chess: "th_chess", janggi: "th_janggi", omok: "th_omok", onecard: "th_onecard", thief: "th_thief", blackjack: "th_blackjack", minhwatu: "th_minhwatu", matgo: "th_matgo", codebreak: "th_codebreak", memory: "th_memory" };
   const GI = { "magic-labyrinth": ["🧙", "마법의 미로", "#9d7cff"], "wall-go": ["🧱", "벽바둑", "#4dabff"], janggi: ["♟️", "장기", "#2fbf71"], baduk: ["⚫", "바둑", "#e0b84d"], omok: ["⚪", "오목", "#ff8a5c"], chess: ["♞", "체스", "#c9a14a"], onecard: ["🃏", "원카드", "#e0453a"], thief: ["🦹", "도둑잡기", "#8e5cf0"], blackjack: ["♠️", "블랙잭", "#2fbf71"], minhwatu: ["🎴", "민화투", "#d8283b"], matgo: ["🌸", "맞고", "#e0453a"], codebreak: ["🔐", "코드 추리", "#5ab0ff"], memory: ["🐾", "짝 맞추기", "#ff8a5c"] };
   const thumb = k => TH[k] ? `<img class="bgth" src="${NB}img/${TH[k]}.webp" alt="">` : `<span class="bgth" style="--c:${(GI[k] || [, , "#7c3aed"])[2]}">${(GI[k] || ["🎲"])[0]}</span>`;
   const css = `

@@ -9,18 +9,18 @@
   // 게임 정보: t=제목(흰/금 두 부분), ban=배너 그림, c=문구 2줄, intro=소개, how=플레이 방식, pl=인원, d=난이도(1~3), tm=시간
   const META = {
     "magic-labyrinth": { t: ["마법의", "미로"], ic: "🧙", ban: "ban_maze", baked: 1, intro: "보이지 않는 벽을 기억하며 미로를 탐험하고, 마법 심볼을 먼저 모으세요!", how: "주사위 수만큼 이동 · 벽에 부딪히면 처음 자리로", pl: "2~4명", d: 2, tm: "20분" },
-    "wall-go": { t: ["벽", "바둑"], ic: "🧱", c: ["벽을 세워", "땅을 차지하세요!"], intro: "말을 움직이고 벽을 세워 더 넓은 영역을 차지하는 전략 대결!", how: "이동 후 벽 세우기 · 막힌 영역이 내 땅", pl: "2~3명", d: 3, tm: "15분" },
-    "janggi": { t: ["", "장기"], ic: "♟️", art: "janggi", c: ["초와 한의", "한판 승부!"], intro: "차·포·마·상으로 상대 왕을 외통에 몰아넣는 우리 전통 장기!", how: "번갈아 기물 이동 · 장군을 피할 수 없으면 승리", pl: "2명 (1:1 대전)", d: 3, tm: "20분" },
-    "baduk": { t: ["", "바둑"], ic: "⚫", art: "baduk", c: ["한 수 한 수", "집을 넓혀요!"], intro: "돌을 놓아 더 넓은 집을 차지하는 바둑. 9줄로 가볍게, 19줄로 본격적으로!", how: "번갈아 착수 · 둘러싼 돌은 따냄 · 집이 많으면 승리", pl: "2명 (1:1 대전)", d: 3, tm: "20분" },
-    "omok": { t: ["", "오목"], ic: "⚪", c: ["다섯 개를", "먼저 이어요!"], intro: "가로·세로·대각선으로 먼저 다섯 돌을 이으면 승리! 쉽고 빠른 한 판.", how: "번갈아 돌 놓기 · 5개 연속이면 승리", pl: "2명 (1:1 대전)", d: 1, tm: "10분" },
-    "chess": { t: ["", "체스"], ic: "♞", art: "chess", c: ["킹을 지키고", "체크메이트!"], intro: "킹을 지키며 상대 킹을 체크메이트로 몰아넣는 세계적인 전략 게임.", how: "번갈아 기물 이동 · 캐슬링·앙파상·프로모션", pl: "2명 (1:1 대전)", d: 3, tm: "20분" },
-    "onecard": { t: ["원", "카드"], ic: "🃏", art: "th_cards", c: ["손패를 먼저", "비우세요!"], intro: "같은 무늬·숫자로 손패를 먼저 비우세요. 공격 카드와 기술 카드로 역전!", how: "같은 무늬/숫자 내기 · 공격(2·A·조커) · J·Q·K·7", pl: "2~4명", d: 1, tm: "10분" },
-    "thief": { t: ["도둑", "잡기"], ic: "🦹", art: "th_cards", c: ["조커를 피해", "짝을 맞춰요!"], intro: "짝을 버리고 상대 카드를 뽑아요. 마지막까지 조커를 들고 있으면 도둑!", how: "짝 버리기 · 옆 사람 카드 뽑기", pl: "2~4명", d: 1, tm: "5분" },
-    "blackjack": { t: ["블랙", "잭"], ic: "♠️", art: "th_cards", c: ["21에 가깝게!", "딜러를 이겨요"], intro: "카드 합을 21에 가깝게! 딜러를 이겨 칩을 모으는 8판 승부.", how: "베팅 · 히트/스탠드/더블 · 21 넘으면 버스트", pl: "1~4명", d: 2, tm: "15분" },
-    "minhwatu": { t: ["민", "화투"], ic: "🎴", c: ["같은 달끼리", "맞춰 먹어요!"], intro: "같은 달 화투를 맞춰 먹고 광·열·띠·약 점수로 겨뤄요.", how: "같은 달 맞춰 먹기 · 족보(약) 점수", pl: "2~3명", d: 2, tm: "10분" },
-    "matgo": { t: ["", "맞고"], ic: "🌸", c: ["고? 스톱?", "화투 2인 대결!"], intro: "뻑·따닥·쪽·쓸! 7점이 넘으면 고 또는 스톱을 외치는 화투 대결.", how: "같은 달 먹기 · 7점부터 고/스톱", pl: "2명 (1:1 대전)", d: 2, tm: "10분" },
-    "codebreak": { t: ["코드", "추리"], ic: "🔐", c: ["숨은 숫자를", "맞혀 보세요!"], intro: "상대의 숨은 숫자 타일을 추리로 맞혀 모두 공개시키면 승리!", how: "타일 고르고 숫자 맞히기 · 틀리면 내 타일 공개", pl: "2~4명", d: 2, tm: "15분" },
-    "memory": { t: ["짝", "맞추기"], ic: "🐾", c: ["같은 그림을", "찾아라!"], intro: "같은 그림 두 장을 찾아라! 기억력으로 겨루는 카드 뒤집기.", how: "두 장 뒤집기 · 짝이면 한 번 더", pl: "1~4명", d: 1, tm: "10분" },
+    "wall-go": { b: "ban_wallgo", t: ["벽", "바둑"], ic: "🧱", c: ["벽을 세워", "땅을 차지하세요!"], intro: "말을 움직이고 벽을 세워 더 넓은 영역을 차지하는 전략 대결!", how: "이동 후 벽 세우기 · 막힌 영역이 내 땅", pl: "2~3명", d: 3, tm: "15분" },
+    "janggi": { b: "ban_janggi", t: ["", "장기"], ic: "♟️", art: "janggi", c: ["초와 한의", "한판 승부!"], intro: "차·포·마·상으로 상대 왕을 외통에 몰아넣는 우리 전통 장기!", how: "번갈아 기물 이동 · 장군을 피할 수 없으면 승리", pl: "2명 (1:1 대전)", d: 3, tm: "20분" },
+    "baduk": { b: "ban_baduk", t: ["", "바둑"], ic: "⚫", art: "baduk", c: ["한 수 한 수", "집을 넓혀요!"], intro: "돌을 놓아 더 넓은 집을 차지하는 바둑. 9줄로 가볍게, 19줄로 본격적으로!", how: "번갈아 착수 · 둘러싼 돌은 따냄 · 집이 많으면 승리", pl: "2명 (1:1 대전)", d: 3, tm: "20분" },
+    "omok": { b: "ban_omok", t: ["", "오목"], ic: "⚪", c: ["다섯 개를", "먼저 이어요!"], intro: "가로·세로·대각선으로 먼저 다섯 돌을 이으면 승리! 쉽고 빠른 한 판.", how: "번갈아 돌 놓기 · 5개 연속이면 승리", pl: "2명 (1:1 대전)", d: 1, tm: "10분" },
+    "chess": { b: "ban_chess", t: ["", "체스"], ic: "♞", art: "chess", c: ["킹을 지키고", "체크메이트!"], intro: "킹을 지키며 상대 킹을 체크메이트로 몰아넣는 세계적인 전략 게임.", how: "번갈아 기물 이동 · 캐슬링·앙파상·프로모션", pl: "2명 (1:1 대전)", d: 3, tm: "20분" },
+    "onecard": { b: "ban_onecard", t: ["원", "카드"], ic: "🃏", art: "th_cards", c: ["손패를 먼저", "비우세요!"], intro: "같은 무늬·숫자로 손패를 먼저 비우세요. 공격 카드와 기술 카드로 역전!", how: "같은 무늬/숫자 내기 · 공격(2·A·조커) · J·Q·K·7", pl: "2~4명", d: 1, tm: "10분" },
+    "thief": { b: "ban_thief", t: ["도둑", "잡기"], ic: "🦹", art: "th_cards", c: ["조커를 피해", "짝을 맞춰요!"], intro: "짝을 버리고 상대 카드를 뽑아요. 마지막까지 조커를 들고 있으면 도둑!", how: "짝 버리기 · 옆 사람 카드 뽑기", pl: "2~4명", d: 1, tm: "5분" },
+    "blackjack": { b: "ban_blackjack", t: ["블랙", "잭"], ic: "♠️", art: "th_cards", c: ["21에 가깝게!", "딜러를 이겨요"], intro: "카드 합을 21에 가깝게! 딜러를 이겨 칩을 모으는 8판 승부.", how: "베팅 · 히트/스탠드/더블 · 21 넘으면 버스트", pl: "1~4명", d: 2, tm: "15분" },
+    "minhwatu": { b: "ban_minhwatu", t: ["민", "화투"], ic: "🎴", c: ["같은 달끼리", "맞춰 먹어요!"], intro: "같은 달 화투를 맞춰 먹고 광·열·띠·약 점수로 겨뤄요.", how: "같은 달 맞춰 먹기 · 족보(약) 점수", pl: "2~3명", d: 2, tm: "10분" },
+    "matgo": { b: "ban_matgo", t: ["", "맞고"], ic: "🌸", c: ["고? 스톱?", "화투 2인 대결!"], intro: "뻑·따닥·쪽·쓸! 7점이 넘으면 고 또는 스톱을 외치는 화투 대결.", how: "같은 달 먹기 · 7점부터 고/스톱", pl: "2명 (1:1 대전)", d: 2, tm: "10분" },
+    "codebreak": { b: "ban_codebreak", t: ["코드", "추리"], ic: "🔐", c: ["숨은 숫자를", "맞혀 보세요!"], intro: "상대의 숨은 숫자 타일을 추리로 맞혀 모두 공개시키면 승리!", how: "타일 고르고 숫자 맞히기 · 틀리면 내 타일 공개", pl: "2~4명", d: 2, tm: "15분" },
+    "memory": { b: "ban_memory", t: ["짝", "맞추기"], ic: "🐾", c: ["같은 그림을", "찾아라!"], intro: "같은 그림 두 장을 찾아라! 기억력으로 겨루는 카드 뒤집기.", how: "두 장 뒤집기 · 짝이면 한 번 더", pl: "1~4명", d: 1, tm: "10분" },
   };
   const key = location.pathname.split("/").find(p => META[p]);
   const M = META[key];
@@ -89,6 +89,8 @@ html body .tmCard #olNote,html body .tmCard #onNote{margin:6px 14px 0;text-align
 html body #startBtn.tmStart{position:sticky;bottom:10px;z-index:4;display:block;width:calc(100% - 40px)!important;margin:14px auto 4px!important;padding:16px!important;border-radius:999px;font-family:"Jua",system-ui,sans-serif;font-weight:400;font-size:26px;background:linear-gradient(180deg,#c08bff,#8b4dff 45%,#6a2bd9);box-shadow:inset 0 3px 0 #ffffff66,0 6px 0 #4c1d95,0 10px 24px #8b5cf688;animation:tmPulse 1.8s ease-in-out infinite}
 html body #startBtn.tmStart::before{content:"▶ "}
 @keyframes tmPulse{50%{box-shadow:inset 0 3px 0 #ffffff66,0 6px 0 #4c1d95,0 10px 34px #b27bffcc}}
+.tmWinM{display:block;width:min(64%,220px);margin:-6px auto 4px;filter:drop-shadow(0 8px 14px #0008);animation:tmPop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes tmPop{from{transform:scale(.3) rotate(-10deg);opacity:0}}
 .tmLeaf{position:absolute;bottom:-6px;font-size:40px;pointer-events:none;filter:drop-shadow(0 3px 4px #0006)}
 `;
   const st = document.createElement("style"); st.id = "bgTheme"; st.textContent = css;
@@ -109,6 +111,7 @@ html body #startBtn.tmStart::before{content:"▶ "}
     if (h2) h2.replaceWith(head); else card.prepend(head);
     const ban = document.createElement("div");
     if (M.baked) { ban.className = "tmBan art"; ban.innerHTML = `<img src="${IMG(M.ban)}" alt="">`; }
+    else if (M.b) { ban.className = "tmBan art"; ban.innerHTML = `<img src="${IMG(M.b)}" alt=""><div class="bub">${M.c[0]}<b>${M.c[1]}</b></div>`; }
     else if (M.art) { ban.className = "tmBan art"; ban.innerHTML = `<img src="${IMG(M.art)}" alt=""><div class="bub">${M.c[0]}<b>${M.c[1]}</b></div>`; }
     else { ban.className = "tmBan"; ban.style.background = "radial-gradient(circle at 80% 30%,#ffffff55,transparent 40%),linear-gradient(160deg,#7fd0ff,#4f8dff 55%,#6a4cff)"; ban.innerHTML = `<img class="mas" src="${IMG("mascot")}" alt=""><div class="bub">${M.c[0]}<b>${M.c[1]}</b></div>`; }
     const intro = document.createElement("div"); intro.className = "tmSec"; intro.innerHTML = `<div class="h">🎮 게임 소개</div><p>${M.intro}</p>`;
@@ -128,6 +131,18 @@ html body #startBtn.tmStart::before{content:"▶ "}
     // 첫 화면 축하 반짝이
     if (window.FX) setTimeout(() => { const r = ban.getBoundingClientRect(); if (r.width) FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 22, color: ["#ffd84d", "#fff", "#c08bff"], speed: 6, g: .05, size: 5, life: 45, shape: "star" }); }, 350);
   }
+  // 결과 창: 이기면 트로피 마스코트, 지면 '다음엔 이긴다!' 마스코트
+  function winMascot() {
+    const w = document.getElementById("win"); if (!w || w.classList.contains("hide")) return;
+    const card = w.querySelector(".card,.cd"); if (!card) return;
+    const t = (card.querySelector("h2") || card).textContent;
+    const kind = /무승부|🤝/.test(t) ? "" : /🎉|승리했|이겼|1등|축하/.test(t) ? "win" : "lose";
+    let m = card.querySelector(".tmWinM");
+    if (!kind) { if (m) m.remove(); return; }
+    if (!m) { m = document.createElement("img"); m.className = "tmWinM"; card.prepend(m); }
+    if (m.dataset.k !== kind) { m.dataset.k = kind; m.src = IMG(kind + "_mascot"); }
+  }
+  new MutationObserver(winMascot).observe(document.documentElement, { attributes: true, attributeFilter: ["class"], subtree: true, childList: true, characterData: true });
   // cardkit 게임은 화면을 나중에 만들기 때문에 지켜보다가 적용
   const tryAll = () => { enhance(); if (st.parentNode !== document.head || document.head.lastElementChild !== st) put(); };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tryAll); else tryAll();
