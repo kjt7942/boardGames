@@ -64,41 +64,65 @@
   }
 
   // ---------- UI ----------
+  const NB = ((document.currentScript && document.currentScript.src) || location.href).replace(/net\.js.*$/, "");
+  const TH = { "magic-labyrinth": "th_maze", baduk: "th_baduk", chess: "th_chess", janggi: "janggi", onecard: "th_cards", thief: "th_cards", blackjack: "th_cards" };
+  const GI = { "magic-labyrinth": ["🧙", "마법의 미로", "#9d7cff"], "wall-go": ["🧱", "벽바둑", "#4dabff"], janggi: ["♟️", "장기", "#2fbf71"], baduk: ["⚫", "바둑", "#e0b84d"], omok: ["⚪", "오목", "#ff8a5c"], chess: ["♞", "체스", "#c9a14a"], onecard: ["🃏", "원카드", "#e0453a"], thief: ["🦹", "도둑잡기", "#8e5cf0"], blackjack: ["♠️", "블랙잭", "#2fbf71"], minhwatu: ["🎴", "민화투", "#d8283b"], matgo: ["🌸", "맞고", "#e0453a"], codebreak: ["🔐", "코드 추리", "#5ab0ff"], memory: ["🐾", "짝 맞추기", "#ff8a5c"] };
+  const thumb = k => TH[k] ? `<img class="bgth" src="${NB}img/${TH[k]}.webp" alt="">` : `<span class="bgth" style="--c:${(GI[k] || [, , "#7c3aed"])[2]}">${(GI[k] || ["🎲"])[0]}</span>`;
   const css = `
-.bgn{position:fixed;inset:0;background:#090d1af0;z-index:100;display:flex;align-items:center;justify-content:center;padding:14px;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#e8eeff}
+.bgn{position:fixed;inset:0;background:#12063ae6;backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;padding:12px;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#f3efff}
 .bgn.hide{display:none}
-.bgc{background:#1b2747;border:2px solid #4d7cff;border-radius:18px;padding:16px;width:100%;max-width:440px;max-height:100%;overflow:auto}
-.bgh{display:flex;align-items:center;justify-content:space-between;font-size:20px;margin-bottom:8px}
-.bgn button{font:inherit;border:0;border-radius:12px;padding:11px 10px;background:#4d7cff;color:#fff;font-weight:700;cursor:pointer}
-.bgn button:disabled{opacity:.35;cursor:default}
-.bgn button.sec{background:#ffffff22}
-.bgn .bgx{background:none;font-size:18px;padding:4px 8px}
-.bgn input{font:inherit;width:100%;padding:11px;border-radius:10px;border:2px solid #ffffff30;background:#0d1530;color:#fff;margin:4px 0 8px}
-.bglbl{font-size:13px;opacity:.75;margin:10px 0 4px}
-.bgr{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#ffffff12;border-radius:12px;padding:10px 12px;margin-bottom:6px}
-.bgr small{display:block;opacity:.7;font-size:12px;margin-top:2px}
-.bgempty{opacity:.65;text-align:center;padding:18px 0;font-size:14px}
+.bgc{position:relative;background:linear-gradient(180deg,#5d2fd0 0%,#3d1a9c 26%,#2b0f78 100%);border:4px solid #9a6bff;border-radius:28px;box-shadow:0 0 0 3px #3b0f8c,0 0 40px #8b5cf688,0 20px 50px #000a;width:100%;max-width:460px;max-height:100%;overflow:auto;padding:0 0 12px}
+.bgh{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(180deg,#7a45ff,#5527d4);border-bottom:3px solid #9a6bff;box-shadow:0 6px 14px #0004}
+.bgic{width:46px;height:46px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:26px;background:radial-gradient(circle at 35% 30%,#fff6,transparent 55%),linear-gradient(160deg,#4fb3ff,#2a5fe0);border:3px solid #fff;box-shadow:0 3px 0 #1d3f99}
+#bgTitle{flex:1;text-align:center;font:400 clamp(24px,7vw,32px)/1.05 "Jua",system-ui,sans-serif;color:#fff;text-shadow:0 3px 0 #3b0f8c,0 0 14px #b27bff}
+#bgTitle em{font-style:normal;color:#ffd84d;text-shadow:0 3px 0 #b86b00,0 0 14px #ffb800}
+#bgBody{padding:0 12px}
+.bgn button{font:inherit;border:0;border-radius:14px;padding:11px 10px;background:linear-gradient(180deg,#b27bff,#7c3aed 60%,#6a2bd9);color:#fff;font-weight:800;cursor:pointer;box-shadow:inset 0 2px 0 #ffffff55,0 4px 0 #4c1d95,0 6px 12px #0005;text-shadow:0 1px 0 #0004}
+.bgn button:active:not(:disabled){transform:translateY(3px);box-shadow:inset 0 2px 0 #ffffff55,0 1px 0 #4c1d95}
+.bgn button:disabled{opacity:.4;cursor:default}
+.bgn button.sec{background:linear-gradient(180deg,#ffffff2a,#ffffff10);box-shadow:inset 0 1px 0 #ffffff33,0 3px 0 #0004}
+.bgn .bgx{width:44px;height:44px;flex:none;border-radius:50%;padding:0;font-size:20px;border:3px solid #fff;background:linear-gradient(160deg,#9b6bff,#5b21b6)}
+.bgn input{font:inherit;width:100%;padding:11px 14px;border-radius:14px;border:2px solid #ffffff30;background:#1c0b4acc;color:#fff;margin:4px 0 8px;outline:none}
+.bgn input:focus{border-color:#ffd84d}
+.bgban{display:block;width:100%;aspect-ratio:860/370;object-fit:cover;border-radius:20px;margin:12px 0 4px;border:3px solid #ffffff55;box-shadow:0 8px 20px #0006}
+.bgsh{display:flex;align-items:center;gap:8px;margin:14px 2px 8px;font:400 21px "Jua",system-ui,sans-serif;color:#fff}
+.bglbl{font-size:13px;color:#cfc3ff;margin:10px 2px 4px;font-weight:700}
+.bgme{display:flex;gap:8px;align-items:center}.bgme input{margin:0;flex:1}.bgme button{flex:none;padding:12px 14px}
+.bgr{display:flex;align-items:center;gap:10px;background:#1c0b4a99;border-radius:18px;padding:8px;margin-bottom:8px;box-shadow:inset 0 0 0 1px #ffffff1a,0 4px 12px #0004;animation:bgIn .35s ease-out}
+@keyframes bgIn{from{transform:translateY(8px);opacity:0}}
+.bgth{flex:none;width:74px;height:52px;border-radius:12px;object-fit:cover;border:2px solid #ffffff55;display:grid;place-items:center;font-size:30px;background:linear-gradient(150deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c))}
+.bgri{flex:1;min-width:0}
+.bgri b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bgri small{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;color:#d7ccff;flex-wrap:wrap}
+.bgtag{font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 9px;background:#2fbf71;color:#fff}
+.bgtag.lk{background:#e0453a}.bgtag.gm{background:#3d5bff}
+.bgr button{flex:none;padding:10px 14px;border-radius:14px;font-size:15px}
+.bgempty{text-align:center;padding:18px 0;font-size:14px;color:#cfc3ff}
 .bgrow{display:flex;gap:6px}.bgrow button{flex:1}
-.bgrow button.on{background:#4d7cff}.bgrow button:not(.on){background:#ffffff1a}
+.bgrow button.on{background:linear-gradient(180deg,#b27bff,#7c3aed)}.bgrow button:not(.on){background:#ffffff14;box-shadow:inset 0 0 0 1px #ffffff1f}
 .bgm{min-height:20px;margin-top:8px;font-size:13px;color:#ffb3b3;text-align:center}
-.bgp{display:flex;align-items:center;justify-content:space-between;background:#ffffff12;border-radius:12px;padding:12px;margin-bottom:6px;font-size:16px}
-.bgp.ok{background:#1f5a3a}
-.bgcd{text-align:center;font-size:30px;font-weight:800;min-height:46px;margin:10px 0}
-.bgcd.s{font-size:14px;font-weight:600;opacity:.8;padding-top:14px}
-.bgbig{width:100%;padding:15px 10px;font-size:17px}
-.bgg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
-.bgg button{flex:0 0 auto;padding:9px 12px;font-size:14px;background:#ffffff1a}
-.bgg button.on{background:#4d7cff}
-.bgpick{font-size:15px;text-align:center;margin:6px 0 2px}
-#bgBack{position:fixed;left:6px;top:6px;z-index:200;border:0;border-radius:18px;padding:7px 12px;font:700 13px system-ui,sans-serif;background:#000a;color:#fff;border:1px solid #ffffff55;cursor:pointer}
-#bgFrame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:150;background:#090d1a}
+.bgp{display:flex;align-items:center;justify-content:space-between;background:#1c0b4a99;border-radius:16px;padding:12px 14px;margin-bottom:6px;font-size:16px;box-shadow:inset 0 0 0 1px #ffffff1a}
+.bgp.ok{background:linear-gradient(90deg,#1f7a4acc,#1c0b4a99);box-shadow:inset 0 0 0 2px #5ee08a}
+.bgcd{text-align:center;font:400 34px "Jua",system-ui,sans-serif;min-height:46px;margin:10px 0;color:#ffd84d;text-shadow:0 3px 0 #a86200}
+.bgcd.s{font:600 14px system-ui,sans-serif;color:#cfc3ff;padding-top:14px;text-shadow:none}
+.bgbig{display:block;width:100%;padding:15px 10px;font:400 22px "Jua",system-ui,sans-serif!important;border-radius:999px!important}
+.bgrf{margin:8px auto 0;width:78%!important}
+.bgg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.bgg button{flex:0 0 auto;padding:9px 12px;font-size:14px;background:#ffffff14;box-shadow:inset 0 0 0 1px #ffffff1f}
+.bgg button.on{background:linear-gradient(180deg,#b27bff,#7c3aed);box-shadow:inset 0 2px 0 #ffffff55,0 3px 0 #4c1d95}
+.bgpick{font-size:15px;text-align:center;margin:6px 0 8px;padding:10px;border-radius:14px;background:#1c0b4a99}
+.bgst{display:flex;align-items:center;gap:10px;margin:12px 0 0;padding:10px 14px;border-radius:16px;background:#12063acc;box-shadow:inset 0 0 0 1px #ffffff1a;font-size:13px;color:#cfc3ff}
+.bgst .on{color:#5ee08a;font-weight:800}.bgst .off{color:#ff8a8a;font-weight:800}.bgst i{opacity:.4;font-style:normal}
+#bgBack{position:fixed;left:6px;top:6px;z-index:200;border:2px solid #fff;border-radius:18px;padding:7px 12px;font:700 13px system-ui,sans-serif;background:linear-gradient(160deg,#9b6bff,#5b21b6);color:#fff;cursor:pointer;box-shadow:0 3px 0 #3b0f8c}
+#bgFrame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:150;background:#160a3d}
 `;
   let root = null, bodyEl = null, titleEl = null;
   function ensureUI() {
     if (root) return;
     const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+    if (!document.querySelector('link[href*="family=Jua"]')) { const fl = document.createElement("link"); fl.rel = "stylesheet"; fl.href = "https://fonts.googleapis.com/css2?family=Jua&display=swap"; document.head.appendChild(fl); }
     root = document.createElement("div"); root.className = "bgn hide"; root.id = "bgnet";
-    root.innerHTML = `<div class="bgc"><div class="bgh"><b id="bgTitle"></b><button class="bgx" data-a="close">✕</button></div><div id="bgBody"></div></div>`;
+    root.innerHTML = `<div class="bgc"><div class="bgh"><span class="bgic">🌐</span><b id="bgTitle"></b><button class="bgx" data-a="close">✕</button></div><div id="bgBody"></div></div>`;
     document.body.appendChild(root);
     bodyEl = root.querySelector("#bgBody"); titleEl = root.querySelector("#bgTitle");
     root.addEventListener("click", onClick);
@@ -112,7 +136,7 @@
   let C = { np: 2 };
 
   function open(opts) {
-    ensureUI(); O = opts; titleEl.textContent = "🌐 온라인 · " + opts.title;
+    ensureUI(); O = opts; titleEl.innerHTML = "온라인·<em>" + esc(opts.hub ? "대기실" : opts.title) + "</em>";
     if (opts.hub) O.game = "*";
     root.classList.remove("hide");
     if (!DB) { bodyEl.innerHTML = `<div class="bgempty">온라인 서버가 아직 설정되지 않았어요.<br><br><small>firebase-config.js 에 Realtime Database 주소를 넣어 주세요.</small></div><button class="sec bgbig" data-a="close">닫기</button>`; return; }
@@ -127,11 +151,12 @@
   // ----- 방 목록 -----
   function viewList() {
     stopLobby();
-    bodyEl.innerHTML = `
-      <div class="bglbl">내 이름</div><input id="bgName" maxlength="10" placeholder="이름" value="${esc(getName())}">
-      <button class="bgbig" data-a="create">➕ 방 만들기</button>
+    bodyEl.innerHTML = `<img class="bgban" src="${NB}img/ban_lobby.webp" alt="지금, 다른 유저들과 함께해요!">
+      <div class="bglbl">내 이름</div><div class="bgme"><input id="bgName" maxlength="10" placeholder="이름" value="${esc(getName())}"><button data-a="create">➕ 방 만들기</button></div>
       <div id="bgPwBox" class="hide" style="display:none"><div class="bglbl" id="bgPwT"></div><input id="bgPw" type="password" placeholder="비밀번호"><div class="bgrow"><button data-a="pwok">입장</button><button class="sec" data-a="pwcancel">취소</button></div></div>
-      <div class="bglbl">열려 있는 방</div><div id="bgRooms"></div><div class="bgm" id="bgMsg"></div>`;
+      <div class="bgsh">👥 대기 중인 방 목록</div><div id="bgRooms"></div><div class="bgm" id="bgMsg"></div>
+      <button class="bgbig bgrf" data-a="refresh">🔄 새로고침</button>
+      <div class="bgst" id="bgSt"><span class="on">📶 온라인 접속 중</span><i>|</i><span id="bgCnt">열린 방 0개</span></div>`;
     L.rooms = []; L.pw = null; renderRooms();
     try {
       L.stream = listen("lobby", d => {
@@ -139,16 +164,17 @@
         all.forEach(r => { if (now - (r.hb || 0) > 120000) { del("lobby/" + r.id).catch(() => {}); del("rooms/" + r.id).catch(() => {}); } });
         L.rooms = all.filter(r => r.g === O.game && now - (r.hb || 0) < 30000).sort((a, b) => b.t - a.t);
         renderRooms();
-      }, () => msg("서버에 연결할 수 없어요"));
+      }, () => { msg("서버에 연결할 수 없어요"); const s = $("#bgSt"); if (s) s.firstElementChild.outerHTML = '<span class="off">📵 연결 안 됨</span>'; });
     } catch (e) { msg("서버에 연결할 수 없어요"); }
   }
   function stopLobby() { if (L.stream) { L.stream.close(); L.stream = null; } }
   function renderRooms() {
     const el = $("#bgRooms"); if (!el) return;
     el.innerHTML = L.rooms.length ? L.rooms.map(r => {
-      const full = r.count >= r.np;
-      return `<div class="bgr"><div><b>${esc(r.name)}</b>${r.ph ? " 🔒" : ""}<small>${esc(r.host)} · ${r.count}/${r.np}명</small></div><button data-a="join" data-id="${r.id}"${full ? " disabled" : ""}>${full ? "가득" : "입장"}</button></div>`;
-    }).join("") : `<div class="bgempty">열려 있는 방이 없어요.<br>방을 만들어 보세요!</div>`;
+      const full = r.count >= r.np, gk = O.hub ? r.pk : O.game, gi = GI[gk];
+      return `<div class="bgr">${thumb(gk)}<div class="bgri"><b>${esc(r.name)}</b><small>👥 ${r.count} / ${r.np}명 ${r.ph ? '<span class="bgtag lk">🔒 비밀방</span>' : '<span class="bgtag">일반</span>'}${O.hub && gi ? `<span class="bgtag gm">${gi[1]}</span>` : ""}</small></div><button data-a="join" data-id="${r.id}"${full ? " disabled" : ""}>${full ? "가득" : "▶ 참여하기"}</button></div>`;
+    }).join("") : `<div class="bgempty">열려 있는 방이 없어요.<br>방을 만들어 친구를 불러 보세요! 🎲</div>`;
+    const c = $("#bgCnt"); if (c) c.textContent = `열린 방 ${L.rooms.length}개`;
   }
   const cleanName = () => {
     const i = $("#bgName"); let n = ((i && i.value) || getName() || "").trim().slice(0, 10);
@@ -170,7 +196,7 @@
     const id = rs().slice(0, 6), ph = pw ? await hash(id + ":" + pw) : "", t = NOW();
     try {
       await put("rooms/" + id, { np: C.np, g: O.game, host: uid, pick: O.hub ? (hubGames(C.np)[0] || {}).k || "" : null, players: { [uid]: { n: name, t, ready: false, hb: t } } });
-      await put("lobby/" + id, { g: O.game, name: rn, host: name, np: C.np, ph, count: 1, hb: t, t });
+      await put("lobby/" + id, { g: O.game, name: rn, host: name, np: C.np, ph, count: 1, hb: t, t, pk: O.hub ? (hubGames(C.np)[0] || {}).k || "" : "" });
       enterRoom(id, true, rn);
     } catch (e) { msg("서버에 연결할 수 없어요"); }
   }
@@ -262,7 +288,7 @@
   function renderRoom() {
     const el = $("#bgRoom"); if (!el || !R.room) return;
     const np = R.room.np, pl = R.players, me = pl[uid];
-    let h = `<div style="font-size:15px;opacity:.8;margin-bottom:8px">${esc(R.rname || "")} · ${R.order.length}/${np}명</div>`;
+    let h = `<div style="font-size:15px;opacity:.85;margin:12px 2px 8px;font-weight:700">${esc(R.rname || "")} · ${R.order.length}/${np}명</div>`;
     if (O.hub) h += pickHtml(np);
     for (let i = 0; i < np; i++) {
       const u = R.order[i], p = u && pl[u];
@@ -383,7 +409,8 @@
     }
     else if (a === "pwok") { if (L.pw) tryJoin(L.pw, $("#bgPw").value); }
     else if (a === "pwcancel") { L.pw = null; $("#bgPwBox").style.display = "none"; }
-    else if (a === "pick") { if (R && R.isHost) patch(`rooms/${R.id}`, { pick: b.dataset.k }).catch(() => msg("서버에 연결할 수 없어요")); }
+    else if (a === "pick") { if (R && R.isHost) { patch(`rooms/${R.id}`, { pick: b.dataset.k }).catch(() => msg("서버에 연결할 수 없어요")); patch("lobby/" + R.id, { pk: b.dataset.k }).catch(() => {}); } }
+    else if (a === "refresh") { viewList(); }
     else if (a === "ready") { if (R && R.players[uid]) patch(`rooms/${R.id}/players/${uid}`, { ready: !R.players[uid].ready }).catch(() => msg("서버에 연결할 수 없어요")); }
     else if (a === "leave") backToList();
   }

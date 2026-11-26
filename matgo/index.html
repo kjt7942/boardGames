@@ -220,4 +220,5 @@ CK.run({
   return[S.win===me?"🎉 승리했어요!":"😵 "+names[S.win]+" 승리",`<div style="text-align:left">최종 <b>${f.pts}점</b> (기본 ${f.base}점${S.go[S.win]?" · "+S.go[S.win]+"고":""}${f.bak.length?" · "+f.bak.join("·")+" ×2":""})<br>`+[0,1].map(p=>`${names[p]}: ${score(S.cap[p]).s}점 ${score(S.cap[p]).det.join(", ")}`).join("<br>")+"</div>"];
  }
 });
-</script></body></html>
+</script><script src="../theme.js"></script>
+</body></html>
