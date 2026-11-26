@@ -89,7 +89,7 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 @media (max-width:480px){.big .ar{display:none}}
 @media (min-width:700px){.feat{flex-basis:80%}.tile{flex-basis:30%}}
 /* 설치 안내 */
-#inst{position:fixed;left:50%;bottom:92px;transform:translate(-50%,140%);width:min(94%,560px);z-index:60;background:#fff;border-radius:24px;padding:14px;box-shadow:0 14px 40px #1a3a8a55,inset 0 0 0 2px #fff;display:flex;gap:12px;align-items:center;transition:transform .5s cubic-bezier(.2,1.3,.4,1)}
+#inst{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,140%);width:min(94%,560px);z-index:60;background:#fff;border-radius:24px;padding:14px;box-shadow:0 14px 40px #1a3a8a55,inset 0 0 0 2px #fff;display:flex;gap:12px;align-items:center;transition:transform .5s cubic-bezier(.2,1.3,.4,1)}
 #inst.show{transform:translate(-50%,0)}
 #inst img{width:62px;height:62px;border-radius:16px;flex:none;box-shadow:0 4px 10px #0003;animation:bob 2.4s ease-in-out infinite}
 #inst .tx{flex:1;min-width:0}
@@ -99,7 +99,7 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 #inst .bt{display:flex;flex-direction:column;gap:6px;flex:none}
 #inst button{border:0;border-radius:14px;font:inherit;font-weight:900;cursor:pointer;padding:10px 14px;font-size:15px}
 #inst .ok{background:linear-gradient(150deg,#46b4ff,#1f6bf0);color:#fff;box-shadow:0 3px 0 #1747b3}
-#inst .no{background:none;color:#8a93b5;font-size:12.5px;padding:2px}
+#inst .no{background:none;color:#8a93b5;font-size:12px;padding:2px;white-space:nowrap}
 #inst .ios{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:#e8f0ff;color:#1f6bf0;font-size:13px;vertical-align:-4px}
 </style>
 </head>
@@ -128,7 +128,7 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
  </section>
  <footer id="about">모든 게임은 컴퓨터와 혼자, 또는 온라인으로 친구와 할 수 있어요<br>새 게임은 계속 추가됩니다 · <a href="https://github.com/kjt7942/boardGames">GitHub</a></footer>
 </div>
-<div id="inst" role="dialog" aria-live="polite"><img src="icons/icon-192.png" alt=""><div class="tx"><b id="instT">앱으로 설치하기</b><p id="instP"></p></div><div class="bt"><button class="ok" id="instOk">설치</button><button class="no" id="instNo">나중에</button></div></div>
+<div id="inst" role="dialog" aria-live="polite"><img src="icons/icon-192.png" alt=""><div class="tx"><b id="instT">앱으로 설치하기</b><p id="instP"></p></div><div class="bt"><button class="ok" id="instOk">설치</button><button class="no" id="instNo">나중에</button><button class="no" id="instHave">이미 설치했어요</button></div></div>
 <nav id="nav">
  <button class="on" data-go="top"><span>🏠</span>홈</button>
  <button data-go="all"><span>🎲</span>전체 게임</button>
@@ -229,16 +229,24 @@ document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.
 // ── 앱 설치 안내 (설치 안 된 스마트폰에서만) ──
 (function(){
   const $=s=>document.querySelector(s),ua=navigator.userAgent;
-  const installed=matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone===true;
+  const mm=q=>matchMedia("(display-mode: "+q+")").matches;
+  let flag=false;try{flag=localStorage.getItem("bgInstalled")==="1"}catch(e){}
+  const appRun=mm("standalone")||mm("fullscreen")||mm("minimal-ui")||mm("window-controls-overlay")||navigator.standalone===true
+    ||/[?&]app=1/.test(location.search)||document.referrer.startsWith("android-app://");
+  if(appRun){try{localStorage.setItem("bgInstalled","1")}catch(e){}}
+  const installed=appRun||flag;
   const mobile=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/.test(ua));
   if(installed||!mobile)return;
   try{const t=+localStorage.getItem("bgInstNo")||0;if(Date.now()-t<3*864e5)return}catch(e){}
   const ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/.test(ua));
   const kakao=/KAKAOTALK/i.test(ua),inApp=kakao||/NAVER|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp|BAND/i.test(ua);
   const box=$("#inst"),T=$("#instT"),P=$("#instP"),ok=$("#instOk"),no=$("#instNo");
-  const show=()=>setTimeout(()=>box.classList.add("show"),1200);
+  let blocked=false;
+  if(navigator.getInstalledRelatedApps)navigator.getInstalledRelatedApps().then(a=>{if(a&&a.length){blocked=true;box.classList.remove("show");try{localStorage.setItem("bgInstalled","1")}catch(e){}}}).catch(()=>{});
+  const show=()=>setTimeout(()=>{if(!blocked&&!mm("standalone")&&!mm("fullscreen"))box.classList.add("show")},1200);
   const hide=()=>box.classList.remove("show");
   no.onclick=()=>{hide();try{localStorage.setItem("bgInstNo",Date.now())}catch(e){}};
+  $("#instHave").onclick=()=>{hide();try{localStorage.setItem("bgInstalled","1")}catch(e){}};
   let dp=null;
   if(inApp){
     T.textContent="브라우저에서 열어 설치하기";
@@ -259,7 +267,7 @@ document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.
   P.textContent="홈 화면에 아이콘이 생기고, 전체 화면·오프라인으로 바로 즐길 수 있어요.";
   addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;show()});
   ok.onclick=async()=>{if(!dp)return;hide();dp.prompt();try{const r=await dp.userChoice;if(r.outcome!=="accepted")localStorage.setItem("bgInstNo",Date.now())}catch(e){}dp=null};
-  addEventListener("appinstalled",()=>{hide();if(window.FX){FX.sfx("win");FX.confetti();FX.banner("설치 완료!","#1f6bf0","홈 화면에서 실행해 보세요")}});
+  addEventListener("appinstalled",()=>{hide();try{localStorage.setItem("bgInstalled","1")}catch(e){}if(window.FX){FX.sfx("win");FX.confetti();FX.banner("설치 완료!","#1f6bf0","홈 화면에서 실행해 보세요")}});
   // 설치 창 이벤트가 안 오는 브라우저(파이어폭스 등)는 메뉴 안내
   setTimeout(()=>{if(!dp&&!box.classList.contains("show")){T.textContent="앱으로 설치하기";P.innerHTML="브라우저 메뉴 <b>⋮</b> → <b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 눌러 주세요.";ok.textContent="알겠어요";ok.onclick=no.onclick;show()}},6000);
 })();

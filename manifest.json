@@ -3,7 +3,7 @@
   "short_name": "보드게임즈",
   "description": "둘러앉아 즐기는 웹 보드게임 모음",
   "lang": "ko",
-  "start_url": "./",
+  "start_url": "./?app=1",
   "scope": "./",
   "id": "./",
   "display": "fullscreen",
@@ -37,6 +37,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://kjt7942.github.io/boardGames/manifest.json"
     }
   ]
 }
