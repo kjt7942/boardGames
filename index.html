@@ -98,18 +98,20 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 @media (max-width:480px){.big .ar{display:none}}
 @media (min-width:700px){.car{overflow:visible;scroll-snap-type:none;cursor:auto}.feat{flex:1 1 0;min-width:0;border-width:3px}.feat .info{display:none}.feat .lbl{font-size:15px;padding:4px 12px 4px 5px;left:8px;bottom:8px}.feat .lbl i{width:22px;height:22px;font-size:10px}.dots{display:none}.tile{flex-basis:30%}}
 .car{cursor:grab}.car.drag{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
+/* 메인 이미지를 배경으로 깔고 그 위에 큰 버튼 2개를 걸쳐 놓음 */
+.acts{position:relative;z-index:2;margin-top:-44px}
 /* PC 화면(넓은 화면)용 배치: 왼쪽 큰 히어로 + 오른쪽 큰 버튼 2개, 아래로 추천 3개·전체 게임 3열 */
 @media (min-width:1024px){
  body{padding-bottom:110px}
- .wrap{max-width:1200px;display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:0 20px;padding:70px 28px 0}
- .hero{grid-column:1;border-radius:30px;box-shadow:none}
- .acts{grid-column:2;grid-template-columns:1fr;grid-template-rows:1fr 1fr;gap:20px;padding:0}
- .big{min-height:0;padding:20px 24px;gap:18px;border-radius:30px}
+ .wrap{max-width:1200px;padding:18px 28px 0}
+ .hero{border-radius:30px;box-shadow:none}
+ .hero img{aspect-ratio:auto;height:500px;object-position:50% 30%}
+ .acts{grid-template-columns:repeat(2,minmax(0,330px));gap:18px;padding:0 28px;margin-top:-150px}
+ .big{min-height:124px;padding:18px 24px;gap:16px;border-radius:28px}
  .big .bi{font-size:64px}
  .big b{font-size:clamp(28px,2.8vw,40px)}
  .big small{font-size:16px;margin-top:10px}
  .big .ar{width:36px;height:36px;font-size:20px;right:18px;top:18px}
- .sec,footer{grid-column:1/-1}
  .sec{padding:30px 0 4px}
  .sh h2{font-size:28px}
  .sh .em{font-size:34px}

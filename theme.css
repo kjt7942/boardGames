@@ -665,3 +665,23 @@ body.bg-game {
 :is(#sndBtn, #sndT)[aria-pressed="false"] { background-image: url(img/ui/snd_off.webp) !important; filter: none; }
 :is(#ruleBtn, #ruleT) { background-image: url(img/ui/rules.webp) !important; }
 :is(#newBtn, #newT) { background-image: url(img/ui/new.webp) !important; }
+
+@media (max-width: 600px) {
+  .bg-toolbar button, .bg-game #menu.bg-toolbar button { width: 42px; height: 42px; min-width: 42px; min-height: 42px; }
+  .bg-toolbar, .bg-game #menu.bg-toolbar { gap: 2px; }
+}
+
+/* 공통 상단 버튼: 작고 촘촘하게(홈·게임 화면을 가리지 않도록) */
+.bg-toolbar, .bg-game #menu.bg-toolbar { top: max(6px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); gap: 2px; }
+.bg-toolbar button, .bg-game #menu.bg-toolbar button { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
+@media (max-width: 600px) {
+  .bg-toolbar button, .bg-game #menu.bg-toolbar button { width: 31px; height: 31px; min-width: 31px; min-height: 31px; }
+  .bg-toolbar, .bg-game #menu.bg-toolbar { gap: 1px; right: 6px; }
+}
+
+/* 창이 상단 버튼 밑에서 시작하도록 / 폰에서도 소개 그림 비율 유지 */
+.bg-game .ov:is(#setup, #rules, #promo, #win) { padding-top: 48px; }
+@media (max-width: 620px) {
+  .bg-game-overview { display: block; }
+  .bg-game-cover { height: auto; aspect-ratio: 2 / 1; }
+}
