@@ -147,7 +147,8 @@
   result.prepend(mascot);
   const syncResult = () => {
     const text = resultTitle.textContent;
-    const kind = /무승부|🤝|게임 종료|나갔어요/.test(text) ? ""
+    const kind = /무승부|🤝/.test(text) ? "draw"
+      : /게임 종료|나갔어요/.test(text) ? ""
       : /😢|😵|🦹|컴퓨터 승리|졌어요|기권했어요|패배/.test(text) ? "lose"
       : /🏆|🎉|승리|이겼|1등|축하/.test(text) ? "win" : "";
     mascot.hidden = !kind;
