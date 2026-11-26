@@ -65,6 +65,15 @@ body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none
 @keyframes bwglow{from{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 16px var(--cc,#4d7cff),0 8px 30px #000a}to{box-shadow:0 0 0 5px var(--cc,#4d7cff),0 0 44px var(--cc,#4d7cff),0 8px 30px #000a}}
 .panel.cur{animation:pglow 1.2s ease-in-out infinite alternate}
 @keyframes pglow{from{box-shadow:0 0 10px var(--pc),inset 0 0 12px #ffffff12}to{box-shadow:0 0 32px var(--pc),inset 0 0 22px #ffffff22}}
+#boardarea{position:relative}
+#boardNotice{position:absolute;z-index:2;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:max-content;max-width:calc(100% - 24px);padding:10px 16px;border:1px solid #a38559;border-radius:12px;
+  background:#211a14;color:#fff4dc;text-align:center;pointer-events:none;box-shadow:0 4px 14px #0004;
+  font-family:system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;word-break:keep-all}
+#boardNotice[hidden]{display:none}
+#boardNotice strong{display:block;font-size:clamp(21px,5vw,28px);font-weight:750;line-height:1.25;letter-spacing:normal}
+#boardNotice span{display:block;margin-top:4px;font-size:.875rem;line-height:1.4;color:#e8d7b9}
+#boardNotice span:empty{display:none}
 </style>
 <link rel="stylesheet" href="../theme.css">
 </head>
@@ -78,7 +87,10 @@ body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none
     <button class="sec" id="ruleBtn" title="규칙">❓</button>
     <button class="sec" id="newBtn" title="새 게임">↻</button>
   </div>
-  <div id="boardarea"><div id="boardwrap"><svg id="svg" viewBox="0 0 940 1040"></svg></div></div>
+  <div id="boardarea">
+    <div id="boardwrap"><svg id="svg" viewBox="0 0 940 1040"></svg></div>
+    <div id="boardNotice" role="status" hidden><strong></strong><span></span></div>
+  </div>
   <div id="bigmsg"></div>
   <div class="panel" id="pBR"></div>
 </div>
@@ -121,8 +133,8 @@ body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none
 <script>
 const J=Janggi,$=s=>document.querySelector(s);
 const S=100,M=70,W=940,H=1040;
-const SIDE={1:{n:"초",c:"#2fbf71",hz:{1:"楚",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"卒"}},2:{n:"한",c:"#ff5d73",hz:{1:"漢",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"兵"}}};
-const RAD={1:50,2:43,3:43,4:43,5:43,6:36,7:32},FS={1:62,2:52,3:52,4:52,5:52,6:44,7:42};
+const SIDE={1:{n:"초",c:"#2fbf71",ink:"#1a4b32",rim:"#4c7052",hz:{1:"楚",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"卒"}},2:{n:"한",c:"#ff5d73",ink:"#852920",rim:"#a2533e",hz:{1:"漢",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"兵"}}};
+const RAD={1:47,2:42,3:42,4:42,5:42,6:37,7:34},FS={1:62,2:52,3:52,4:52,5:52,6:44,7:42};
 let sel={lv:"normal",me:1,mode:"solo"},G=null,gen=0;
 
 const sfx=(cue,options)=>window.JanggiSound?.play(cue,options);
@@ -131,7 +143,7 @@ const flip=()=>G&&G.me===2;
 const px=(r,c)=>{if(flip()){r=9-r;c=8-c}return [M+c*S,M+r*S]};
 
 function newGame(net,cfg){
-  gen++;stopSounds();
+  gen++;stopSounds();hideBoardNotice();
   const B=J.initialBoard();J.locateKings(B);
   G={online:net||null,B,turn:1,me:net?(net.isHost?cfg.side:3-cfg.side):sel.me,lv:net?"normal":sel.lv,sel:-1,moves:[],last:null,hist:[],over:false,ply:0,cap:{1:[],2:[]},busy:false,msg:"",kind:"",check:false,legal:J.legalMoves(B,1)};
   setTurnMsg();render();
@@ -144,8 +156,38 @@ function setTurnMsg(){
   }else{G.msg=G.check?"장군!":G.online?"상대 차례… 기다리는 중":"🤖 생각하는 중…";G.kind=G.check?"warn":""}
 }
 
+function octagon(x,y,r){
+  const corner=Math.round(r*.42);
+  return [
+    [x-corner,y-r],[x+corner,y-r],[x+r,y-corner],[x+r,y+corner],
+    [x+corner,y+r],[x-corner,y+r],[x-r,y+corner],[x-r,y-corner]
+  ].map(point=>point.join(",")).join(" ");
+}
+
+function pieceSVG(i,x,y,side,type,inCheck){
+  const r=RAD[type],depth=type===1?9:7,palette=SIDE[side];
+  return `<g id="pc${i}" class="janggi-piece">
+    <polygon points="${octagon(x+2,y+depth+3,r+1)}" fill="#432809" opacity=".38"/>
+    <polygon points="${octagon(x,y+depth,r)}" fill="url(#piece-edge)" stroke="#513019" stroke-width="2" stroke-linejoin="round"/>
+    <polygon points="${octagon(x,y,r)}" fill="url(#piece-face${inCheck?"-check":""})" stroke="#624026" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="${octagon(x,y,r-4)}" fill="none" stroke="#fff2cf" stroke-width="1.5" opacity=".85"/>
+    <polygon points="${octagon(x,y,r-9)}" fill="none" stroke="${inCheck?"#b83a29":palette.rim}" stroke-width="${type===1||inCheck?3:2.3}"/>
+    <text x="${x}" y="${y+FS[type]*.35}" text-anchor="middle" font-size="${FS[type]}" font-weight="800" fill="${palette.ink}" font-family="'Noto Serif CJK KR','Noto Serif KR','Nanum Myeongjo',serif">${palette.hz[type]}</text>
+  </g>`;
+}
+
 function boardSVG(){
-  let h=`<rect width="${W}" height="${H}" fill="#e2b96f"/><rect x="14" y="14" width="${W-28}" height="${H-28}" rx="8" fill="none" stroke="#7a5320" stroke-width="5"/>`;
+  let h=`<defs>
+    <linearGradient id="piece-face" x2="20%" y2="100%">
+      <stop stop-color="#fff1ce"/><stop offset="1" stop-color="#d9ae76"/>
+    </linearGradient>
+    <linearGradient id="piece-face-check" x2="20%" y2="100%">
+      <stop stop-color="#fff0d3"/><stop offset="1" stop-color="#eda87f"/>
+    </linearGradient>
+    <linearGradient id="piece-edge" x2="0%" y2="100%">
+      <stop stop-color="#9b673b"/><stop offset="1" stop-color="#683b22"/>
+    </linearGradient>
+  </defs><rect width="${W}" height="${H}" fill="#e2b96f"/><rect x="14" y="14" width="${W-28}" height="${H-28}" rx="8" fill="none" stroke="#7a5320" stroke-width="5"/>`;
   h+=`<g stroke="#4a2f0c" stroke-width="3" stroke-linecap="round">`;
   for(let r=0;r<10;r++)h+=`<line x1="${M}" y1="${M+r*S}" x2="${M+8*S}" y2="${M+r*S}"/>`;
   for(let c=0;c<9;c++)h+=`<line x1="${M+c*S}" y1="${M}" x2="${M+c*S}" y2="${M+9*S}"/>`;
@@ -156,24 +198,25 @@ function boardSVG(){
   // 마지막 수
   if(G.last)for(const i of G.last){const [x,y]=px((i/9)|0,i%9);h+=`<rect x="${x-46}" y="${y-46}" width="92" height="92" rx="12" fill="#ffe14d" opacity=".4"/>`}
   // 선택
-  if(G.sel>=0){const [x,y]=px((G.sel/9)|0,G.sel%9);h+=`<circle cx="${x}" cy="${y}" r="56" fill="none" stroke="#2f6bff" stroke-width="7"/>`}
+  if(G.sel>=0){
+    const [x,y]=px((G.sel/9)|0,G.sel%9),r=RAD[G.B[G.sel]&7];
+    h+=`<polygon points="${octagon(x,y+3,r+7)}" fill="#7ea5ff" fill-opacity=".22" stroke="#194ec7" stroke-width="5" stroke-linejoin="round"/>`;
+  }
   // 기물
   for(let i=0;i<90;i++){
     const v=G.B[i];if(!v)continue;
-    const s=v>>3,t=v&7,[x,y]=px((i/9)|0,i%9),col=SIDE[s].c;
-    const inChk=G.check&&t===1&&s===G.turn;
-    h+=`<g id="pc${i}"${inChk?' class="pulse"':""}><circle cx="${x}" cy="${y+4}" r="${RAD[t]}" fill="#0003"/><circle cx="${x}" cy="${y}" r="${RAD[t]}" fill="${inChk?"#ffd0d0":"#f8ebc8"}" stroke="${col}" stroke-width="${t===1?8:6}"/>`
-      +`<text x="${x}" y="${y+FS[t]*.36}" text-anchor="middle" font-size="${FS[t]}" font-weight="900" fill="${col}" font-family="'Noto Serif CJK KR','Noto Serif KR','Nanum Myeongjo',serif">${SIDE[s].hz[t]}</text></g>`;
+    const side=v>>3,type=v&7,[x,y]=px((i/9)|0,i%9);
+    h+=pieceSVG(i,x,y,side,type,G.check&&type===1&&side===G.turn);
   }
   // 갈 수 있는 곳
   for(const i of G.moves){
     const [x,y]=px((i/9)|0,i%9);
-    h+=G.B[i]?`<circle cx="${x}" cy="${y}" r="52" fill="none" stroke="#ff3b3b" stroke-width="8" class="pulse"/>`:`<circle cx="${x}" cy="${y}" r="16" fill="#2f6bff" opacity=".85" class="pulse"/>`;
+    h+=G.B[i]?`<polygon points="${octagon(x,y+3,RAD[G.B[i]&7]+5)}" fill="none" stroke="#b32626" stroke-width="5" stroke-linejoin="round" class="pulse"/>`:`<circle cx="${x}" cy="${y}" r="16" fill="#2f6bff" opacity=".85" class="pulse"/>`;
   }
   return h;
 }
-function render(){
-  $("#svg").innerHTML=boardSVG();
+function render(updateBoard=true){
+  if(updateBoard)$("#svg").innerHTML=boardSVG();
   const turnC=G.over?"#4d7cff":SIDE[G.turn].c;
   $("#boardwrap").style.setProperty("--cc",turnC);
   const bm=$("#bigmsg");bm.textContent=G.over?"게임 종료":G.msg;bm.className=G.over?"":G.kind;bm.style.setProperty("--cc",turnC);
@@ -191,29 +234,41 @@ function render(){
   try{postFx()}catch(e){}
 }
 // ── 연출 ──
+const boardNotice=$("#boardNotice");
+let boardNoticeTimer;
+function hideBoardNotice(){
+  clearTimeout(boardNoticeTimer);
+  boardNotice.hidden=true;
+}
+function showBoardNotice(title,detail=""){
+  hideBoardNotice();
+  boardNotice.querySelector("strong").textContent=title;
+  boardNotice.querySelector("span").textContent=detail;
+  boardNotice.hidden=false;
+  boardNoticeTimer=setTimeout(hideBoardNotice,1350);
+}
 function postFx(){
   if(!G.fx)return;
   const F=G.fx;G.fx=null;
-  const check=G.check&&!G.over, game=gen;
+  const check=G.check&&!G.over,game=gen;
   const contact=F.cap?"capture":F.piece<=3?"heavy":"move";
-  sfx(contact,{rate:1+(((F.f*11+F.t)%7)-3)*.009});
-  if(check)sfx(F.meong?"counter":"check",{delay:.21});
-  else if(F.meong)sfx("clear",{delay:.23});
-  if(F.passed)sfx("pass",{delay:.27});
+  const sv=$("#svg"),el=$("#pc"+F.t);
+  const [x0,y0]=px((F.f/9)|0,F.f%9),[x1,y1]=px((F.t/9)|0,F.t%9);
+  const travel=window.FX&&el?.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches?110:0;
+  if(travel)FX.slide(el,x0-x1,y0-y1,{dur:travel,s:1.05,hop:4});
+  sfx(contact,{delay:travel/1000,rate:1+(((F.f*11+F.t)%7)-3)*.009});
 
-  if(!window.FX)return;
-  const sv=$("#svg"),col=SIDE[F.mover].c;
-  const el=$("#pc"+F.t),[x0,y0]=px((F.f/9)|0,F.f%9),[x1,y1]=px((F.t/9)|0,F.t%9);
-  if(el)FX.slide(el,x0-x1,y0-y1,{dur:320,s:1.15,hop:14});
   setTimeout(()=>{
     if(game!==gen)return;
-    const p=FX.svgXY(sv,x1,y1);
-    if(F.cap){const c=SIDE[F.cap>>3].c;FX.burst(p.x,p.y,{n:28,color:[c,"#f8ebc8","#fff"],speed:8,g:.3,size:5,life:45,shape:"rect"});FX.ring(p.x,p.y,c,{r0:12,grow:2.4});FX.shake($("#boardwrap"),7);FX.vib(30);
-      const t=F.cap&7,nm=SIDE[F.cap>>3].hz[t];FX.float(p.x,p.y-34,`${nm} 잡았다!`,c)}
-    if(check&&F.meong){FX.flash(col);FX.banner("멍군 장군!",col,"막으면서 역으로 장군")}
-    else if(check){FX.flash("#ff3b3b");FX.banner("장군!","#ff3b3b");FX.shake($("#boardwrap"),6)}
-    else if(F.meong){FX.banner("멍군!",col,"장군을 막았어요")}
-  },300);
+    if(check)showBoardNotice(F.meong?"멍군! 역장군!":"장군!",F.meong?"장군을 막고 되받았어요":"");
+    else if(F.meong)showBoardNotice("멍군!","장군을 막았어요");
+    if(F.cap&&window.FX){
+      const p=FX.svgXY(sv,x1,y1),opponent=SIDE[F.cap>>3];
+      FX.burst(p.x,p.y,{n:16,color:[opponent.c,"#f8ebc8"],speed:6,g:.3,size:4,life:30,shape:"rect"});
+      FX.ring(p.x,p.y,opponent.c,{r0:12,grow:2.4});
+      FX.vib(30);
+    }
+  },travel);
 }
 
 function doMove(m,remote){
@@ -230,10 +285,9 @@ function afterMove(mover){
   J.locateKings(B);
   G.legal=J.legalMoves(B,opp);G.check=J.inCheck(B,opp);
   if(!G.legal.length){
-    if(G.check){render();return endGame(mover,"외통! 더 이상 피할 수 없어요")}
+    if(G.check)return endGame(mover,"외통! 더 이상 피할 수 없어요");
     G.turn=mover;G.check=J.inCheck(B,mover);G.legal=J.legalMoves(B,mover);
     if(!G.legal.length)return endScore();
-    G.fx.passed=true;
     setTurnMsg();G.msg=`${SIDE[opp].n}이(가) 둘 곳이 없어 한 수 쉼 — `+G.msg;
   }else{
     setTurnMsg();
@@ -243,7 +297,7 @@ function afterMove(mover){
   if(G.turn!==G.me&&!G.online)aiTurn();
 }
 function aiTurn(){
-  G.busy=true;render();
+  G.busy=true;render(false);
   const g=gen;
   setTimeout(()=>{
     if(g!==gen||!G||G.over)return;
@@ -260,10 +314,10 @@ function endGame(winner,why){
   $("#wd").textContent=why;
   const game=gen;
   sfx(win?"win":"lose",{delay:.65});
-  if(window.FX)setTimeout(()=>{
+  setTimeout(()=>{
     if(game!==gen)return;
-    if(win){FX.confetti();FX.banner(why.includes("외통")?"외통!":"승리!","#ffd24d",why)}
-    else{FX.banner("패배…","#666",why)}
+    if(win)window.FX?.confetti();
+    showBoardNotice(win?(why.includes("외통")?"외통!":"승리!"):"패배",why);
   },650);
   setTimeout(()=>{if(game===gen)$("#win").classList.remove("hide")},window.FX?2800:900);
 }
@@ -282,10 +336,9 @@ $("#svg").addEventListener("click",e=>{
   if(v&&(v>>3)===G.me){
     G.sel=i;G.moves=G.legal.filter(m=>(m>>7)===i).map(m=>m&127);
     if(!G.moves.length){G.msg="이 말은 움직일 수 없어요";G.kind="bad";sfx("invalid");render();return}
-    setTurnMsg();sfx("select");render();return;
+    setTurnMsg();render();return;
   }
   if(G.sel>=0&&G.moves.includes(i)){doMove(G.sel<<7|i);return}
-  if(G.sel>=0)sfx("back");
   G.sel=-1;G.moves=[];setTurnMsg();render();
 });
 function onNet(e){
@@ -303,7 +356,7 @@ $("#stage").addEventListener("click",e=>{
       if(h.turn===G.me){
         G.B=Int8Array.from(h.B);G.turn=h.turn;G.last=h.last;G.cap=h.cap;G.ply=h.ply;G.check=h.check;G.hist.length=k;
         J.locateKings(G.B);G.legal=J.legalMoves(G.B,G.turn);G.sel=-1;G.moves=[];
-        gen++;stopSounds();sfx("undo");
+        gen++;stopSounds();hideBoardNotice();sfx("undo");
         setTurnMsg();render();return;
       }
     }
@@ -320,7 +373,7 @@ soundButton.onclick=()=>{
   if(FX.on)sfx("menu");else stopSounds();
 };
 const again=()=>{
-  gen++;stopSounds();sfx("back");
+  gen++;stopSounds();hideBoardNotice();sfx("back");
   if(G&&G.online){G.online.leave();G.online=null}
   $("#win").classList.add("hide");$("#setup").classList.remove("hide");
 };
