@@ -123,7 +123,9 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 }
 /* PC 화면(넓은 화면)용 배치: 왼쪽 큰 히어로 + 오른쪽 큰 버튼 2개, 아래로 추천 3개·전체 게임 3열 */
 @media (min-width:1024px){
- body{padding-bottom:110px}
+ body{padding-bottom:40px}
+ nav{display:none}
+ #bgMenuBtn{display:block;width:40px;height:40px;opacity:.9}
  .wrap{max-width:1200px;padding:18px 28px 0}
  .big{min-height:124px;padding:18px 24px;gap:16px;border-radius:28px}
  .big .bi{font-size:64px}
@@ -203,6 +205,7 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
  <footer id="about">모든 게임은 컴퓨터와 혼자, 또는 온라인으로 친구와 할 수 있어요<br>새 게임은 계속 추가됩니다 · <a href="https://github.com/kjt7942/boardGames">GitHub</a></footer>
 </div>
 <div id="inst" role="dialog" aria-live="polite"><img src="icons/icon-192.png" alt=""><div class="tx"><b id="instT">앱으로 설치하기</b><p id="instP"></p></div><div class="bt"><button class="ok" id="instOk">설치</button><button class="no" id="instNo">나중에</button><button class="no" id="instHave">이미 설치했어요</button></div></div>
+<button id="bgMenuBtn" type="button" title="메뉴" aria-label="메뉴" hidden></button>
 <nav id="nav">
  <button class="on" data-go="top"><span>🏠</span>홈</button>
  <button data-go="all"><span>🎲</span>전체 게임</button>
@@ -303,7 +306,7 @@ const secs=["top","all","about"],navB=[...document.querySelectorAll("nav button"
 addEventListener("scroll",()=>{const y=scrollY+innerHeight*.4;let k=0;if(y>$("#all").offsetTop)k=1;navB.forEach((b,i)=>b.classList.toggle("on",i===k))},{passive:true});
 // 하단 메뉴 시트(옵션 탭)
 BGMenu.set({home:()=>go("top"),snd:()=>{if(window.FX){FX.on=!FX.on;tap()}},sndOn:()=>!!FXon(),rules:showRules,newGame:()=>go("all")});
-$("#optBtn").onclick=()=>{tap();BGMenu.open()};
+$("#optBtn").onclick=$("#bgMenuBtn").onclick=()=>{tap();BGMenu.open()};
 document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.card");if(a&&window.FX){FX.sfx("card");const r=a.getBoundingClientRect();FX.burst(r.left+r.width/2,r.top+r.height/2,{n:16,color:["#ffd24d","#fff","#46b4ff"],speed:5,g:.1,size:4,life:30,shape:"star"})}});
 // 반짝이
 [["8%","62%","✨"],["88%","48%","⭐"],["6%","88%","✨"],["92%","80%","⭐"]].forEach(([x,y,t],i)=>{const e=document.createElement("div");e.className="sparkle";e.textContent=t;e.style.left=x;e.style.top=y;e.style.animationDelay=i*.7+"s";document.body.appendChild(e)});
