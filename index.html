@@ -48,7 +48,7 @@ body{min-height:100dvh;font-family:"Jua","Apple SD Gothic Neo","Noto Sans KR",sy
 /* 추천 캐러셀 */
 .car{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:4px 2px 10px}
 .car::-webkit-scrollbar,.strip::-webkit-scrollbar{display:none}
-.feat{flex:0 0 92%;scroll-snap-align:center;position:relative;border-radius:22px;overflow:hidden;aspect-ratio:848/392;text-decoration:none;color:#fff;border:4px solid #fff;box-shadow:0 8px 20px #2a4a9a33;background:var(--bg)}
+.feat{flex:0 0 100%;scroll-snap-align:center;position:relative;border-radius:22px;overflow:hidden;aspect-ratio:848/392;text-decoration:none;color:#fff;border:4px solid #fff;background:var(--bg)}
 .feat img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s}
 .feat:hover img{transform:scale(1.05)}
 .feat .art,.tile .art{position:absolute;inset:0;display:grid;place-items:center;font-size:84px;background:radial-gradient(circle at 30% 20%,#ffffff66,transparent 45%),repeating-linear-gradient(45deg,#ffffff14 0 14px,transparent 14px 28px),linear-gradient(150deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 60%,color-mix(in srgb,var(--c) 60%,#000));text-shadow:0 8px 14px #0005}
@@ -61,7 +61,7 @@ body{min-height:100dvh;font-family:"Jua","Apple SD Gothic Neo","Noto Sans KR",sy
 .dots i.on{width:28px;background:#2f6bff}
 /* 가로 스트립 */
 .strip{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:4px 2px 12px}
-.tile{flex:0 0 42%;max-width:220px;scroll-snap-align:start;position:relative;aspect-ratio:276/190;border-radius:20px;overflow:hidden;border:4px solid #fff;box-shadow:0 6px 16px #2a4a9a2e;text-decoration:none;color:#fff}
+.tile{flex:0 0 42%;max-width:220px;scroll-snap-align:start;position:relative;aspect-ratio:276/190;border-radius:20px;overflow:hidden;border:4px solid #fff;text-decoration:none;color:#fff}
 .tile img{width:100%;height:100%;object-fit:cover;display:block}
 .tile .art{font-size:58px}
 .tile .lbl{font-size:15px;padding:4px 12px 4px 5px;left:8px;bottom:8px}.tile .lbl i{width:22px;height:22px;font-size:10px}
@@ -71,7 +71,7 @@ body{min-height:100dvh;font-family:"Jua","Apple SD Gothic Neo","Noto Sans KR",sy
 .chips button{flex:none;border:0;border-radius:999px;padding:8px 16px;font:inherit;font-weight:800;font-size:15px;background:#fff;color:#1d2550;box-shadow:0 3px 0 #d4dcf3;cursor:pointer}
 .chips button.on{background:linear-gradient(150deg,#46b4ff,#1f6bf0);color:#fff;box-shadow:0 3px 0 #1747b3}
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.card{display:flex;gap:12px;align-items:center;background:#fff;border-radius:20px;padding:12px;text-decoration:none;color:#1d2550;box-shadow:0 4px 0 #dbe3f7,0 8px 18px #2a4a9a1a;transition:transform .12s}
+.card{display:flex;gap:12px;align-items:center;background:#fff;border-radius:20px;padding:12px;text-decoration:none;color:#1d2550;transition:transform .12s}
 .card .ci{flex:none;width:64px;height:64px;border-radius:16px;display:grid;place-items:center;font-size:36px;background:linear-gradient(150deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c));box-shadow:inset 0 2px 0 #ffffff88,0 4px 0 color-mix(in srgb,var(--c) 60%,#000);overflow:hidden}
 .card .ci img{width:100%;height:100%;object-fit:cover}
 .card b{font-size:18px;font-weight:900;display:block}
@@ -96,7 +96,8 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 .hdc button{width:100%;border:0;border-radius:999px;padding:13px;font:inherit;font-weight:900;font-size:17px;color:#fff;background:linear-gradient(180deg,#b79bff,#6a3df0);border-bottom:5px solid #3a1fa0;cursor:pointer}
 @keyframes tw{50%{transform:scale(.6) rotate(25deg);opacity:.3}}
 @media (max-width:480px){.big .ar{display:none}}
-@media (min-width:700px){.feat{flex-basis:80%}.tile{flex-basis:30%}}
+@media (min-width:700px){.car{overflow:visible;scroll-snap-type:none;cursor:auto}.feat{flex:1 1 0;min-width:0;border-width:3px}.feat .info{display:none}.feat .lbl{font-size:15px;padding:4px 12px 4px 5px;left:8px;bottom:8px}.feat .lbl i{width:22px;height:22px;font-size:10px}.dots{display:none}.tile{flex-basis:30%}}
+.car{cursor:grab}.car.drag{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
 /* 설치 안내 */
 #inst{position:fixed;left:50%;bottom:96px;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,calc(100% + 140px));visibility:hidden;opacity:0;pointer-events:none;width:min(94%,560px);z-index:60;background:#fff;border-radius:24px;padding:14px;box-shadow:0 14px 40px #1a3a8a55,inset 0 0 0 2px #fff;display:flex;gap:12px;align-items:center;transition:transform .5s cubic-bezier(.2,1.3,.4,1),opacity .3s,visibility 0s .5s}
 #inst.show{transform:translate(-50%,0);visibility:visible;opacity:1;pointer-events:auto;transition:transform .5s cubic-bezier(.2,1.3,.4,1),opacity .3s,visibility 0s}
@@ -223,8 +224,13 @@ $("#car").innerHTML=FEAT.map(g=>`<a class="feat" href="${g.path}" style="--c:${g
 $("#dots").innerHTML=FEAT.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("");
 const car=$("#car");let ci=0;
 car.addEventListener("scroll",()=>{const w=car.firstElementChild.getBoundingClientRect().width+12,i=Math.round(car.scrollLeft/w);if(i!==ci){ci=i;[...$("#dots").children].forEach((d,k)=>d.classList.toggle("on",k===i))}},{passive:true});
-let auto=setInterval(()=>{const w=car.firstElementChild.getBoundingClientRect().width+12;car.scrollTo({left:((ci+1)%FEAT.length)*w,behavior:"smooth"})},4500);
+let auto=setInterval(()=>{if(innerWidth>=700)return;const w=car.firstElementChild.getBoundingClientRect().width+12;car.scrollTo({left:((ci+1)%FEAT.length)*w,behavior:"smooth"})},4500);
 car.addEventListener("pointerdown",()=>clearInterval(auto),{once:true});
+// 마우스로도 끌어서 넘기기 (터치는 기본 스크롤 스냅)
+car.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"||innerWidth>=700)return;const x0=e.clientX,l0=car.scrollLeft;let moved=0;car.classList.add("drag");
+  const mv=m=>{moved=Math.abs(m.clientX-x0);car.scrollLeft=l0-(m.clientX-x0)};
+  const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up);car.classList.remove("drag");const w=car.firstElementChild.getBoundingClientRect().width+12;car.scrollTo({left:Math.round(car.scrollLeft/w)*w,behavior:"smooth"});if(moved>6)car.addEventListener("click",ev=>ev.preventDefault(),{once:true,capture:true})};
+  addEventListener("pointermove",mv);addEventListener("pointerup",up)});
 // 더 많은 게임
 $("#strip").innerHTML=GAMES.filter(g=>!FEAT.includes(g)).concat(FEAT.slice(1,4)).map(g=>`<a class="tile" href="${g.path}" style="--c:${g.color}">${art(g)}<span class="lbl"><i>▶</i>${g.name}</span></a>`).join("");
 // 전체
@@ -247,7 +253,7 @@ $("[data-act=online]").onclick=openHub;
 const secs=["top","all","about"],navB=[...document.querySelectorAll("nav button")];
 addEventListener("scroll",()=>{const y=scrollY+innerHeight*.4;let k=0;if(y>$("#all").offsetTop)k=1;if(innerHeight+scrollY>=document.body.scrollHeight-4)k=3;navB.forEach((b,i)=>b.classList.toggle("on",i===k))},{passive:true});
 // 소리·전체화면
-const sb=$("#sndT");sb.textContent=FXon()?"🔊":"🔇";sb.onclick=()=>{if(!window.FX)return;FX.on=!FX.on;sb.textContent=FX.on?"🔊":"🔇";tap()};
+const sb=$("#sndT"),showSnd=()=>sb.setAttribute("aria-pressed",String(!!FXon()));showSnd();sb.onclick=()=>{if(!window.FX)return;FX.on=!FX.on;showSnd();tap()};
 $("#fsT").onclick=()=>{const d=document;try{if(d.fullscreenElement)d.exitFullscreen();else d.documentElement.requestFullscreen()}catch(e){}};
 document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.card");if(a&&window.FX){FX.sfx("pop");const r=a.getBoundingClientRect();FX.burst(r.left+r.width/2,r.top+r.height/2,{n:16,color:["#ffd24d","#fff","#46b4ff"],speed:5,g:.1,size:4,life:30,shape:"star"})}});
 // 반짝이

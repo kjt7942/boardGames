@@ -550,7 +550,7 @@ body.bg-game {
   background: #fff;
   border-radius: 20px;
   padding: 12px 16px 14px;
-  box-shadow: inset 0 0 0 2px #e6e0f6, 0 3px 0 #e2dbf2;
+  box-shadow: inset 0 0 0 2px #e6e0f6;
 }
 
 .bg-info h3 { margin: 0 0 6px; font-size: 1.12rem; font-weight: 900; color: #2a3a8a; }
@@ -583,7 +583,7 @@ body.bg-game {
   background: #fff;
   border-radius: 20px;
   padding: 12px 14px 2px;
-  box-shadow: inset 0 0 0 2px #e6e0f6, 0 3px 0 #e2dbf2;
+  box-shadow: inset 0 0 0 2px #e6e0f6;
 }
 
 .bg-game #setup .lbl { color: #2a3a8a; font-weight: 800; }
@@ -630,3 +630,38 @@ body.bg-game {
 
 .bg-setup-layout > * { flex: none; }
 .bg-game-cover { width: 100%; height: auto; }
+
+/* ===== 공통 상단 버튼: 테마에 맞춰 새로 그린 아이콘 세트(img/ui) ===== */
+.bg-toolbar,
+.bg-game #menu.bg-toolbar {
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.bg-toolbar button,
+.bg-game #menu.bg-toolbar button {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  font-size: 0;
+  color: transparent;
+  background: center / contain no-repeat transparent;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  transition: transform .12s;
+}
+
+.bg-toolbar button:active { transform: scale(.92); box-shadow: none; }
+@media (hover: hover) { .bg-toolbar button:hover { transform: scale(1.06); filter: brightness(1.08); } }
+
+:is(#homeBtn, #homeT) { background-image: url(img/ui/home.webp) !important; }
+:is(#fsBtn, #fsT) { background-image: url(img/ui/fs.webp) !important; }
+:is(#sndBtn, #sndT) { background-image: url(img/ui/snd_on.webp) !important; }
+:is(#sndBtn, #sndT)[aria-pressed="false"] { background-image: url(img/ui/snd_off.webp) !important; filter: none; }
+:is(#ruleBtn, #ruleT) { background-image: url(img/ui/rules.webp) !important; }
+:is(#newBtn, #newT) { background-image: url(img/ui/new.webp) !important; }
