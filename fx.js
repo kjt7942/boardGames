@@ -74,6 +74,40 @@
     pop: () => { tone(500, .08, { to: 1200, v: .15 }); },
   };
   FX.sfx = (n, o) => { if (!FX.on || !ac() || !S[n]) return; try { S[n](o); } catch (e) { } };
+  FX.createSamplePlayer = (render, sampleRate) => {
+    const buffers = new Map();
+    const playing = new Set();
+    return {
+      play(name, { delay = 0, rate = 1 } = {}) {
+        if (!FX.on) return;
+        const context = ac();
+        if (!context || context.state === "closed" ||
+            (context.state !== "running" && navigator.userActivation?.hasBeenActive === false)) return;
+        let buffer = buffers.get(name);
+        if (!buffer) {
+          const samples = render(name);
+          if (!samples) return;
+          buffer = context.createBuffer(1, samples.length, sampleRate);
+          buffer.getChannelData(0).set(samples);
+          buffers.set(name, buffer);
+        }
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.playbackRate.value = rate;
+        source.connect(master);
+        source.onended = () => {
+          playing.delete(source);
+          source.disconnect();
+        };
+        playing.add(source);
+        source.start(context.currentTime + delay);
+      },
+      stop() {
+        for (const source of playing) source.stop();
+        playing.clear();
+      }
+    };
+  };
   FX.vib = ms => { try { if (FX.on && navigator.vibrate) navigator.vibrate(ms); } catch (e) { } };
 
   // ── 화면 효과 ──

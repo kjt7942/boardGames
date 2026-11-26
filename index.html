@@ -4,226 +4,150 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3d9bff">
+<meta name="theme-color" content="#10111d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="보드게임즈">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="icon" type="image/png" href="icons/favicon.png">
 <title>보드게임즈</title>
-<style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0}
-body{min-height:100dvh;font-family:"Jua","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;color:#1d2550;
- background:linear-gradient(180deg,#bfe3ff 0%,#eaf4ff 35%,#f6f9ff 70%,#e3f5dc 100%) fixed;padding-bottom:96px}
-.wrap{max-width:760px;margin:0 auto;position:relative}
-/* 히어로 */
-.hero{position:relative;border-radius:0 0 28px 28px;overflow:hidden;box-shadow:0 10px 30px #3d7bd655}
-.hero img{display:block;width:100%;aspect-ratio:941/528;object-fit:cover;animation:heroIn .9s cubic-bezier(.2,1.2,.4,1)}
-@keyframes heroIn{from{transform:scale(1.08);opacity:.3}}
-.hero .tb{position:absolute;right:12px;top:12px;display:flex;gap:8px}
-.cbtn{width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:linear-gradient(160deg,#4fa3ff,#1f5fd6);color:#fff;font-size:22px;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 #173f99,0 8px 16px #0004;text-decoration:none}
-.cbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #173f99}
-/* 큰 버튼 */
-.acts{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 14px 6px}
-.big{position:relative;border:0;border-radius:24px;padding:16px 12px 14px 10px;word-break:keep-all;min-height:118px;text-align:left;color:#fff;font:inherit;cursor:pointer;overflow:hidden;display:flex;align-items:center;gap:10px;
- box-shadow:inset 0 3px 0 #ffffff66,inset 0 -5px 0 #0002,0 6px 0 var(--sd),0 12px 22px #0003;transition:transform .12s}
-.big:active{transform:translateY(4px);box-shadow:inset 0 3px 0 #ffffff66,0 2px 0 var(--sd)}
-.big::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 0%,#ffffff55,transparent 50%);pointer-events:none}
-.big .bi{font-size:38px;filter:drop-shadow(0 4px 4px #0004);flex:none;animation:bob 2.4s ease-in-out infinite}
-.big b{display:block;font-size:clamp(20px,5.4vw,30px);line-height:1.1;font-weight:900;text-shadow:0 2px 0 #0003}
-.big small{display:block;font-size:12.5px;opacity:.95;margin-top:6px;font-weight:700}
-.big .ar{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:50%;background:#fff;color:var(--sd);display:grid;place-items:center;font-weight:900;font-size:16px}
-.big.on{background:linear-gradient(150deg,#46b4ff,#1f6bf0);--sd:#1747b3}
-.big.ex{background:linear-gradient(150deg,#ffd84d,#ffa41b);--sd:#d07800;color:#fff}
-.big.ex b{color:#fff;text-shadow:0 2px 0 #c46d00}
-@keyframes bob{50%{transform:translateY(-5px) rotate(-4deg)}}
-/* 섹션 */
-.sec{padding:18px 14px 4px}
-.sh{display:flex;align-items:center;gap:8px;margin:0 2px 10px}
-.sh h2{margin:0;font-size:22px;font-weight:900;color:#1d2550}
-.sh .em{font-size:28px;filter:drop-shadow(0 2px 2px #0003)}
-.sh .more{margin-left:auto;border:2px solid #d4dcf3;background:#fff;border-radius:999px;padding:6px 14px;font:inherit;font-weight:800;font-size:14px;color:#1d2550;cursor:pointer;box-shadow:0 3px 0 #d4dcf3}
-/* 추천 캐러셀 */
-.car{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:4px 2px 10px}
-.car::-webkit-scrollbar,.strip::-webkit-scrollbar{display:none}
-.feat{flex:0 0 92%;scroll-snap-align:center;position:relative;border-radius:22px;overflow:hidden;aspect-ratio:848/392;text-decoration:none;color:#fff;border:4px solid #fff;box-shadow:0 8px 20px #2a4a9a33;background:var(--bg)}
-.feat img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s}
-.feat:hover img{transform:scale(1.05)}
-.feat .art,.tile .art{position:absolute;inset:0;display:grid;place-items:center;font-size:84px;background:radial-gradient(circle at 30% 20%,#ffffff66,transparent 45%),repeating-linear-gradient(45deg,#ffffff14 0 14px,transparent 14px 28px),linear-gradient(150deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 60%,color-mix(in srgb,var(--c) 60%,#000));text-shadow:0 8px 14px #0005}
-.feat .art span,.tile .art span{animation:bob 3s ease-in-out infinite;display:inline-block}
-.feat .info{position:absolute;right:12px;top:50%;transform:translateY(-50%) rotate(-2deg);max-width:44%;text-align:center;font-weight:800;font-size:13px;line-height:1.4;color:#fff;background:linear-gradient(160deg,#3d5bffee,#2a2fbfee);border:3px solid #fff;border-radius:16px;padding:8px 10px;box-shadow:0 4px 0 #1a1f7a;word-break:keep-all}
-.lbl{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:8px;background:#000000a8;backdrop-filter:blur(4px);border-radius:999px;padding:6px 16px 6px 8px;font-weight:900;font-size:19px;color:#fff}
-.lbl i{width:28px;height:28px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-style:normal;font-size:13px}
-.dots{display:flex;justify-content:center;gap:7px;margin-top:2px}
-.dots i{width:10px;height:10px;border-radius:999px;background:#c8d2ee;transition:.3s}
-.dots i.on{width:28px;background:#2f6bff}
-/* 가로 스트립 */
-.strip{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:4px 2px 12px}
-.tile{flex:0 0 42%;max-width:220px;scroll-snap-align:start;position:relative;aspect-ratio:276/190;border-radius:20px;overflow:hidden;border:4px solid #fff;box-shadow:0 6px 16px #2a4a9a2e;text-decoration:none;color:#fff}
-.tile img{width:100%;height:100%;object-fit:cover;display:block}
-.tile .art{font-size:58px}
-.tile .lbl{font-size:15px;padding:4px 12px 4px 5px;left:8px;bottom:8px}.tile .lbl i{width:22px;height:22px;font-size:10px}
-.tile:active,.feat:active,.card:active{transform:scale(.97)}
-/* 전체 목록 */
-.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 12px}
-.chips button{flex:none;border:0;border-radius:999px;padding:8px 16px;font:inherit;font-weight:800;font-size:15px;background:#fff;color:#1d2550;box-shadow:0 3px 0 #d4dcf3;cursor:pointer}
-.chips button.on{background:linear-gradient(150deg,#46b4ff,#1f6bf0);color:#fff;box-shadow:0 3px 0 #1747b3}
-#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.card{display:flex;gap:12px;align-items:center;background:#fff;border-radius:20px;padding:12px;text-decoration:none;color:#1d2550;box-shadow:0 4px 0 #dbe3f7,0 8px 18px #2a4a9a1a;transition:transform .12s}
-.card .ci{flex:none;width:64px;height:64px;border-radius:16px;display:grid;place-items:center;font-size:36px;background:linear-gradient(150deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c));box-shadow:inset 0 2px 0 #ffffff88,0 4px 0 color-mix(in srgb,var(--c) 60%,#000);overflow:hidden}
-.card .ci img{width:100%;height:100%;object-fit:cover}
-.card b{font-size:18px;font-weight:900;display:block}
-.card p{margin:3px 0 6px;font-size:12.5px;color:#5a6488;line-height:1.4;font-family:system-ui,sans-serif}
-.card .tg{display:flex;flex-wrap:wrap;gap:4px}
-.card .tg span{font-size:11px;font-weight:800;background:#eef3ff;color:#2f5bd8;border-radius:999px;padding:2px 8px}
-footer{margin:22px 0 0;text-align:center;font-size:12px;color:#7a86ab;line-height:1.7;font-family:system-ui,sans-serif}
-footer a{color:inherit}
-/* 하단 탭 */
-nav{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:min(94%,720px);display:grid;grid-template-columns:repeat(4,1fr);background:#ffffffee;backdrop-filter:blur(10px);border-radius:28px;box-shadow:0 8px 26px #2a4a9a40,inset 0 0 0 2px #fff;z-index:50;padding:6px 4px 4px}
-nav button{border:0;background:none;font:inherit;font-weight:800;font-size:13px;color:#5f6b91;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0;cursor:pointer;position:relative}
-nav button span{font-size:25px;transition:transform .2s}
-nav button.on{color:#1f6bf0}nav button.on span{transform:translateY(-3px) scale(1.12)}
-nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4px;border-radius:4px;background:#1f6bf0}
-.sparkle{position:fixed;pointer-events:none;z-index:-1;font-size:26px;animation:tw 3s ease-in-out infinite;opacity:.8}
-@keyframes tw{50%{transform:scale(.6) rotate(25deg);opacity:.3}}
-@media (max-width:480px){.big .ar{display:none}}
-@media (min-width:700px){.feat{flex-basis:80%}.tile{flex-basis:30%}}
-/* 설치 안내 */
-#inst{position:fixed;left:50%;bottom:96px;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,calc(100% + 140px));visibility:hidden;opacity:0;pointer-events:none;width:min(94%,560px);z-index:60;background:#fff;border-radius:24px;padding:14px;box-shadow:0 14px 40px #1a3a8a55,inset 0 0 0 2px #fff;display:flex;gap:12px;align-items:center;transition:transform .5s cubic-bezier(.2,1.3,.4,1),opacity .3s,visibility 0s .5s}
-#inst.show{transform:translate(-50%,0);visibility:visible;opacity:1;pointer-events:auto;transition:transform .5s cubic-bezier(.2,1.3,.4,1),opacity .3s,visibility 0s}
-#inst img{width:62px;height:62px;border-radius:16px;flex:none;box-shadow:0 4px 10px #0003;animation:bob 2.4s ease-in-out infinite}
-#inst .tx{flex:1;min-width:0}
-#inst b{display:block;font-size:17px;font-weight:900;color:#1d2550}
-#inst p b{display:inline;font-size:inherit;color:#1f6bf0}
-#inst p{margin:3px 0 0;font:600 12.5px/1.45 system-ui,sans-serif;color:#5a6488}
-#inst .bt{display:flex;flex-direction:column;gap:6px;flex:none}
-#inst button{border:0;border-radius:14px;font:inherit;font-weight:900;cursor:pointer;padding:10px 14px;font-size:15px}
-#inst .ok{background:linear-gradient(150deg,#46b4ff,#1f6bf0);color:#fff;box-shadow:0 3px 0 #1747b3}
-#inst .no{background:none;color:#8a93b5;font-size:12px;padding:2px;white-space:nowrap}
-#inst .ios{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:#e8f0ff;color:#1f6bf0;font-size:13px;vertical-align:-4px}
-</style>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="home.css">
 </head>
-<body>
-<div class="wrap">
- <header class="hero" id="top">
-  <img src="img/hero.webp" alt="보드게임즈 — 다양한 보드게임을 지금 바로 즐겨보세요!">
-  <div class="tb"><button class="cbtn" id="sndT" title="효과음">🔊</button><button class="cbtn" id="fsT" title="전체화면">⛶</button></div>
- </header>
- <div class="acts">
-  <button class="big on" id="hubOnline"><span class="bi">💻</span><span><b>온라인<br>대기실</b><small>함께하는 즐거움!</small></span><span class="ar">›</span></button>
-  <button class="big ex" id="explore"><span class="bi">🔍</span><span><b>게임 탐색</b><small>다양한 게임을<br>찾아보세요!</small></span><span class="ar">›</span></button>
- </div>
- <section class="sec">
-  <div class="sh"><span class="em">🏆</span><h2>추천 게임</h2><button class="more" data-go="all">전체보기 ›</button></div>
-  <div class="car" id="car"></div><div class="dots" id="dots"></div>
- </section>
- <section class="sec">
-  <div class="sh"><span class="em">🎮</span><h2>더 많은 게임들</h2></div>
-  <div class="strip" id="strip"></div>
- </section>
- <section class="sec" id="all">
-  <div class="sh"><span class="em">🎲</span><h2>전체 게임</h2></div>
-  <div class="chips" id="chips"></div>
-  <main id="grid"></main>
- </section>
- <footer id="about">모든 게임은 컴퓨터와 혼자, 또는 온라인으로 친구와 할 수 있어요<br>새 게임은 계속 추가됩니다 · <a href="https://github.com/kjt7942/boardGames">GitHub</a></footer>
-</div>
-<div id="inst" role="dialog" aria-live="polite"><img src="icons/icon-192.png" alt=""><div class="tx"><b id="instT">앱으로 설치하기</b><p id="instP"></p></div><div class="bt"><button class="ok" id="instOk">설치</button><button class="no" id="instNo">나중에</button><button class="no" id="instHave">이미 설치했어요</button></div></div>
-<nav id="nav">
- <button class="on" data-go="top"><span>🏠</span>홈</button>
- <button data-go="all"><span>🎲</span>전체 게임</button>
- <button data-act="online"><span>🌐</span>온라인</button>
- <button data-go="about"><span>💬</span>정보</button>
-</nav>
+<body class="bg-home">
+<a class="skip-link" href="#library">게임 목록 바로가기</a>
+<header class="app-header" id="top">
+  <div class="app-bar">
+    <a class="brand" href="./"><img src="icons/icon-192.png" width="38" height="38" alt=""><span>보드게임즈</span></a>
+    <nav class="app-nav" aria-label="주 메뉴">
+      <a href="#library">전체 게임</a>
+      <button id="navOnline" type="button">온라인 대기실</button>
+    </nav>
+    <div class="app-tools">
+      <button class="icon-button" id="sndT" type="button" aria-label="효과음" title="효과음">🔊</button>
+      <button class="icon-button" id="fsT" type="button" aria-label="전체화면" title="전체화면">⛶</button>
+    </div>
+  </div>
+</header>
+<main class="home-wrap">
+  <section class="hero" aria-labelledby="home-title">
+    <img class="hero-art" src="img/mascot.webp" alt="" fetchpriority="high">
+    <div class="hero-copy">
+      <h1 id="home-title">보드게임 한 판?</h1>
+      <p>혼자 가볍게, 친구와 함께.<br>오늘의 게임을 골라보세요.</p>
+      <div class="hero-actions">
+        <a class="home-button primary" href="#library">게임 탐색</a>
+        <button class="home-button" id="hubOnline" type="button">온라인 대기실</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section" aria-labelledby="featured-title">
+    <h2 id="featured-title">추천 게임</h2>
+    <div class="featured" id="featured"></div>
+  </section>
+
+  <section class="home-section library" id="library" aria-labelledby="library-title">
+    <div class="section-heading">
+      <h2 id="library-title">전체 게임</h2>
+      <span id="gameCount" role="status"></span>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="게임 종류">
+      <button type="button" data-category="" aria-pressed="true">전체</button>
+      <button type="button" data-category="보드" aria-pressed="false">보드</button>
+      <button type="button" data-category="카드" aria-pressed="false">카드</button>
+      <button type="button" data-category="화투" aria-pressed="false">화투</button>
+      <button type="button" data-category="추리" aria-pressed="false">추리</button>
+    </div>
+    <div class="game-grid" id="grid"></div>
+  </section>
+</main>
+<footer class="home-footer"><span>보드게임즈</span><a href="https://github.com/kjt7942/boardGames">GitHub</a></footer>
+<div id="inst" role="dialog" aria-labelledby="instT" aria-live="polite"><img src="icons/icon-192.png" alt=""><div class="tx"><b id="instT">앱으로 설치하기</b><p id="instP"></p></div><div class="bt"><button class="ok" id="instOk">설치</button><button class="no" id="instNo">나중에</button><button class="no" id="instHave">이미 설치했어요</button></div></div>
 <script src="fx.js"></script>
 <script src="firebase-config.js"></script>
 <script src="net.js"></script>
+<script src="theme.js"></script>
 <script>
-const GAMES=[
-  {path:"magic-labyrinth/",ban:"img/ban_maze.webp",cat:"보드",img:"img/maze.webp",icon:"🧙",name:"마법의 미로",sub:"The Magic Labyrinth",color:"#9d7cff",
-   desc:"보이지 않는 벽을 기억해 마법 심볼을 모으세요. 벽에 부딪히면 처음 자리로!",
-   tags:["1인 가능 🤖","온라인 🌐","2~4인","기억력","주사위","20분"]},
-  {path:"wall-go/",cat:"보드",img:"img/th_wallgo.webp",ban:"img/ban_wallgo.webp",icon:"🧱",name:"벽바둑",sub:"Wall Go · 데블스 플랜",color:"#4dabff",
-   desc:"말을 움직이고 벽을 세워 더 넓은 영역을 차지하세요. 쿼리도와 바둑이 만난 전략 게임.",
-   tags:["1인 가능 🤖","온라인 🌐","2~3인","전략","영역 싸움","15분"]},
-  {path:"janggi/",cat:"보드",img:"img/th_janggi.webp",ban:"img/ban_janggi.webp",icon:"♟️",name:"장기",sub:"Janggi · 한국 전통 장기",color:"#2fbf71",
-   desc:"초와 한이 겨루는 전통 장기. 차·포·마·상으로 상대 왕을 외통에 몰아넣으세요.",
-   tags:["1인 가능 🤖","온라인 🌐","2인","전략","전통","20분"]},
-  {path:"baduk/",cat:"보드",img:"img/th_baduk.webp",ban:"img/ban_baduk.webp",icon:"⚫",name:"바둑",sub:"Baduk · 9·13·19줄",color:"#ffd24d",
-   desc:"돌을 놓아 더 넓은 집을 차지하는 바둑. 9줄로 가볍게, 19줄로 본격적으로 즐겨요.",
-   tags:["1인 가능 🤖","온라인 🌐","2인","전략","전통","20분"]},
-  {path:"omok/",cat:"보드",img:"img/th_omok.webp",ban:"img/ban_omok.webp",icon:"⚪",name:"오목",sub:"Omok · 15·19줄",color:"#ff8a5c",
-   desc:"가로·세로·대각선으로 먼저 5개를 이으면 승리! 쉽고 빠른 한 판.",
-   tags:["1인 가능 🤖","온라인 🌐","2인","전략","10분"]},
-  {path:"chess/",cat:"보드",img:"img/th_chess.webp",ban:"img/ban_chess.webp",icon:"♞",name:"체스",sub:"Chess · 캐슬링·앙파상 지원",color:"#c9a14a",
-   desc:"킹을 지키며 상대 킹을 체크메이트로 몰아넣는 세계적인 전략 게임.",
-   tags:["1인 가능 🤖","온라인 🌐","2인","전략","20분"]},
-  {path:"onecard/",cat:"카드",img:"img/th_onecard.webp",ban:"img/ban_onecard.webp",icon:"🃏",name:"원카드",sub:"One Card · 트럼프",color:"#e0453a",
-   desc:"같은 무늬·숫자로 손패를 먼저 비우세요. 공격 카드(2·A·조커)와 J·Q·K·7 기술 카드가 있어요.",
-   tags:["1인 가능 🤖","온라인 🌐","2~4인","카드","10분"]},
-  {path:"thief/",cat:"카드",img:"img/th_thief.webp",ban:"img/ban_thief.webp",icon:"🦹",name:"도둑잡기",sub:"Old Maid · 트럼프",color:"#8e5cf0",
-   desc:"짝을 버리고 상대 카드를 뽑아요. 조커를 끝까지 들고 있으면 도둑!",
-   tags:["1인 가능 🤖","온라인 🌐","2~4인","카드","운","5분"]},
-  {path:"blackjack/",cat:"카드",img:"img/th_blackjack.webp",ban:"img/ban_blackjack.webp",icon:"♠️",name:"블랙잭",sub:"Blackjack · 8판 승부",color:"#2fbf71",
-   desc:"21에 가깝게! 딜러를 이겨 칩을 모으세요. 히트·스탠드·더블.",
-   tags:["1인 가능 🤖","온라인 🌐","1~4인","카드","15분"]},
-  {path:"minhwatu/",cat:"화투",img:"img/th_minhwatu.webp",ban:"img/ban_minhwatu.webp",icon:"🎴",name:"민화투",sub:"Minhwatu · 화투",color:"#d8283b",
-   desc:"같은 달 화투를 맞춰 먹고 광·열·띠·약 점수로 겨뤄요.",
-   tags:["1인 가능 🤖","온라인 🌐","2~3인","화투","10분"]},
-  {path:"codebreak/",cat:"추리",img:"img/th_codebreak.webp",ban:"img/ban_codebreak.webp",icon:"🔐",name:"코드 추리",sub:"숨은 숫자 타일 추리",color:"#5ab0ff",
-   desc:"상대의 숨은 숫자 타일을 추리로 맞혀 모두 공개시키세요.",
-   tags:["1인 가능 🤖","온라인 🌐","2~4인","추리","15분"]},
-  {path:"memory/",cat:"추리",img:"img/th_memory.webp",ban:"img/ban_memory.webp",icon:"🐾",name:"짝 맞추기",sub:"Memory Match",color:"#ff8a5c",
-   desc:"같은 그림 두 장을 찾아라! 기억력으로 겨루는 카드 뒤집기.",
-   tags:["1인 가능 🤖","온라인 🌐","1~4인","기억력","10분"]},
-  {path:"matgo/",cat:"화투",img:"img/th_matgo.webp",ban:"img/ban_matgo.webp",icon:"🌸",name:"맞고",sub:"Matgo · 2인 화투",color:"#e0453a",
-   desc:"화투 2인 대결! 뻑·따닥·쪽·쓸에 7점이 넘으면 고 또는 스톱.",
-   tags:["1인 가능 🤖","온라인 🌐","2인","화투","10분"]},
-];
-const HUBG=[
- {k:"janggi",icon:"♟️",name:"장기",np:[2]},{k:"baduk",icon:"⚫",name:"바둑",np:[2]},
- {k:"omok",icon:"⚪",name:"오목",np:[2]},{k:"chess",icon:"♞",name:"체스",np:[2]},
- {k:"magic-labyrinth",icon:"🧙",name:"마법의 미로",np:[2,3,4]},{k:"wall-go",icon:"🧱",name:"벽바둑",np:[2,3]},
- {k:"onecard",icon:"🃏",name:"원카드",np:[2,3,4]},{k:"thief",icon:"🦹",name:"도둑잡기",np:[2,3,4]},
- {k:"blackjack",icon:"♠️",name:"블랙잭",np:[2,3,4]},{k:"minhwatu",icon:"🎴",name:"민화투",np:[2,3]},{k:"matgo",icon:"🌸",name:"맞고",np:[2]},
- {k:"codebreak",icon:"🔐",name:"코드 추리",np:[2,3,4]},{k:"memory",icon:"🐾",name:"짝 맞추기",np:[2,3,4]}];
-const $=s=>document.querySelector(s),FXon=()=>window.FX&&FX.on;
-const tap=()=>{if(window.FX)FX.sfx("tap")};
-const openHub=()=>{tap();BGNet.open({hub:true,game:"*",title:"대기실",games:HUBG,sizes:[{np:2,label:"2인"},{np:3,label:"3인"},{np:4,label:"4인"}],onStart(){},onClose(){}})};
-$("#hubOnline").onclick=openHub;
-const pl=g=>(g.tags.find(t=>/인$/.test(t))||"");
-const art=g=>g.img?`<img src="${g.img}" alt="" loading="lazy">`:`<div class="art"><span>${g.icon}</span></div>`;
-// 추천
-const FEAT=["baduk/","chess/","magic-labyrinth/","janggi/","wall-go/","matgo/"].map(p=>GAMES.find(g=>g.path===p));
-$("#car").innerHTML=FEAT.map(g=>`<a class="feat" href="${g.path}" style="--c:${g.color}">${g.ban?`<img src="${g.ban}" alt="" loading="lazy">`:art(g)}${g.ban&&g.path!=="magic-labyrinth/"?`<div class="info">${g.desc.split(/(?<=[.!])\s/)[0]}</div>`:""}<span class="lbl"><i>▶</i>${g.name}</span></a>`).join("");
-$("#dots").innerHTML=FEAT.map((_,i)=>`<i class="${i?"":"on"}"></i>`).join("");
-const car=$("#car");let ci=0;
-car.addEventListener("scroll",()=>{const w=car.firstElementChild.getBoundingClientRect().width+12,i=Math.round(car.scrollLeft/w);if(i!==ci){ci=i;[...$("#dots").children].forEach((d,k)=>d.classList.toggle("on",k===i))}},{passive:true});
-let auto=setInterval(()=>{const w=car.firstElementChild.getBoundingClientRect().width+12;car.scrollTo({left:((ci+1)%FEAT.length)*w,behavior:"smooth"})},4500);
-car.addEventListener("pointerdown",()=>clearInterval(auto),{once:true});
-// 더 많은 게임
-$("#strip").innerHTML=GAMES.filter(g=>!FEAT.includes(g)).concat(FEAT.slice(1,4)).map(g=>`<a class="tile" href="${g.path}" style="--c:${g.color}">${art(g)}<span class="lbl"><i>▶</i>${g.name}</span></a>`).join("");
-// 전체
-const CATS=["전체","보드","카드","화투","추리"];let cat="전체";
-function grid(){
-  $("#chips").innerHTML=CATS.map(c=>`<button class="${c===cat?"on":""}" data-c="${c}">${{전체:"✨",보드:"♟️",카드:"🃏",화투:"🎴",추리:"🧠"}[c]} ${c}</button>`).join("");
-  $("#grid").innerHTML=GAMES.filter(g=>cat==="전체"||g.cat===cat).map(g=>`<a class="card" href="${g.path}" style="--c:${g.color}"><div class="ci">${g.img?`<img src="${g.img}" alt="">`:g.icon}</div><div><b>${g.name}</b><p>${g.desc}</p><div class="tg"><span>${pl(g)}</span><span>🤖 혼자</span><span>🌐 온라인</span></div></div></a>`).join("");
+const { games, image } = BGTHEME;
+const byId = id => document.getElementById(id);
+const tap = () => window.FX?.sfx("tap");
+
+const lobbyOrder = ["janggi", "baduk", "omok", "chess", "magic-labyrinth", "wall-go", "onecard",
+  "thief", "blackjack", "minhwatu", "matgo", "codebreak", "memory"];
+const openLobby = () => {
+  tap();
+  BGNet.open({
+    hub: true, game: "*", title: "대기실",
+    games: lobbyOrder.map(id => {
+      const { icon, name, online } = games.find(game => game.id === id);
+      return { k: id, icon, name, np: online };
+    }),
+    sizes: [2, 3, 4].map(np => ({ np, label: np + "인" })),
+    onStart() {}, onClose() {}
+  });
+};
+byId("hubOnline").onclick = byId("navOnline").onclick = openLobby;
+
+const card = (game, featured = false) => `
+  <a class="game-card" href="${game.id}/">
+    <img class="game-art" src="${image(featured && game.id !== "magic-labyrinth" ? game.banner : game.thumb)}" alt="" ${featured ? "" : 'loading="lazy"'}>
+    <div class="game-card-copy">
+      <span class="game-meta">${game.category} · ${game.players} · 약 ${game.minutes}분</span>
+      <h3>${game.name}</h3>
+      <p>${game.description}</p>
+    </div>
+  </a>`;
+const featuredIds = ["baduk", "chess", "magic-labyrinth"];
+byId("featured").innerHTML = featuredIds.map(id => card(games.find(game => game.id === id), true)).join("");
+
+const filters = byId("filters");
+function showGames(category) {
+  const matches = category ? games.filter(game => game.category === category) : games;
+  byId("grid").innerHTML = matches.map(game => card(game)).join("");
+  byId("gameCount").textContent = matches.length + "개 게임";
 }
-grid();
-$("#chips").onclick=e=>{const b=e.target.closest("button");if(!b)return;cat=b.dataset.c;tap();grid()};
-// 이동
-const go=id=>{tap();document.getElementById(id).scrollIntoView({behavior:"smooth",block:"start"})};
-document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
-$("#explore").onclick=()=>go("all");
-$("[data-act=online]").onclick=openHub;
-const secs=["top","all","about"],navB=[...document.querySelectorAll("nav button")];
-addEventListener("scroll",()=>{const y=scrollY+innerHeight*.4;let k=0;if(y>$("#all").offsetTop)k=1;if(innerHeight+scrollY>=document.body.scrollHeight-4)k=3;navB.forEach((b,i)=>b.classList.toggle("on",i===k))},{passive:true});
-// 소리·전체화면
-const sb=$("#sndT");sb.textContent=FXon()?"🔊":"🔇";sb.onclick=()=>{if(!window.FX)return;FX.on=!FX.on;sb.textContent=FX.on?"🔊":"🔇";tap()};
-$("#fsT").onclick=()=>{const d=document;try{if(d.fullscreenElement)d.exitFullscreen();else d.documentElement.requestFullscreen()}catch(e){}};
-document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.card");if(a&&window.FX){FX.sfx("pop");const r=a.getBoundingClientRect();FX.burst(r.left+r.width/2,r.top+r.height/2,{n:16,color:["#ffd24d","#fff","#46b4ff"],speed:5,g:.1,size:4,life:30,shape:"star"})}});
-// 반짝이
-[["8%","62%","✨"],["88%","48%","⭐"],["6%","88%","✨"],["92%","80%","⭐"]].forEach(([x,y,t],i)=>{const e=document.createElement("div");e.className="sparkle";e.textContent=t;e.style.left=x;e.style.top=y;e.style.animationDelay=i*.7+"s";document.body.appendChild(e)});
+showGames("");
+filters.addEventListener("click", event => {
+  const selected = event.target.closest("button");
+  if (!selected || selected.getAttribute("aria-pressed") === "true") return;
+  tap();
+  filters.querySelector('[aria-pressed="true"]').setAttribute("aria-pressed", "false");
+  selected.setAttribute("aria-pressed", "true");
+  showGames(selected.dataset.category);
+});
+
+const sound = byId("sndT");
+function showSound() {
+  const enabled = Boolean(window.FX?.on);
+  sound.textContent = enabled ? "🔊" : "🔇";
+  sound.setAttribute("aria-pressed", String(enabled));
+}
+showSound();
+sound.onclick = () => {
+  if (!window.FX) return;
+  FX.on = !FX.on;
+  showSound();
+  tap();
+};
+
+const fullscreen = byId("fsT");
+const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+fullscreen.hidden = !requestFullscreen;
+fullscreen.onclick = async () => {
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      await requestFullscreen.call(document.documentElement);
+    }
+  } catch (error) {}
+};
+function syncFullscreen() {
+  fullscreen.setAttribute("aria-pressed", String(Boolean(document.fullscreenElement || document.webkitFullscreenElement)));
+}
+document.addEventListener("fullscreenchange", syncFullscreen);
+document.addEventListener("webkitfullscreenchange", syncFullscreen);
+syncFullscreen();
 </script>
 <script>
 // ── 앱 설치 안내 (설치 안 된 스마트폰에서만) ──

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#0b1130">
+<meta name="theme-color" content="#10111d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="보드게임즈">
@@ -66,6 +66,7 @@ body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none
 .panel.cur{animation:pglow 1.2s ease-in-out infinite alternate}
 @keyframes pglow{from{box-shadow:0 0 10px var(--pc),inset 0 0 12px #ffffff12}to{box-shadow:0 0 32px var(--pc),inset 0 0 22px #ffffff22}}
 </style>
+<link rel="stylesheet" href="../theme.css">
 </head>
 <body>
 <div id="stage">
@@ -113,6 +114,7 @@ body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none
 <button id="againBtn" style="width:100%;padding:14px">다시 하기</button></div></div>
 
 <script src="../fx.js"></script>
+<script src="sound.js"></script>
 <script src="engine.js"></script>
 <script src="../firebase-config.js"></script>
 <script src="../net.js"></script>
@@ -121,21 +123,15 @@ const J=Janggi,$=s=>document.querySelector(s);
 const S=100,M=70,W=940,H=1040;
 const SIDE={1:{n:"초",c:"#2fbf71",hz:{1:"楚",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"卒"}},2:{n:"한",c:"#ff5d73",hz:{1:"漢",2:"車",3:"包",4:"馬",5:"象",6:"士",7:"兵"}}};
 const RAD={1:50,2:43,3:43,4:43,5:43,6:36,7:32},FS={1:62,2:52,3:52,4:52,5:52,6:44,7:42};
-let sel={lv:"normal",me:1,mode:"solo"},G=null,soundOn=window.FX?FX.on:true,ac=null,gen=0;
+let sel={lv:"normal",me:1,mode:"solo"},G=null,gen=0;
 
-const sfx=(n,o)=>{if(window.FX&&soundOn)FX.sfx(n,o)};
-function beep(f,d,type="sine",v=.07,delay=0){
-  if(!soundOn||window.FX)return;
-  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
-    const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
-    o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
-    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}
-}
+const sfx=(cue,options)=>window.JanggiSound?.play(cue,options);
+const stopSounds=()=>window.JanggiSound?.stop();
 const flip=()=>G&&G.me===2;
 const px=(r,c)=>{if(flip()){r=9-r;c=8-c}return [M+c*S,M+r*S]};
 
 function newGame(net,cfg){
-  gen++;
+  gen++;stopSounds();
   const B=J.initialBoard();J.locateKings(B);
   G={online:net||null,B,turn:1,me:net?(net.isHost?cfg.side:3-cfg.side):sel.me,lv:net?"normal":sel.lv,sel:-1,moves:[],last:null,hist:[],over:false,ply:0,cap:{1:[],2:[]},busy:false,msg:"",kind:"",check:false,legal:J.legalMoves(B,1)};
   setTurnMsg();render();
@@ -196,28 +192,35 @@ function render(){
 }
 // ── 연출 ──
 function postFx(){
-  if(!window.FX||!G.fx)return;
-  const F=G.fx;G.fx=null;const sv=$("#svg");
+  if(!G.fx)return;
+  const F=G.fx;G.fx=null;
+  const check=G.check&&!G.over, game=gen;
+  const contact=F.cap?"capture":F.piece<=3?"heavy":"move";
+  sfx(contact,{rate:1+(((F.f*11+F.t)%7)-3)*.009});
+  if(check)sfx(F.meong?"counter":"check",{delay:.21});
+  else if(F.meong)sfx("clear",{delay:.23});
+  if(F.passed)sfx("pass",{delay:.27});
+
+  if(!window.FX)return;
+  const sv=$("#svg"),col=SIDE[F.mover].c;
   const el=$("#pc"+F.t),[x0,y0]=px((F.f/9)|0,F.f%9),[x1,y1]=px((F.t/9)|0,F.t%9);
   if(el)FX.slide(el,x0-x1,y0-y1,{dur:320,s:1.15,hop:14});
   setTimeout(()=>{
+    if(game!==gen)return;
     const p=FX.svgXY(sv,x1,y1);
-    if(F.cap){const c=SIDE[F.cap>>3].c;sfx("hit");FX.burst(p.x,p.y,{n:28,color:[c,"#f8ebc8","#fff"],speed:8,g:.3,size:5,life:45,shape:"rect"});FX.ring(p.x,p.y,c,{r0:12,grow:2.4});FX.shake($("#boardwrap"),7);FX.vib(30);
+    if(F.cap){const c=SIDE[F.cap>>3].c;FX.burst(p.x,p.y,{n:28,color:[c,"#f8ebc8","#fff"],speed:8,g:.3,size:5,life:45,shape:"rect"});FX.ring(p.x,p.y,c,{r0:12,grow:2.4});FX.shake($("#boardwrap"),7);FX.vib(30);
       const t=F.cap&7,nm=SIDE[F.cap>>3].hz[t];FX.float(p.x,p.y-34,`${nm} 잡았다!`,c)}
-    else sfx("wood");
-    const chk=G.check&&!G.over,col=SIDE[F.mover].c;
-    if(chk&&F.meong){sfx("check");FX.flash(col);FX.banner("멍군 장군!",col,"막으면서 역으로 장군")}
-    else if(chk){sfx("check");FX.flash("#ff3b3b");FX.banner("장군!","#ff3b3b");FX.shake($("#boardwrap"),6)}
-    else if(F.meong){sfx("alert");FX.banner("멍군!",col,"장군을 막았어요")}
+    if(check&&F.meong){FX.flash(col);FX.banner("멍군 장군!",col,"막으면서 역으로 장군")}
+    else if(check){FX.flash("#ff3b3b");FX.banner("장군!","#ff3b3b");FX.shake($("#boardwrap"),6)}
+    else if(F.meong){FX.banner("멍군!",col,"장군을 막았어요")}
   },300);
 }
 
 function doMove(m,remote){
   const B=G.B,f=m>>7,t=m&127,mover=G.turn;if(G.online&&!remote)G.online.send({t:"mv",m});
   G.hist.push({B:Int8Array.from(B),turn:mover,last:G.last,cap:{1:G.cap[1].slice(),2:G.cap[2].slice()},ply:G.ply,check:G.check});
-  const cap=B[t];if(cap)G.cap[mover].push(cap);
-  J.make(B,m);G.last=[f,t];G.ply++;G.fx={f,t,cap,mover,meong:!!G.check};
-  beep(cap?220:420,cap?.18:.07,cap?"square":"triangle",cap?.1:.07);
+  const cap=B[t],piece=B[f]&7;if(cap)G.cap[mover].push(cap);
+  J.make(B,m);G.last=[f,t];G.ply++;G.fx={f,t,cap,piece,mover,meong:!!G.check};
   if(cap&&(cap&7)===1){endGame(mover,"왕을 잡았어요");return}
   afterMove(mover);
 }
@@ -230,9 +233,9 @@ function afterMove(mover){
     if(G.check){render();return endGame(mover,"외통! 더 이상 피할 수 없어요")}
     G.turn=mover;G.check=J.inCheck(B,mover);G.legal=J.legalMoves(B,mover);
     if(!G.legal.length)return endScore();
+    G.fx.passed=true;
     setTurnMsg();G.msg=`${SIDE[opp].n}이(가) 둘 곳이 없어 한 수 쉼 — `+G.msg;
   }else{
-    if(G.check)beep(700,.12,"sawtooth",.08);
     setTurnMsg();
   }
   if(G.ply>=400)return endScore();
@@ -255,9 +258,14 @@ function endGame(winner,why){
   const win=winner===G.me;
   $("#wt").textContent=win?"🎉 승리했어요!":G.online?"😢 졌어요":"🤖 컴퓨터 승리";
   $("#wd").textContent=why;
-  beep(win?784:196,.3,"triangle",.1);if(win){beep(1047,.4,"triangle",.1,.25)}
-  if(window.FX)setTimeout(()=>{if(win){FX.sfx("win");FX.confetti();FX.banner(why.includes("외통")?"외통!":"승리!","#ffd24d",why)}else{FX.sfx("lose");FX.banner("패배…","#666",why)}},600);
-  setTimeout(()=>$("#win").classList.remove("hide"),window.FX?3000:900);
+  const game=gen;
+  sfx(win?"win":"lose",{delay:.65});
+  if(window.FX)setTimeout(()=>{
+    if(game!==gen)return;
+    if(win){FX.confetti();FX.banner(why.includes("외통")?"외통!":"승리!","#ffd24d",why)}
+    else{FX.banner("패배…","#666",why)}
+  },650);
+  setTimeout(()=>{if(game===gen)$("#win").classList.remove("hide")},window.FX?2800:900);
 }
 function endScore(){
   const sc=J.score(G.B),w=sc[1]>sc[2]?1:2;
@@ -273,14 +281,15 @@ $("#svg").addEventListener("click",e=>{
   const i=r*9+c,v=G.B[i];
   if(v&&(v>>3)===G.me){
     G.sel=i;G.moves=G.legal.filter(m=>(m>>7)===i).map(m=>m&127);
-    if(!G.moves.length){G.msg="이 말은 움직일 수 없어요";G.kind="bad";render();return}
-    setTurnMsg();beep(500,.05);sfx("pop");render();return;
+    if(!G.moves.length){G.msg="이 말은 움직일 수 없어요";G.kind="bad";sfx("invalid");render();return}
+    setTurnMsg();sfx("select");render();return;
   }
   if(G.sel>=0&&G.moves.includes(i)){doMove(G.sel<<7|i);return}
+  if(G.sel>=0)sfx("back");
   G.sel=-1;G.moves=[];setTurnMsg();render();
 });
 function onNet(e){
-  if(e.t==="cfg"){if(!G||!G.online||G.started)return;newGame(G.online,e);G.started=true;return}
+  if(e.t==="cfg"){if(!G||!G.online||G.started)return;newGame(G.online,e);G.started=true;sfx("start");return}
   if(!G||G.over)return;
   if(e.t==="mv"&&G.turn!==G.me&&G.legal.includes(e.m))doMove(e.m,true);
   else if(e.t==="resign")endGame(G.me,"상대가 기권했어요");
@@ -294,21 +303,32 @@ $("#stage").addEventListener("click",e=>{
       if(h.turn===G.me){
         G.B=Int8Array.from(h.B);G.turn=h.turn;G.last=h.last;G.cap=h.cap;G.ply=h.ply;G.check=h.check;G.hist.length=k;
         J.locateKings(G.B);G.legal=J.legalMoves(G.B,G.turn);G.sel=-1;G.moves=[];
+        gen++;stopSounds();sfx("undo");
         setTurnMsg();render();return;
       }
     }
   }
 });
-$("#ruleBtn").onclick=()=>$("#rules").classList.remove("hide");
-$("#ruleClose").onclick=()=>$("#rules").classList.add("hide");
-$("#sndBtn").textContent=soundOn?"🔊":"🔇";
-$("#sndBtn").onclick=()=>{soundOn=!soundOn;if(window.FX)FX.on=soundOn;$("#sndBtn").textContent=soundOn?"🔊":"🔇";sfx("tap")};
-const again=()=>{gen++;if(G&&G.online){G.online.leave();G.online=null}$("#win").classList.add("hide");$("#setup").classList.remove("hide")};
+$("#ruleBtn").onclick=()=>{sfx("menu");$("#rules").classList.remove("hide")};
+$("#ruleClose").onclick=()=>{sfx("back");$("#rules").classList.add("hide")};
+const soundButton=$("#sndBtn");
+const syncSound=()=>{soundButton.textContent=window.FX?.on?"🔊":"🔇"};
+syncSound();
+soundButton.onclick=()=>{
+  if(!window.FX)return;
+  FX.on=!FX.on;syncSound();
+  if(FX.on)sfx("menu");else stopSounds();
+};
+const again=()=>{
+  gen++;stopSounds();sfx("back");
+  if(G&&G.online){G.online.leave();G.online=null}
+  $("#win").classList.add("hide");$("#setup").classList.remove("hide");
+};
 $("#newBtn").onclick=again;$("#againBtn").onclick=again;
 function bindOpt(id,key,num){
   $(id).addEventListener("click",e=>{
     const b=e.target.closest("button");if(!b)return;
-    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=num?+b.dataset.v:b.dataset.v;syncSetup();
+    [...$(id).children].forEach(x=>x.classList.remove("on"));b.classList.add("on");sel[key]=num?+b.dataset.v:b.dataset.v;sfx("menu");syncSetup();
   });
 }
 function syncSetup(){
@@ -320,19 +340,19 @@ function syncSetup(){
 bindOpt("#optMode","mode");bindOpt("#optMe","me",true);bindOpt("#optLv","lv");syncSetup();
 $("#startBtn").onclick=()=>{
   if(sel.mode==="online"){
-    if(!window.BGNet){$("#olNote").textContent="온라인 모듈을 불러오지 못했어요 (저장소 주소로 열어 주세요)";return}
-    $("#setup").classList.add("hide");
+    if(!window.BGNet){$("#olNote").textContent="온라인 모듈을 불러오지 못했어요 (저장소 주소로 열어 주세요)";sfx("invalid");return}
+    sfx("menu");$("#setup").classList.add("hide");
     BGNet.open({game:"janggi",title:"장기",sizes:[{np:2,label:"2명"}],
       onStart:ctx=>{
         $("#win").classList.add("hide");
         newGame(ctx,{side:1});G.over=true;G.started=false;G.msg="방장이 시작하는 중…";render();
-        ctx.onEvent=onNet;ctx.onLeft=()=>{if(G&&!G.over)endGame(G.me,"상대가 나갔어요")};
-        if(ctx.isHost){const cfg={t:"cfg",side:sel.me};ctx.send(cfg);newGame(ctx,cfg);G.started=true}
+        ctx.onEvent=onNet;ctx.onLeft=()=>{if(G?.online===ctx&&!G.over)endGame(G.me,"상대가 나갔어요")};
+        if(ctx.isHost){const cfg={t:"cfg",side:sel.me};ctx.send(cfg);newGame(ctx,cfg);G.started=true;sfx("start")}
       },
       onClose:()=>$("#setup").classList.remove("hide")});
     return;
   }
-  $("#setup").classList.add("hide");newGame();
+  $("#setup").classList.add("hide");newGame();sfx("start");
 };
 
 (function(){
@@ -343,7 +363,8 @@ $("#startBtn").onclick=()=>{
     try{
       if(isFs()){await(d.exitFullscreen||d.webkitExitFullscreen).call(d)}
       else{const f=el.requestFullscreen||el.webkitRequestFullscreen;if(!f)throw 0;await f.call(el)}
-    }catch(e){if(G){G.msg="이 환경에서는 전체화면을 쓸 수 없어요";G.kind="bad";render()}}
+      sfx("menu");
+    }catch(e){sfx("invalid");if(G){G.msg="이 환경에서는 전체화면을 쓸 수 없어요";G.kind="bad";render()}}
   };
   d.addEventListener("fullscreenchange",sync);d.addEventListener("webkitfullscreenchange",sync);
 })();

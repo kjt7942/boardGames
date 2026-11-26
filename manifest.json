@@ -11,8 +11,8 @@
     "fullscreen",
     "standalone"
   ],
-  "background_color": "#3d9bff",
-  "theme_color": "#3d9bff",
+  "background_color": "#10111d",
+  "theme_color": "#10111d",
   "icons": [
     {
       "src": "icons/icon-192.png",
