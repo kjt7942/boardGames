@@ -376,55 +376,6 @@ body.bg-game {
   background: linear-gradient(#10286a40, #0a1a4c80), url(img/bg_sky.webp) center / cover fixed #1b3f9a;
 }
 
-/* 어디서나 같은 자리(오른쪽 위)에 보이는 공통 버튼: 홈 · 전체화면 · 소리 · 규칙 · 새 게임 */
-.bg-toolbar,
-.bg-game #menu.bg-toolbar {
-  position: fixed;
-  top: max(8px, env(safe-area-inset-top));
-  right: max(8px, env(safe-area-inset-right));
-  left: auto;
-  bottom: auto;
-  z-index: 95;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  width: auto;
-  height: auto;
-  margin: 0;
-  padding: 5px 7px;
-  border-radius: 999px;
-  background: #1b3a9bd9;
-  border: 2px solid #ffffff80;
-  box-shadow: 0 4px 0 #0f2468, 0 8px 22px #07124a66;
-}
-
-.bg-toolbar button,
-.bg-game #menu.bg-toolbar button {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  padding: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 20%, #6db7ff, #2468ee 70%);
-  color: #fff;
-  border: 2px solid #fff;
-  box-shadow: 0 3px 0 #123a9a;
-  font-size: 1.05rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.bg-toolbar button:active { transform: translateY(2px); box-shadow: 0 1px 0 #123a9a; }
-.bg-toolbar button[aria-pressed="false"]#sndBtn, .bg-toolbar button[aria-pressed="false"]#sndT { filter: grayscale(.6) brightness(.85); }
-.bg-toolbar button[hidden] { display: none; }
-.bg-game #menu.bg-toolbar .bg-stage-title { display: none; }
-
 /* 보라색 반짝이는 창(설정·규칙·결과) */
 .bg-game .ov > :is(.card, .cd) {
   background: linear-gradient(180deg, #6a4ee0 0%, #3b2490 55%, #2c1a78 100%);
@@ -631,57 +582,138 @@ body.bg-game {
 .bg-setup-layout > * { flex: none; }
 .bg-game-cover { width: 100%; height: auto; }
 
-/* ===== 공통 상단 버튼: 테마에 맞춰 새로 그린 아이콘 세트(img/ui) ===== */
-.bg-toolbar,
-.bg-game #menu.bg-toolbar {
-  gap: 4px;
-  padding: 0;
-  background: none;
-  border: 0;
-  box-shadow: none;
-}
-
-.bg-toolbar button,
-.bg-game #menu.bg-toolbar button {
-  width: 46px;
-  height: 46px;
-  min-width: 46px;
-  min-height: 46px;
-  font-size: 0;
-  color: transparent;
-  background: center / contain no-repeat transparent;
-  border: 0;
-  border-radius: 50%;
-  box-shadow: none;
-  transition: transform .12s;
-}
-
-.bg-toolbar button:active { transform: scale(.92); box-shadow: none; }
-@media (hover: hover) { .bg-toolbar button:hover { transform: scale(1.06); filter: brightness(1.08); } }
-
-:is(#homeBtn, #homeT) { background-image: url(img/ui/home.webp) !important; }
-:is(#fsBtn, #fsT) { background-image: url(img/ui/fs.webp) !important; }
-:is(#sndBtn, #sndT) { background-image: url(img/ui/snd_on.webp) !important; }
-:is(#sndBtn, #sndT)[aria-pressed="false"] { background-image: url(img/ui/snd_off.webp) !important; filter: none; }
-:is(#ruleBtn, #ruleT) { background-image: url(img/ui/rules.webp) !important; }
-:is(#newBtn, #newT) { background-image: url(img/ui/new.webp) !important; }
-
-@media (max-width: 600px) {
-  .bg-toolbar button, .bg-game #menu.bg-toolbar button { width: 42px; height: 42px; min-width: 42px; min-height: 42px; }
-  .bg-toolbar, .bg-game #menu.bg-toolbar { gap: 2px; }
-}
-
-/* 공통 상단 버튼: 작고 촘촘하게(홈·게임 화면을 가리지 않도록) */
-.bg-toolbar, .bg-game #menu.bg-toolbar { top: max(6px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); gap: 2px; }
-.bg-toolbar button, .bg-game #menu.bg-toolbar button { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
-@media (max-width: 600px) {
-  .bg-toolbar button, .bg-game #menu.bg-toolbar button { width: 31px; height: 31px; min-width: 31px; min-height: 31px; }
-  .bg-toolbar, .bg-game #menu.bg-toolbar { gap: 1px; right: 6px; }
-}
-
 /* 창이 상단 버튼 밑에서 시작하도록 / 폰에서도 소개 그림 비율 유지 */
 .bg-game .ov:is(#setup, #rules, #promo, #win) { padding-top: 48px; }
 @media (max-width: 620px) {
   .bg-game-overview { display: block; }
   .bg-game-cover { height: auto; aspect-ratio: 2 / 1; }
 }
+
+/* ===== 입장 화면: 스크롤 없이 한 화면에 ===== */
+.bg-game #setup .bg-setup-card { height: 100%; max-height: 100%; }
+.bg-setup-layout { flex: 1 1 auto; min-height: 0; gap: 8px; padding: 0 12px 6px; }
+.bg-col-left { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.bg-col-left > * { flex: none; }
+.bg-setup-layout > .bg-settings { flex: none; }
+
+/* 그림이 남는 높이를 흡수 */
+.bg-col-left > .bg-game-overview { flex: 1 1 0; min-height: 64px; max-height: 230px; position: relative; margin: 0 -12px; }
+.bg-game-overview .bg-game-cover { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; object-fit: cover; object-position: center; }
+
+.bg-dialog-header { padding: 8px 52px 8px; }
+.bg-game #setup .bg-dialog-header h2 { font-size: clamp(1.3rem, 5vw, 1.7rem); }
+.bg-title-badge { font-size: 1.4rem; }
+.bg-game .bg-back { width: 36px; height: 36px; right: 10px; font-size: 1rem; }
+
+.bg-info { padding: 8px 12px 10px; border-radius: 16px; }
+.bg-info h3 { margin: 0 0 3px; font-size: .95rem; }
+.bg-game .bg-game-description { font-size: .85rem; line-height: 1.45; }
+.bg-game .bg-rules-button { margin-top: 6px; min-height: 34px; padding: 4px 12px; font-size: .8rem; }
+.bg-stats { padding: 6px 2px; border-radius: 16px; }
+.bg-stat { gap: 2px; }
+.bg-stat span { font-size: .72rem; }
+.bg-stat b { font-size: .92rem; }
+.bg-settings { padding: 8px 12px 0; border-radius: 16px; }
+.bg-game #setup .lbl { margin: 0 0 4px; font-size: .78rem; }
+.bg-game #setup .opt { margin: 0 0 8px; gap: 5px; }
+.bg-game #setup .opt button { min-height: 36px; padding: 4px 3px; font-size: .8rem; border-radius: 10px; }
+.bg-dialog-footer { padding: 2px 12px 10px; }
+.bg-game #startBtn { min-height: 48px; font-size: 1.15rem; }
+
+/* 낮은 폰 화면: 방식 카드와 정보 줄을 줄여 스크롤 방지 */
+.bg-how { display: none; }
+@media (max-height: 700px) and (max-width: 899px) { .bg-stats { display: none; } }
+
+/* PC: 왼쪽(그림·소개·방식·정보) + 오른쪽(설정) 두 칸 */
+@media (min-width: 900px) {
+  .bg-game #setup .bg-setup-card { width: min(100%, 940px); height: auto; }
+  .bg-setup-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; padding: 0 16px 8px; align-items: start; }
+  .bg-col-left > .bg-game-overview { flex: none; height: clamp(120px, 30dvh, 250px); max-height: none; margin: 0 -16px 0; border-radius: 0 0 28px 28px; }
+  .bg-col-left { margin-top: 0; }
+  .bg-how { display: block; }
+  .bg-settings { padding: 14px 16px 6px; margin-top: 10px; }
+  .bg-game #setup .lbl { font-size: .9rem; }
+  .bg-game #setup .opt button { min-height: 42px; font-size: .92rem; }
+  .bg-dialog-footer { padding: 4px 16px 16px; }
+  .bg-game .bg-game-description { font-size: .92rem; }
+}
+
+.bg-col-left { min-height: min-content; }
+@media (max-height: 700px) and (max-width: 899px) {
+  .bg-col-left > .bg-game-overview { min-height: 48px; }
+  .bg-info h3 { display: none; }
+  .bg-game .bg-rules-button { display: none; } /* 규칙은 위쪽 ❓ 버튼으로 */
+}
+
+/* ===== 메뉴 시트(하단) + 게임 화면 메뉴 버튼 ===== */
+#bgMenuBtn {
+  position: fixed;
+  top: max(6px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 95;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: url(img/ui/options.webp) center / contain no-repeat;
+  opacity: .6;
+  cursor: pointer;
+  transition: opacity .15s, transform .12s;
+}
+#bgMenuBtn:hover, #bgMenuBtn:focus-visible { opacity: 1; }
+#bgMenuBtn:active { transform: scale(.92); }
+
+.bgm { position: fixed; inset: 0; z-index: 120; font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+.bgm[hidden] { display: none; }
+.bgm-dim { position: absolute; inset: 0; background: #0a1450aa; }
+.bgm-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 16px calc(18px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #fff8ea, #fff1d6);
+  border: 4px solid #fff;
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 0 0 4px #2f7bf0;
+  color: #1d2550;
+  animation: bgmUp .22s ease-out;
+}
+@keyframes bgmUp { from { transform: translateY(100%); } }
+.bgm-grab { width: 44px; height: 5px; margin: 0 auto 8px; border-radius: 3px; background: #c9cfe6; }
+.bgm-sheet h2 { margin: 0 0 10px; text-align: center; font-size: 1.15rem; font-weight: 900; color: #1d2550; }
+.bgm-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.bgm button.bgm-item {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 2px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #1d2550;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+.bgm-item img { width: 52px; height: 52px; }
+.bgm button.bgm-item:hover, .bgm button.bgm-item:focus-visible { background: #e8eeff; }
+.bgm-item:active { transform: scale(.95); }
+.bgm-confirm { text-align: center; padding: 4px 0 6px; }
+.bgm-confirm p { margin: 0 0 14px; font-size: 1rem; font-weight: 800; line-height: 1.5; word-break: keep-all; }
+.bgm-confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bgm .bgm-confirm-btns button { min-height: 48px; border: 0; border-radius: 14px; font: inherit; font-weight: 900; font-size: 1rem; cursor: pointer; }
+.bgm .bgm-no { background: #e3ebff; color: #2a3a8a; }
+.bgm .bgm-ok { background: linear-gradient(180deg, #55baff, #1f6bf0); color: #fff; box-shadow: 0 3px 0 #1747b3; }
+@media (min-width: 700px) { .bgm-item img { width: 60px; height: 60px; } .bgm-item { font-size: .85rem; } }
+
+.bg-game #menu { display: none !important; }
+
+.bgm-grid[hidden], .bgm-confirm[hidden] { display: none; }

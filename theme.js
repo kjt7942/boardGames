@@ -47,19 +47,39 @@
     stageTitle.textContent = game.name;
     menu.prepend(stageTitle);
   }
-  menu.classList.add("bg-toolbar");
-  // 창(설정·규칙·결과) 위에도 항상 보이도록 stage 밖으로 옮기되, 원래 자리는 비워 둬서 게임 배치가 그대로 유지돼요
+  // 5개 버튼은 숨기고(기존 동작 연결용으로만 둠) 하단 메뉴 시트로 모아요. 원래 자리는 비워 둬서 게임 배치가 그대로 유지돼요
   const spacer = element("div", "bg-menu-spacer");
-  const area = getComputedStyle(menu).gridArea;
-  spacer.style.gridArea = area;
-  if (area.startsWith("auto")) spacer.style.minHeight = "46px"; // 카드 게임: 맨 위 줄이 공통 버튼 자리
+  spacer.style.gridArea = getComputedStyle(menu).gridArea;
   menu.before(spacer);
   document.body.append(menu);
+  menu.hidden = true;
   const menuNames = { homeBtn: "게임 목록", fsBtn: "전체화면", sndBtn: "효과음", ruleBtn: "게임 규칙", newBtn: "새 게임" };
   for (const button of menu.querySelectorAll("button")) {
     button.setAttribute("aria-label", menuNames[button.id]);
     button.title = menuNames[button.id];
   }
+  // 오른쪽 위의 작은 메뉴 버튼 → 하단 시트
+  const menuScript = element("script");
+  menuScript.src = new URL("menu.js", base).href;
+  document.head.append(menuScript);
+  const menuButton = element("button");
+  menuButton.id = "bgMenuBtn";
+  menuButton.type = "button";
+  menuButton.title = menuButton.ariaLabel = "메뉴";
+  menuButton.onclick = () => window.BGMenu?.open();
+  document.body.append(menuButton);
+  const running = () => byId("setup").classList.contains("hide") && byId("win").classList.contains("hide");
+  menuScript.onload = () => BGMenu.set({
+    home: goHome,
+    snd: () => byId("sndBtn").click(),
+    sndOn: () => byId("sndBtn").getAttribute("aria-pressed") !== "false",
+    rules: () => byId("ruleBtn").click(),
+    newGame: () => byId("newBtn").click(),
+    confirm: {
+      home: () => running() ? "진행 중인 게임이 끝나요. 홈으로 갈까요?" : null,
+      new: () => running() ? "진행 중인 게임이 끝나요. 새 게임을 할까요?" : null
+    }
+  });
   const sound = byId("sndBtn");
   const syncSound = () => sound.setAttribute("aria-pressed", String(sound.textContent.trim() === "🔊"));
   syncSound();
@@ -120,7 +140,9 @@
   rulesButton.type = "button";
   rulesButton.textContent = "📖 규칙 자세히 보기";
   rulesButton.onclick = () => byId("ruleBtn").click();
-  how.append(howText, rulesButton);
+  how.classList.add("bg-how");
+  how.append(howText);
+  about.append(rulesButton);
 
   const stats = element("div", "bg-stats");
   for (const [icon, label, value] of [["👥", "플레이어 수", game.players], ["🏷️", "종류", game.category], ["⏱️", "예상 시간", "약 " + game.minutes + "분"]]) {
@@ -132,7 +154,9 @@
     cell.append(l, v);
     stats.append(cell);
   }
-  layout.append(overview, about, how, stats, settings);
+  const left = element("div", "bg-col-left");
+  left.append(overview, about, how, stats);
+  layout.append(left, settings);
 
   const footer = element("div", "bg-dialog-footer");
   start.removeAttribute("style");

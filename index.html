@@ -149,14 +149,6 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
 </style>
 </head>
 <body>
-<!-- 모든 화면 공통 버튼(홈 · 전체화면 · 소리 · 규칙 · 새 게임): 게임 화면과 같은 자리 -->
-<div class="bg-toolbar" id="appTools" role="toolbar" aria-label="앱 메뉴">
- <button id="homeT" type="button" aria-label="홈" title="홈">🏠</button>
- <button id="fsT" type="button" aria-label="전체화면" title="전체화면">⛶</button>
- <button id="sndT" type="button" aria-label="효과음" title="효과음">🔊</button>
- <button id="ruleT" type="button" aria-label="이용 방법" title="이용 방법">❓</button>
- <button id="newT" type="button" aria-label="새 게임 고르기" title="새 게임 고르기">↻</button>
-</div>
 <div class="hd" id="homeRules" hidden role="dialog" aria-modal="true" aria-labelledby="homeRulesT">
  <div class="hdc"><h2 id="homeRulesT">이용 방법</h2>
   <ol><li><b>게임 탐색</b>에서 하고 싶은 게임을 골라요.</li>
@@ -193,9 +185,10 @@ nav button.on::after{content:"";position:absolute;bottom:-1px;width:40%;height:4
  <button class="on" data-go="top"><span>🏠</span>홈</button>
  <button data-go="all"><span>🎲</span>전체 게임</button>
  <button data-act="online"><span>🌐</span>온라인</button>
- <button data-go="about"><span>💬</span>정보</button>
+ <button id="optBtn" type="button"><span>⚙️</span>옵션</button>
 </nav>
 <script src="fx.js"></script>
+<script src="menu.js"></script>
 <script src="firebase-config.js"></script>
 <script src="net.js"></script>
 <script>
@@ -280,16 +273,15 @@ $("#chips").onclick=e=>{const b=e.target.closest("button");if(!b)return;cat=b.da
 const go=id=>{tap();document.getElementById(id).scrollIntoView({behavior:"smooth",block:"start"})};
 document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
 $("#explore").onclick=()=>go("all");
-$("#homeT").onclick=()=>go("top");$("#newT").onclick=()=>go("all");
-const hr=$("#homeRules");$("#ruleT").onclick=()=>{tap();hr.hidden=false;$("#homeRulesClose").focus()};
+const hr=$("#homeRules");const showRules=()=>{hr.hidden=false;$("#homeRulesClose").focus()};
 $("#homeRulesClose").onclick=()=>{hr.hidden=true};hr.addEventListener("click",e=>{if(e.target===hr)hr.hidden=true});
 addEventListener("keydown",e=>{if(e.key==="Escape")hr.hidden=true});
 $("[data-act=online]").onclick=openHub;
 const secs=["top","all","about"],navB=[...document.querySelectorAll("nav button")];
-addEventListener("scroll",()=>{const y=scrollY+innerHeight*.4;let k=0;if(y>$("#all").offsetTop)k=1;if(innerHeight+scrollY>=document.body.scrollHeight-4)k=3;navB.forEach((b,i)=>b.classList.toggle("on",i===k))},{passive:true});
-// 소리·전체화면
-const sb=$("#sndT"),showSnd=()=>sb.setAttribute("aria-pressed",String(!!FXon()));showSnd();sb.onclick=()=>{if(!window.FX)return;FX.on=!FX.on;showSnd();tap()};
-$("#fsT").onclick=()=>{const d=document;try{if(d.fullscreenElement)d.exitFullscreen();else d.documentElement.requestFullscreen()}catch(e){}};
+addEventListener("scroll",()=>{const y=scrollY+innerHeight*.4;let k=0;if(y>$("#all").offsetTop)k=1;navB.forEach((b,i)=>b.classList.toggle("on",i===k))},{passive:true});
+// 하단 메뉴 시트(옵션 탭)
+BGMenu.set({home:()=>go("top"),snd:()=>{if(window.FX){FX.on=!FX.on;tap()}},sndOn:()=>!!FXon(),rules:showRules,newGame:()=>go("all")});
+$("#optBtn").onclick=()=>{tap();BGMenu.open()};
 document.addEventListener("click",e=>{const a=e.target.closest("a.feat,a.tile,a.card");if(a&&window.FX){FX.sfx("pop");const r=a.getBoundingClientRect();FX.burst(r.left+r.width/2,r.top+r.height/2,{n:16,color:["#ffd24d","#fff","#46b4ff"],speed:5,g:.1,size:4,life:30,shape:"star"})}});
 // 반짝이
 [["8%","62%","✨"],["88%","48%","⭐"],["6%","88%","✨"],["92%","80%","⭐"]].forEach(([x,y,t],i)=>{const e=document.createElement("div");e.className="sparkle";e.textContent=t;e.style.left=x;e.style.top=y;e.style.animationDelay=i*.7+"s";document.body.appendChild(e)});
