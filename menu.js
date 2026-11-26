@@ -30,7 +30,67 @@
     { key: "new", label: "새 게임", icon: "new", run: () => cfg.newGame && cfg.newGame() }
   ].filter(Boolean);
 
+  // 스타일을 이 파일에 함께 둬서, 다른 CSS가 예전 것으로 캐시돼 있어도 시트가 항상 제대로 보여요
+  const SHEET_CSS = `
+.bgm { position: fixed; inset: 0; z-index: 120; font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+.bgm[hidden] { display: none; }
+.bgm-dim { position: absolute; inset: 0; background: #0a1450aa; }
+.bgm-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 16px calc(18px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #fff8ea, #fff1d6);
+  border: 4px solid #fff;
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 0 0 4px #2f7bf0;
+  color: #1d2550;
+  animation: bgmUp .22s ease-out;
+}
+@keyframes bgmUp { from { transform: translateY(100%); } }
+.bgm-grab { width: 44px; height: 5px; margin: 0 auto 8px; border-radius: 3px; background: #c9cfe6; }
+.bgm-sheet h2 { margin: 0 0 10px; text-align: center; font-size: 1.15rem; font-weight: 900; color: #1d2550; }
+.bgm-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.bgm button.bgm-item {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 2px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #1d2550;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+.bgm-item img { width: 52px; height: 52px; }
+.bgm button.bgm-item:hover, .bgm button.bgm-item:focus-visible { background: #e8eeff; }
+.bgm-item:active { transform: scale(.95); }
+.bgm-confirm { text-align: center; padding: 4px 0 6px; }
+.bgm-confirm p { margin: 0 0 14px; font-size: 1rem; font-weight: 800; line-height: 1.5; word-break: keep-all; }
+.bgm-confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bgm .bgm-confirm-btns button { min-height: 48px; border: 0; border-radius: 14px; font: inherit; font-weight: 900; font-size: 1rem; cursor: pointer; }
+.bgm .bgm-no { background: #e3ebff; color: #2a3a8a; }
+.bgm .bgm-ok { background: linear-gradient(180deg, #55baff, #1f6bf0); color: #fff; box-shadow: 0 3px 0 #1747b3; }
+@media (min-width: 700px) { .bgm-item img { width: 60px; height: 60px; } .bgm-item { font-size: .85rem; } }
+.bgm-grid[hidden], .bgm-confirm[hidden] { display: none; }
+`;
+
   function build() {
+    if (!document.getElementById("bgm-style")) {
+      const style = document.createElement("style");
+      style.id = "bgm-style";
+      style.textContent = SHEET_CSS;
+      document.head.append(style);
+    }
     root = el("div", "bgm");
     root.hidden = true;
     root.innerHTML = '<div class="bgm-dim"></div><div class="bgm-sheet" role="dialog" aria-modal="true" aria-label="메뉴">' +
